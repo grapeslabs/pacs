@@ -1,0 +1,50 @@
+FROM php:8.2-fpm-alpine as app
+
+ARG UID
+ARG GID
+
+ENV UID=${UID}
+ENV GID=${GID}
+
+RUN mkdir -p /var/www/html
+
+WORKDIR /var/www/html
+
+# MacOS staff group's gid is 20, so is the dialout group in alpine linux. We're not using it, let's just remove it.
+RUN delgroup dialout
+
+RUN addgroup -g ${GID} --system laravel
+RUN adduser -G laravel --system -D -s /bin/sh -u ${UID} laravel
+
+RUN sed -i "s/user = www-data/user = laravel/g" /usr/local/etc/php-fpm.d/www.conf
+RUN sed -i "s/group = www-data/group = laravel/g" /usr/local/etc/php-fpm.d/www.conf
+RUN echo "php_admin_flag[log_errors] = on" >> /usr/local/etc/php-fpm.d/www.conf
+
+RUN echo ${TZ} > /etc/timezone
+RUN set -eux; apk add --no-cache curl postgresql-dev libzip-dev zip supervisor git git-lfs gpg less openssh patch
+RUN git lfs install
+
+RUN docker-php-ext-configure pcntl --enable-pcntl
+RUN docker-php-ext-install pdo_mysql pdo_pgsql pcntl
+
+RUN mkdir -p /usr/src/php/ext/redis \
+    && curl -L https://github.com/phpredis/phpredis/archive/5.3.4.tar.gz | tar xvz -C /usr/src/php/ext/redis --strip 1 \
+    && echo 'redis' >> /usr/src/php-available-exts \
+    && docker-php-ext-install redis
+
+RUN curl -sS https://getcomposer.org/installer -o composer-setup.php
+RUN php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+RUN rm -rf composer-setup.php
+
+USER laravel
+
+CMD ["php-fpm", "-y", "/usr/local/etc/php-fpm.conf", "-R"]
+
+FROM app as horizon
+
+USER root
+
+COPY supervisord.conf /etc/supervisord.conf
+
+CMD ["/usr/bin/supervisord", "-n", "-c",  "/etc/supervisord.conf"]
+

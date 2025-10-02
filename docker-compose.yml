@@ -1,0 +1,230 @@
+version: '3'
+
+x-logging: &default-logging
+  options:
+    max-size: "10m"
+  driver: json-file
+
+networks:
+  laravel:
+  traefik-public:
+   external: true
+
+services:
+  app:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    expose:
+      - 80
+    volumes:
+      - ./:/var/www/html:delegated
+    environment:
+      TZ: 'Europe/Moscow'
+    depends_on:
+      - php
+    networks:
+      - laravel
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${DOCKER_DOMAIN}`)"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=web"
+      - "traefik.http.middlewares.https_redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=https_redirect"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-https.entrypoints=websecure"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-https.rule=Host(`${DOCKER_DOMAIN}`)"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-https.tls=true"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-https.tls.certresolver=le"
+    logging: *default-logging
+
+  pgsql:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: '${DB_USERNAME}'
+      POSTGRES_PASSWORD: '${DB_PASSWORD}'
+      POSTGRES_DB: '${DB_DATABASE}'
+      TZ: 'Europe/Moscow'
+    volumes:
+      - ./docker/pgsql:/var/lib/postgresql/data:delegated
+    expose:
+      - 5432
+    networks:
+      - laravel
+    logging: *default-logging
+    
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+      target: app
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    expose:
+      - 9000
+    volumes:
+      - ./:/var/www/html:delegated
+    depends_on:
+      - pgsql
+      - redis
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    logging: *default-logging
+    
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    volumes:
+      - ./docker/redis:/data:delegated
+    expose:
+      - 6379
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      retries: 3
+      timeout: 5s
+    logging: *default-logging
+    
+  composer:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+      target: app
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    volumes:
+      - ./:/var/www/html:delegated
+      - ~/.ssh/:/home/laravel/.ssh
+    entrypoint: [ 'composer' ]
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    logging: *default-logging
+    
+  npm:
+    image: node:current-alpine
+    volumes:
+      - ./:/var/www/html
+    expose:
+      - 3000
+      - 3001
+      - 5173
+    working_dir: /var/www/html
+    entrypoint: [ 'npm' ]
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-npm.rule=Host(`${DOCKER_DOMAIN}`)"
+      - "traefik.http.services.${TRAEFIK_SERVICE}-npm.loadbalancer.server.port=3000"
+      - "traefik.http.services.${TRAEFIK_SERVICE}-npm.loadbalancer.server.port=3001"
+      - "traefik.http.services.${TRAEFIK_SERVICE}-npm.loadbalancer.server.port=5173"
+    logging: *default-logging
+    
+  artisan:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+      target: app
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    volumes:
+      - ./:/var/www/html:delegated
+    depends_on:
+      - pgsql
+      - redis
+    entrypoint: [ 'php', '/var/www/html/artisan' ]
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    logging: *default-logging
+
+  mailpit:
+    image: 'axllent/mailpit:latest'
+    expose:
+        - 1025
+        - 8025
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-mailpit.rule=Host(`${DOCKER_DOMAIN}`) && Path(`/mailpit`)"
+      - "traefik.http.services.${TRAEFIK_SERVICE}-mailpit.loadbalancer.server.port=8025"
+    networks:
+      - laravel
+      - traefik-public
+    logging: *default-logging
+
+  scheduler:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+      target: app
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    volumes:
+      - ./:/var/www/html:delegated
+    depends_on:
+      - pgsql
+      - redis
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    entrypoint: [ '/var/www/html/docker/php/schedule_run.sh' ]
+    logging: *default-logging
+
+  horizon:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+      target: horizon
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    volumes:
+      - ./:/var/www/html:delegated
+      - ./docker/php/supervisord.d/horizon.conf:/etc/supervisord.d/horizon.conf
+    depends_on:
+      - pgsql
+      - redis
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    logging: *default-logging
+
+  adminer:
+    image: adminer
+    restart: always
+    expose:
+      - 8080
+    depends_on:
+      - pgsql
+    networks:
+      - laravel
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-adminer.rule=Host(`${DOCKER_DOMAIN}`) && Path(`/adminer`)"
+    logging: *default-logging
