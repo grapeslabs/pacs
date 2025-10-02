@@ -1,4 +1,4 @@
-FROM php:8.2-fpm-alpine as app
+FROM php:8.4-fpm-alpine AS app
 
 ARG UID
 ARG GID
@@ -27,10 +27,18 @@ RUN git lfs install
 RUN docker-php-ext-configure pcntl --enable-pcntl
 RUN docker-php-ext-install pdo_mysql pdo_pgsql pcntl
 
-RUN mkdir -p /usr/src/php/ext/redis \
-    && curl -L https://github.com/phpredis/phpredis/archive/5.3.4.tar.gz | tar xvz -C /usr/src/php/ext/redis --strip 1 \
-    && echo 'redis' >> /usr/src/php-available-exts \
-    && docker-php-ext-install redis
+#RUN mkdir -p /usr/src/php/ext/redis \
+#    && curl -L https://github.com/phpredis/phpredis/archive/5.3.4.tar.gz | tar xvz -C /usr/src/php/ext/redis --strip 1 \
+#    && echo 'redis' >> /usr/src/php-available-exts \
+#    && docker-php-ext-install redis
+
+ARG PHPEXT_REDIS_VERSION=6.1.0
+RUN set -eux; \
+    pecl bundle -d /usr/src/php/ext redis-${PHPEXT_REDIS_VERSION}; \
+    docker-php-ext-install -j$(nproc) redis; \
+    \
+    docker-php-source delete; \
+    rm -rf /tmp/* /var/tmp/*
 
 RUN curl -sS https://getcomposer.org/installer -o composer-setup.php
 RUN php composer-setup.php --install-dir=/usr/local/bin --filename=composer
@@ -40,11 +48,10 @@ USER laravel
 
 CMD ["php-fpm", "-y", "/usr/local/etc/php-fpm.conf", "-R"]
 
-FROM app as horizon
+FROM app AS horizon
 
 USER root
 
 COPY supervisord.conf /etc/supervisord.conf
 
 CMD ["/usr/bin/supervisord", "-n", "-c",  "/etc/supervisord.conf"]
-
