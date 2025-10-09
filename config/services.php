@@ -31,4 +31,19 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'dadata' => [
+        'token' => env('DADATA_TOKEN'),
+        'secret' => env('DADATA_SECRET'),
+        'url' => env('DADATA_URL', 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/party'),
+        'timeout' => env('DADATA_TIMEOUT', 10),
+    ],
+    'ms' => [
+        'url' => env('MEDIA_SERVER_API_URL'),
+        'rtsp_url' => env('MEDIA_SERVER_RTSP'),
+        'timeout' => env('MEDIA_SERVER_API_TIMEOUT', 5),
+    ],
+    'va' => [
+        'url' => env('ANALYTIC_HOST'),
+        'timeout' => env('ANALYTIC_TIMEOUT')
+    ]
 ];

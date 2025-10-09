@@ -25,12 +25,7 @@ RUN set -eux; apk add --no-cache curl postgresql-dev libzip-dev zip supervisor g
 RUN git lfs install
 
 RUN docker-php-ext-configure pcntl --enable-pcntl
-RUN docker-php-ext-install pdo_mysql pdo_pgsql pcntl
-
-#RUN mkdir -p /usr/src/php/ext/redis \
-#    && curl -L https://github.com/phpredis/phpredis/archive/5.3.4.tar.gz | tar xvz -C /usr/src/php/ext/redis --strip 1 \
-#    && echo 'redis' >> /usr/src/php-available-exts \
-#    && docker-php-ext-install redis
+RUN docker-php-ext-install pdo_mysql pdo_pgsql pcntl zip
 
 ARG PHPEXT_REDIS_VERSION=6.1.0
 RUN set -eux; \
@@ -39,6 +34,13 @@ RUN set -eux; \
     \
     docker-php-source delete; \
     rm -rf /tmp/* /var/tmp/*
+
+RUN echo "upload_max_filesize = 50M" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "post_max_size = 50M" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "max_input_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "max_file_uploads = 20" >> /usr/local/etc/php/conf.d/uploads.ini
 
 RUN curl -sS https://getcomposer.org/installer -o composer-setup.php
 RUN php composer-setup.php --install-dir=/usr/local/bin --filename=composer

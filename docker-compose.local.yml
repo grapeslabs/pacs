@@ -11,14 +11,19 @@ services:
       args:
         - UID=${UID:-1000}
         - GID=${GID:-1000}
-    ports:
+    expose:
       - 80
     volumes:
       - ./:/var/www/html:delegated
+      - ./analytic/thumbnails:/var/www/html/public/analytic-storage/thumbnails
     environment:
       TZ: "Europe/Moscow"
+      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-20M}
     depends_on:
       - php
+      - media-server
+      - analytic-server
+      - events-processor
     networks:
       - laravel
       - traefik-public
@@ -35,7 +40,7 @@ services:
       - "traefik.http.routers.${TRAEFIK_SERVICE}-https.tls.certresolver=le"
     logging: *default-logging
 
-  pgsql:
+  app-database:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
@@ -44,10 +49,9 @@ services:
       POSTGRES_DB: "${DB_DATABASE}"
       TZ: "Europe/Moscow"
     volumes:
-      - pgsql_data:/var/lib/postgresql/data:delegated
+      - app_database:/var/lib/postgresql/data:delegated
     networks:
       - laravel
-      - traefik-public
     logging: *default-logging
 
   php:
@@ -63,10 +67,20 @@ services:
     volumes:
       - ./:/var/www/html:delegated
     depends_on:
-      - pgsql
+      - app-database
       - redis
+      - ofelia
     environment:
       TZ: Europe/Moscow
+      UPLOAD_MAX_FILESIZE: 5M
+      POST_MAX_SIZE: 5M
+      MEMORY_LIMIT: 256M
+      MAX_EXECUTION_TIME: 300
+      MAX_INPUT_TIME: 300
+    labels:
+      - "ofelia.enabled=true"
+      - "ofelia.job-exec.drive-check.schedule=@every 1m"
+      - "ofelia.job-exec.drive-check.command=php /var/www/html/artisan drive:check"
     networks:
       - laravel
       - traefik-public
@@ -84,7 +98,7 @@ services:
     networks:
       - laravel
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       retries: 3
       timeout: 5s
     logging: *default-logging
@@ -101,7 +115,7 @@ services:
       - ./:/var/www/html:delegated
       - ../packages/:/var/www/packages:delegated
       - ~/.ssh/:/home/laravel/.ssh
-    entrypoint: ["composer"]
+    entrypoint: [ "composer" ]
     environment:
       TZ: Europe/Moscow
     networks:
@@ -112,25 +126,13 @@ services:
     image: node:current-alpine
     volumes:
       - ./:/var/www/html
-    expose:
-      - 3000
-      - 3001
-      - 5173
     working_dir: /var/www/html
-    entrypoint: ["npm"]
-    command: ["run", "dev"]
+    entrypoint: [ "npm" ]
+    command: [ "run", "dev" ]
     environment:
       TZ: Europe/Moscow
     networks:
       - laravel
-      - traefik-public
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik-public"
-      - "traefik.http.routers.${TRAEFIK_SERVICE}-npm.rule=Host(`${DOCKER_DOMAIN}`)"
-      - "traefik.http.services.${TRAEFIK_SERVICE}-npm.loadbalancer.server.port=3000"
-      - "traefik.http.services.${TRAEFIK_SERVICE}-npm.loadbalancer.server.port=3001"
-      - "traefik.http.services.${TRAEFIK_SERVICE}-npm.loadbalancer.server.port=5173"
     logging: *default-logging
 
   artisan:
@@ -144,9 +146,9 @@ services:
     volumes:
       - ./:/var/www/html:delegated
     depends_on:
-      - pgsql
+      - app-database
       - redis
-    entrypoint: ["php", "/var/www/html/artisan"]
+    entrypoint: [ "php", "/var/www/html/artisan" ]
     environment:
       TZ: Europe/Moscow
     networks:
@@ -171,27 +173,6 @@ services:
       - "traefik.http.routers.${TRAEFIK_SERVICE}-mailhog.tls.certresolver=le"
     networks:
       - laravel
-      - traefik-public
-    logging: *default-logging
-
-  scheduler:
-    build:
-      context: ./docker/php
-      dockerfile: Dockerfile
-      target: app
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    volumes:
-      - ./:/var/www/html:delegated
-    depends_on:
-      - pgsql
-      - redis
-    environment:
-      TZ: Europe/Moscow
-    networks:
-      - laravel
-    entrypoint: ["/var/www/html/docker/php/schedule_run.sh"]
     logging: *default-logging
 
   horizon:
@@ -206,7 +187,7 @@ services:
       - ./:/var/www/html:delegated
       - ./docker/php/supervisord.d/horizon.conf:/etc/supervisord.d/horizon.conf
     depends_on:
-      - pgsql
+      - app-database
       - redis
     environment:
       TZ: Europe/Moscow
@@ -220,7 +201,7 @@ services:
     expose:
       - 8080
     depends_on:
-      - pgsql
+      - app-database
     networks:
       - laravel
       - traefik-public
@@ -235,6 +216,131 @@ services:
       - "traefik.http.services.${TRAEFIK_SERVICE}-adminer.loadbalancer.server.port=8080"
     logging: *default-logging
 
+  media-server:
+    restart: unless-stopped
+    image: grapeslabs/pacs:1.0.0
+    environment:
+      TZ: "Europe/Moscow"
+    networks:
+      - laravel
+      - traefik-public
+    expose:
+      - 8081
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.rule=Host(`${DOCKER_DOMAIN}`) && PathPrefix(`/media`)"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.entrypoints=websecure"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.tls=true"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.tls.certresolver=le"
+      - "traefik.http.services.${TRAEFIK_SERVICE}-media.loadbalancer.server.port=8081"
+      - "traefik.http.middlewares.${TRAEFIK_SERVICE}-media-strip.stripprefix.prefixes=/media"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.middlewares=${TRAEFIK_SERVICE}-media-strip"
+
+    volumes:
+      - ./media/streams:/data/streams
+      - ./media/config.toml:/app/config.toml
+
+  analytic-database:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_USER: ${ADB_USERNAME}
+      POSTGRES_PASSWORD: ${ADB_PASSWORD}
+      POSTGRES_DB: ${ADB_DATABASE}
+    expose:
+      - 5432
+    volumes:
+      - analytic_database:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - laravel
+      - traefik-public
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${ADB_USERNAME}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  analytic-api:
+    image: ghcr.io/grapeslabs/analytic-api:1.0.0
+    environment:
+      - PG_HOST=${ADB_HOST}
+      - PG_PORT=${ADB_PORT}
+      - PG_USER=${ADB_USERNAME}
+      - PG_PASSWORD=${ADB_PASSWORD}
+      - FR_DB=${ADB_DATABASE}
+      - API_PORT=8082
+      - DEBUG_MODE=${APP_DEBUG}
+      - PERSON_PHOTOS_PATH=/app/person_photos
+      - MIN_WIDTH_PHOTO=${MIN_WIDTH_PHOTO}
+      - MOTION_MIN_AREA=${MOTION_MIN_AREA}
+      - MOTION_THRESHOLD=${MOTION_THRESHOLD}
+      - MOTION_RECORD_AFTER_TIME=${MOTION_RECORD_AFTER_TIME}
+      - TZ=Europe/Moscow
+    expose:
+      - 8082
+    volumes:
+      - ./analytic/person-photos:/app/person_photos
+      - ./analytic/thumbnails:/app/thumbnails
+    depends_on:
+      analytic-database:
+        condition: service_healthy
+    networks:
+      - laravel
+
+  analytic-server:
+    image: ghcr.io/grapeslabs/analytic-server:1.0.0
+    environment:
+      - PG_HOST=${ADB_HOST}
+      - PG_PORT=${ADB_PORT}
+      - PG_USER=${ADB_USERNAME}
+      - PG_PASSWORD=${ADB_PASSWORD}
+      - FR_DB=${ADB_DATABASE}
+      - PACS_API_URL=http://analytic-api:8082
+      - THUMBNAIL_PATH=/app/thumbnails
+      - DEBUG_MODE=${APP_DEBUG}
+      - MIN_WIDTH_PHOTO=${MIN_WIDTH_PHOTO}
+      - EUCLIDEAN_THRESHOLD=${EUCLIDEAN_THRESHOLD}
+      - MAX_FACES_IN_LIST=${MAX_FACES_IN_LIST}
+      - CAMERA_POLL_INTERVAL=${CAMERA_POLL_INTERVAL}
+      - TZ=Europe/Moscow
+    volumes:
+      - ./test:/app/captured_images
+      - ./analytic/thumbnails:/app/thumbnails
+    depends_on:
+      analytic-api:
+        condition: service_started
+    networks:
+      - laravel
+  events-processor:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+      target: app
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    restart: always
+    volumes:
+      - ./:/var/www/html:delegated
+    depends_on:
+      - app-database
+      - redis
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    entrypoint: [ "php", "/var/www/html/artisan", "events:process-new" ]
+    logging: *default-logging
+
+  ofelia:
+    image: mcuadros/ofelia:latest
+    restart: unless-stopped
+    command: daemon --docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    logging: *default-logging
+
 networks:
   laravel:
   traefik-public:
@@ -242,4 +348,5 @@ networks:
     external: true
 
 volumes:
-  pgsql_data:
+  app_database:
+  analytic_database:
