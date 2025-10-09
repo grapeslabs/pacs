@@ -78,6 +78,21 @@ return [
             'sslmode' => 'prefer',
         ],
 
+        'analytic-database' => [
+            'driver' => 'pgsql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('ADB_HOST'),
+            'port' => env('ADB_PORT'),
+            'database' => env('ADB_DATABASE'),
+            'username' => env('ADB_USERNAME'),
+            'password' => env('ADB_PASSWORD'),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DATABASE_URL'),

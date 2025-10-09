@@ -1,0 +1,279 @@
+x-logging: &default-logging
+  options:
+    max-size: "10m"
+  driver: json-file
+
+services:
+  reverse-proxy:
+    image: traefik:v3.6
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --providers.docker
+      - --providers.docker.exposedByDefault=false
+      - --api
+      - --certificatesresolvers.le.acme.email=${CERT_ADMIN_EMAIL:-admin@pinspb.ru}
+      - --certificatesresolvers.le.acme.storage=/certs/acme.json
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --log.level=debug
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - certs:/certs
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Moscow"
+    depends_on:
+      -  app
+    networks:
+      - traefik-public
+    logging: *default-logging
+
+  app:
+    image: ghcr.io/grapeslabs/pacs-nginx:${APP_VERSION}
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Moscow"
+      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-50M}
+    volumes:
+      - public_storage:/var/www/html/public/storage
+      - analytic_thumbnails:/var/www/html/public/analytic-storage/thumbnails
+    depends_on:
+      - php
+    networks:
+      - laravel
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${DOCKER_DOMAIN}`)"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=web"
+      - "traefik.http.middlewares.https_redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=https_redirect"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-https.entrypoints=websecure"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-https.rule=Host(`${DOCKER_DOMAIN}`)"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-https.tls=true"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-https.tls.certresolver=le"
+    logging: *default-logging
+
+  php:
+    image: ghcr.io/grapeslabs/pacs:${APP_VERSION}
+    restart: unless-stopped
+    networks:
+      - laravel
+    volumes:
+      - storage:/var/www/html/storage
+      - public_storage:/var/www/html/storage/app/public
+    depends_on:
+      app-database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ofelia:
+        condition: service_healthy
+    labels:
+      - "ofelia.enabled=true"
+      - "ofelia.job-exec.drive-check.schedule=@every 1m"
+      - "ofelia.job-exec.drive-check.command=php /var/www/html/artisan drive:check"
+    env_file:
+      - .env
+
+  horizon:
+    image: ghcr.io/grapeslabs/pacs-horizon:${APP_VERSION}
+    volumes:
+      - storage:/var/www/html/storage
+      - public_storage:/var/www/html/storage/app/public
+    depends_on:
+      app-database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    logging: *default-logging
+
+  events-processor:
+    image: ghcr.io/grapeslabs/pacs:${APP_VERSION}
+    restart: unless-stopped
+    volumes:
+      - storage:/var/www/html/storage
+      - public_storage:/var/www/html/storage/app/public
+    depends_on:
+      - app-database
+      - redis
+    env_file:
+      - .env
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    entrypoint: ["php", "/var/www/html/artisan", "events:process-new"]
+    logging: *default-logging
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data:delegated
+    expose:
+      - 6379
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      retries: 3
+      timeout: 5s
+    logging: *default-logging
+
+  app-database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${DB_USERNAME}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_DB: "${DB_DATABASE}"
+      TZ: "Europe/Moscow"
+    volumes:
+      - app_database:/var/lib/postgresql/data:delegated
+    networks:
+      - laravel
+      - traefik-public
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  media-server:
+    image: ghcr.io/grapeslabs/media-server:${MEDIA_SERVER_VERSION}
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Moscow"
+    networks:
+      - laravel
+      - traefik-public
+    expose:
+      - 8081
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.rule=Host(`${DOCKER_DOMAIN}`) && PathPrefix(`/media`)"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.entrypoints=websecure"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.tls=true"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.tls.certresolver=le"
+      - "traefik.http.services.${TRAEFIK_SERVICE}-media.loadbalancer.server.port=8081"
+      - "traefik.http.middlewares.${TRAEFIK_SERVICE}-media-strip.stripprefix.prefixes=/media"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.middlewares=${TRAEFIK_SERVICE}-media-strip"
+    volumes:
+      - media_streams:/data/streams
+      - ./media_config.toml:/app/config.toml
+    logging: *default-logging
+
+  analytic-database:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_USER: "${ADB_USERNAME}"
+      POSTGRES_PASSWORD: "${ADB_PASSWORD}"
+      POSTGRES_DB: "${ADB_DATABASE}"
+    expose:
+      - 5432
+    volumes:
+      - analytic_database:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - laravel
+      - traefik-public
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ADB_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  analytic-api:
+    image: ghcr.io/grapeslabs/analytic-api:${ANALYTIC_VERSION}
+    environment:
+      PG_HOST: "${ADB_HOST}"
+      PG_PORT: "${ADB_PORT}"
+      PG_USER: "${ADB_USERNAME}"
+      PG_PASSWORD: "${ADB_PASSWORD}"
+      FR_DB: "${ADB_DATABASE}"
+      API_PORT: "8082"
+      DEBUG_MODE: "false"
+      PERSON_PHOTOS_PATH: "/app/person_photos"
+      MIN_WIDTH_PHOTO: "${MIN_WIDTH_PHOTO}"
+      MOTION_MIN_AREA: "${MOTION_MIN_AREA}"
+      MOTION_THRESHOLD: "${MOTION_THRESHOLD}"
+      MOTION_RECORD_AFTER_TIME: "${MOTION_RECORD_AFTER_TIME}"
+    expose:
+      - 8082
+    volumes:
+      - analytic_person_photos:/app/person_photos
+      - analytic_thumbnails:/app/thumbnails
+    depends_on:
+      analytic-database:
+        condition: service_healthy
+    networks:
+      - laravel
+    logging: *default-logging
+
+  analytic-server:
+    image: ghcr.io/grapeslabs/analytic:${ANALYTIC_VERSION}
+    environment:
+      PG_HOST: "${ADB_HOST}"
+      PG_PORT: "${ADB_PORT}"
+      PG_USER: "${ADB_USERNAME}"
+      PG_PASSWORD: "${ADB_PASSWORD}"
+      FR_DB: "${ADB_DATABASE}"
+      PACS_API_URL: "http://analytic-api:8082"
+      THUMBNAIL_PATH: "/app/thumbnails"
+      DEBUG_MODE: "false"
+      MIN_WIDTH_PHOTO: "${MIN_WIDTH_PHOTO}"
+      EUCLIDEAN_THRESHOLD: "${EUCLIDEAN_THRESHOLD}"
+      MAX_FACES_IN_LIST: "${MAX_FACES_IN_LIST}"
+      CAMERA_POLL_INTERVAL: "${CAMERA_POLL_INTERVAL}"
+    volumes:
+      - analytic_captured_images:/app/captured_images
+      - analytic_thumbnails:/app/thumbnails
+    depends_on:
+      analytic-api:
+        condition: service_started
+    networks:
+      - laravel
+    logging: *default-logging
+
+  ofelia:
+    image: mcuadros/ofelia:latest
+    restart: unless-stopped
+    command: daemon --docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    logging: *default-logging
+
+
+networks:
+  laravel:
+  traefik-public:
+    name: traefik-public
+
+volumes:
+  app_database:
+  certs:
+  analytic_database:
+  analytic_thumbnails:
+  analytic_captured_images:
+  analytic_person_photos:
+  media_config:
+  media_streams:
+  storage:
+  logs:
+  redis_data:

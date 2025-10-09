@@ -70,7 +70,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Europe/Moscow',
 
     /*
     |--------------------------------------------------------------------------
@@ -168,6 +168,8 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        App\Providers\MoonShineServiceProvider::class,
+        GrapesLabs\PinvideoSkud\PinvideoSkudServiceProvider::class,
     ])->toArray(),
 
     /*
@@ -184,5 +186,7 @@ return [
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
     ])->toArray(),
+
+    'faker_locale' => 'ru_RU',
 
 ];
