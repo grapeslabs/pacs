@@ -6,10 +6,16 @@
     "license": "MIT",
     "require": {
         "php": "^8.1",
+        "grapeslabs/pinvideo-skud": "@dev",
         "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.2",
-        "laravel/tinker": "^2.8"
+        "laravel/tinker": "^2.8",
+        "moonshine/import-export": "1.0.5",
+        "moonshine/moonshine": "^3.16",
+        "moonshine/permissions": "^2.0",
+        "moonshine/ru": "^1.0",
+        "telegram-bot/api": "^2.5"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
@@ -24,7 +30,8 @@
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
-            "Database\\Seeders\\": "database/seeders/"
+            "Database\\Seeders\\": "database/seeders/",
+            "GrapesLabs\\PinvideoSkud\\": "vendor/grapeslabs/pinvideo-skud/src/"
         }
     },
     "autoload-dev": {
@@ -34,8 +41,7 @@
     },
     "scripts": {
         "post-autoload-dump": [
-            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
@@ -61,6 +67,15 @@
             "php-http/discovery": true
         }
     },
+     "repositories": [
+        {
+            "type": "path",
+            "url": "../packages/pinvideo-skud",
+            "options": {
+                "symlink": false
+            }
+        }
+    ],
     "minimum-stability": "stable",
     "prefer-stable": true
 }

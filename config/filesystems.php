@@ -44,6 +44,14 @@ return [
             'throw' => false,
         ],
 
+        'analytic' => [
+            'driver' => 'local',
+            'root' => base_path('analytic'),
+            'url' => config('app.url').'/analytic-storage',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -71,6 +79,7 @@ return [
 
     'links' => [
         public_path('storage') => storage_path('app/public'),
+        public_path('analytic-storage') => base_path('analytic'),
     ],
 
 ];
