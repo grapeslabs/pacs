@@ -209,7 +209,7 @@ final class MoonShineLayout extends AppLayout
 
     protected function getFooterCopyright(): string
     {
-        return '© 2021-2026 Grapes labs';
+        return '© 2007-2026 Grapes labs';
     }
 
     protected function getFooterMenu(): array
