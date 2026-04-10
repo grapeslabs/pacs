@@ -56,7 +56,6 @@ return [
         VerifyCsrfToken::class,
         SubstituteBindings::class,
         ChangeLocale::class,
-        CheckDiskSpace::class
     ],
 
     // Storage
