@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Stream extends Model
 {
     use HasFactory;
+
+    protected $connection='pgsql';
     protected $table = 'streams';
     protected $fillable = [
         'uid',

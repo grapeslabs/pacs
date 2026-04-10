@@ -14,4 +14,14 @@ class VideoAnalyticReport extends Model
         'data' => 'json',
         'created_at' => 'datetime:Y-m-d H:i:s'
     ];
+
+    public function stream()
+    {
+        return $this->belongsTo(Stream::class, 'camera_id', 'uid');
+    }
+
+    public function person()
+    {
+        return $this->belongsTo(Person::class, 'person_photobank_id', 'grapesva_uuid');
+    }
 }

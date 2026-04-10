@@ -13,6 +13,7 @@ use GrapesLabs\PinvideoSkud\Keys\FaceIdKey;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PersonObserver
 {
@@ -33,7 +34,10 @@ class PersonObserver
             $person->key_uid = $person->getSkudUid();
             $person->saveQuietly();
         }
-
+        if (empty($person->grapesva_uuid)) {
+            $person->grapesva_uuid = Str::uuid();;
+            $person->saveQuietly();
+        }
         $this->updateVas($person);
         $person->load('keys');
 
@@ -129,7 +133,7 @@ class PersonObserver
             SkudCommand::where('message', 'LIKE', '%"card":"' . $cardNum . '"%')->delete();
         }
 
-        $this->vas->personDelete($person->id);
+        $this->vas->personDelete($person->grapesva_uuid);
         $person->keys()->getQuery()->delete();
         unset($this->deletedRfidKeysCache[$person->id]);
     }
@@ -276,7 +280,7 @@ class PersonObserver
             if (file_exists($fullPath)) $photosFullPaths[] = $fullPath;
         }
         if (!empty($photosFullPaths)) {
-            $this->vas->personCreate($person->getFullName(), $photosFullPaths, $person->id);
+            $this->vas->personCreate($person->getFullName(), $photosFullPaths, $person->grapesva_uuid);
         }
     }
 

@@ -1508,6 +1508,21 @@ textarea {
     background-color: transparent !important;
 }
 
+
+.js-identify-button {
+    div:last-child {
+        content: url('/icons/btn-identify.svg') !important;
+        filter: invert(89%) sepia(10%) saturate(464%) hue-rotate(216deg) brightness(92%) contrast(88%);
+        width: 20px !important;
+        height: 20px !important;
+    }
+    font-weight: 700;
+    width:  54px !important;
+    height: 42px !important;
+    border: none !important;
+    background-color: transparent !important;
+}
+
 .heading div {
     font-weight: 700 !important;
 }

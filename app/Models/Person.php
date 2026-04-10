@@ -14,6 +14,7 @@ class Person extends Model
 {
     use HasFactory;
 
+    protected $connection='pgsql';
     protected $table = 'person';
 
     protected $fillable = [
