@@ -163,8 +163,8 @@ final class MoonShineLayout extends AppLayout
             MenuGroup::make('Отчеты', [
                 MenuItem::make('Отчеты СКУД', SkudEventResource::class)
                     ->canSee(fn () => auth()->user()->isHavePermission(SkudEventResource::class, Ability::VIEW)),
-//                MenuItem::make('Отчеты шлагбаум', BarrierEventResource::class)
-//                    ->canSee(fn () => auth()->user()->isHavePermission(BarrierEventResource::class, Ability::VIEW)),
+                MenuItem::make('Отчеты шлагбаум', BarrierEventResource::class)
+                    ->canSee(fn () => auth()->user()->isHavePermission(BarrierEventResource::class, Ability::VIEW)),
                  MenuItem::make('Отчеты по событиям', EventReportResource::class)
                     ->canSee(fn () => auth()->user()->isHavePermission(EventReportResource::class, Ability::VIEW)),
                 MenuItem::make('Отчеты по персонам', PeopleReportResource::class)

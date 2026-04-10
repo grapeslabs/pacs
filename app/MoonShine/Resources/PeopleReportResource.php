@@ -7,6 +7,7 @@ use App\Models\Stream;
 use App\Models\VideoAnalyticReport;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
+use MoonShine\Laravel\Handlers\Handler;
 use MoonShine\Support\Enums\SortDirection;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Fields\Date;
@@ -14,9 +15,12 @@ use MoonShine\UI\Fields\DateRange;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Image;
+use MoonShine\ImportExport\Contracts\HasImportExportContract;
+use MoonShine\ImportExport\Traits\ImportExportConcern;
 
-class PeopleReportResource extends BaseModelResource
+class PeopleReportResource extends BaseModelResource  implements HasImportExportContract
 {
+    use ImportExportConcern;
     protected string $model = VideoAnalyticReport::class;
     protected string $title = 'Отчеты по персонам';
     protected string $column = 'name';
@@ -97,4 +101,69 @@ class PeopleReportResource extends BaseModelResource
         ];
     }
 
+    protected function import(): array
+    {
+        return [];
+    }
+
+    protected array $personCache = [];
+    protected array $cameraCache = [];
+
+    protected function getPerson($id)
+    {
+        if (empty($id)) return null;
+        if (!array_key_exists($id, $this->personCache)) {
+            $this->personCache[$id] = Person::find($id);
+        }
+        return $this->personCache[$id];
+    }
+
+    protected function getCamera($id)
+    {
+        if (empty($id)) return null;
+        if (!array_key_exists($id, $this->cameraCache)) {
+            $this->cameraCache[$id] = Stream::where('uid', $id)->first();
+        }
+        return $this->cameraCache[$id];
+    }
+
+    protected function exportFields(): iterable
+    {
+        return [
+            Text::make('Персона', 'person_photobank_id')
+                ->changeFill(function ($item) {
+                    if (empty($item->person_photobank_id)) {
+                        return 'Неизвестная персона';
+                    }
+                    $person = $this->getPerson($item->person_photobank_id);
+                    return $person
+                        ? "[$item->person_photobank_id] " . $person->getfullname()
+                        : "[$item->person_photobank_id] Нет в БД";
+                }),
+
+            Date::make('Дата рождения', 'person_photobank_id')
+                ->changeFill(function ($item) {
+                    if (empty($item->person_photobank_id)) {
+                        return 'Данные не найдены';
+                    }
+                    return $this->getPerson($item->person_photobank_id)?->birth_date;
+                })->format('d.m.Y'),
+
+            Text::make('Теги', 'person_photobank_id')
+                ->changeFill(function ($item) {
+                    if (empty($item->person_photobank_id)) {
+                        return null;
+                    }
+                    return $this->getPerson($item->person_photobank_id)?->tags_list;
+                }),
+
+            Date::make('Дата и время', 'datetime')
+                ->withTime(),
+
+            Text::make('Камера', 'camera_id')
+                ->changeFill(function ($item) {
+                    return $this->getCamera($item->camera_id)?->name ?? 'Неизвестная камера';
+                }),
+        ];
+    }
 }
