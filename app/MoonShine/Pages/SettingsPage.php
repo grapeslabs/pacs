@@ -32,7 +32,7 @@ class SettingsPage extends Page
 
                 ])
                 ->fields([
-                    Box::make('Распознание личности', [
+                    Box::make('Распознавание личности', [
                         Box::make('')->customView('components.warning-alert'),
                         Checkbox::make('Я понимаю риски и хочу включить функцию', 'face_recognition')
                     ]),
