@@ -218,7 +218,7 @@ services:
 
   media-server:
     restart: unless-stopped
-    image: grapeslabs/pacs:1.0.0
+    image: ghcr.io/grapeslabs/media-server:1.0.0
     environment:
       TZ: "Europe/Moscow"
     networks:
