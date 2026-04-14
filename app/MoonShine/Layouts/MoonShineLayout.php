@@ -130,9 +130,9 @@ final class MoonShineLayout extends AppLayout
 //                MenuItem::make('Роли', MoonShineUserRoleResource::class)
 //                    ->icon('rectangle-group')
 //                    ->canSee(fn () => auth()->user()->isHavePermission(MoonShineUserRoleResource::class, Ability::VIEW)),
-//                MenuItem::make('Ключи API', ApiKeyResource::class)
-//                    ->icon(file_get_contents(public_path('icons/menu-apikeys.svg')), true)
-//                    ->canSee(fn () => auth()->user()->isHavePermission(ApiKeyResource::class, Ability::VIEW)),
+                MenuItem::make('Ключи API', ApiKeyResource::class)
+                    ->icon(file_get_contents(public_path('icons/menu-apikeys.svg')), true)
+                    ->canSee(fn () => auth()->user()->isHavePermission(ApiKeyResource::class, Ability::VIEW)),
                 MenuItem::make('Настройки', SettingsPage::class)
                     ->icon('cog-8-tooth')
                     ->canSee(fn () => auth()->user()->isHavePermission(SettingResource::class, Ability::VIEW)),

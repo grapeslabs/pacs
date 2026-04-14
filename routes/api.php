@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use GrapesLabs\PinvideoSkud\Http\Controllers\SkudApiController;
 use App\Http\Controllers\Api\V1\OrganizationApiController;
 use App\Http\Controllers\Api\V1\GuestApiController;
+use App\Http\Middleware\VerifyApiKey;
+use App\Http\Controllers\Api\V1\ReportController;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
@@ -21,6 +23,14 @@ Route::prefix('v1')->group(function () {
     Route::post('/guests/auth', [GuestApiController::class, 'auth']);
     Route::post('/guests/confirm', [GuestApiController::class, 'confirm']);
     Route::post('/guests/{id}/photos', [GuestApiController::class, 'storePhotos']);
+    Route::middleware(VerifyApiKey::class)->group(function() {
+        Route::prefix('reports')->group(function () {
+            Route::get('events', [ReportController::class, 'events']);
+            Route::get('people', [ReportController::class, 'people']);
+            Route::get('unknown', [ReportController::class, 'unknown']);
+            Route::post('unknown/{report_id}/identify', [ReportController::class, 'identify']);
+        });
+    });
 });
 
 // routes/web.php или routes/api.php
