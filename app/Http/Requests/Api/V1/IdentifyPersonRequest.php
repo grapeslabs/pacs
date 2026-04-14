@@ -22,8 +22,6 @@ class IdentifyPersonRequest extends FormRequest
             'certificate_number' => ['nullable', 'string', 'max:255'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['integer', 'exists:tags,id'],
-            'hidden_photo' => ['nullable', 'array'],
-            'hidden_photo.*' => ['string'],
             'photo' => ['nullable'],
             'photo.*' => ['file', 'mimes:jpg,png,jpeg,webp'],
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
