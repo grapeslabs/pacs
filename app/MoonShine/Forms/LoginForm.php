@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Forms;
 
+use Illuminate\Support\Facades\Cache;
 use MoonShine\Contracts\UI\FormBuilderContract;
 use MoonShine\Contracts\UI\FormContract;
 use MoonShine\Support\Traits\Makeable;
@@ -27,9 +28,14 @@ final class LoginForm implements FormContract
                     ->customAttributes([
                         'autofocus' => true,
                         'autocomplete' => 'username',
-                    ]),
+                    ])
+                    ->when(config('demo.enabled'), fn($field) => $field->fill(config('demo.email'))),
 
                 Password::make(__('moonshine::ui.login.password'), 'password')
+                    ->when(config('demo.enabled'), fn($field) => $field->customAttributes([
+                        'x-init' => '$el.value = "' . Cache::get('demo_current_password', '') . '"',
+                        'autocomplete' => 'current-password',
+                    ]))
                     ->required(),
 
                 Switcher::make(__('moonshine::ui.login.remember_me'), 'remember'),

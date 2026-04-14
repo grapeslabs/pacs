@@ -81,6 +81,8 @@ services:
       - "ofelia.enabled=true"
       - "ofelia.job-exec.drive-check.schedule=@every 1m"
       - "ofelia.job-exec.drive-check.command=php /var/www/html/artisan drive:check"
+      - "ofelia.job-exec.demo-user.schedule=@daily"
+      - "ofelia.job-exec.demo-user.command=php /var/www/html/artisan demo:manage-demo-user"
     networks:
       - laravel
       - traefik-public
@@ -289,7 +291,7 @@ services:
       - laravel
 
   analytic-server:
-    image: ghcr.io/grapeslabs/analytic-server:1.0.0
+    image: ghcr.io/grapeslabs/analytic:1.0.0
     environment:
       - PG_HOST=${ADB_HOST}
       - PG_PORT=${ADB_PORT}
