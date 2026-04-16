@@ -20,6 +20,7 @@ class KeyResource extends BaseModelResource
     protected string $model = Key::class;
 
     protected string $title = 'Ключи';
+    protected bool $softDelete = false;
     protected function pages(): array
     {
         return [

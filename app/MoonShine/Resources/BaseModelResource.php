@@ -4,6 +4,9 @@ namespace App\MoonShine\Resources;
 
 use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Components\SafeModal;
+use App\MoonShine\Traits\HasUndoNotification;
+use Illuminate\Database\Eloquent\Model;
+use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
 use MoonShine\Contracts\UI\ActionButtonContract;
 use MoonShine\Laravel\Enums\Ability;
 use MoonShine\Laravel\Enums\Action;
@@ -16,10 +19,11 @@ use MoonShine\UI\Components\ActionButton;
 
 class BaseModelResource extends ModelResource
 {
+    use HasUndoNotification;
     protected bool $createInModal=true;
     protected bool $editInModal=true;
     protected bool $detailInModal=true;
-
+    protected bool $softDelete=true;
     protected string $safeModalName = 'universal-safe-modal';
 
     protected function indexButtons(): ListOf
@@ -83,6 +87,13 @@ class BaseModelResource extends ModelResource
             method: HttpMethod::DELETE,
         );
     }
-
-
+    protected function afterDeleted(mixed $item): mixed
+    {
+        if($this->softDelete) {
+            if ($item instanceof Model) {
+                $this->notifyDeletedWithUndo($item);
+            }
+        }
+        return $item;
+    }
 }
