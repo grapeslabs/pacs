@@ -90,7 +90,7 @@ services:
     image: redis:alpine
     restart: unless-stopped
     volumes:
-      - ./docker/redis:/data:delegated
+      - redis_data:/data:delegated
     expose:
       - 6379
     environment:
@@ -114,7 +114,6 @@ services:
     volumes:
       - ./:/var/www/html:delegated
       - ../packages/:/var/www/packages:delegated
-      - ~/.ssh/:/home/laravel/.ssh
     entrypoint: [ "composer" ]
     environment:
       TZ: Europe/Moscow
@@ -218,7 +217,7 @@ services:
 
   media-server:
     restart: unless-stopped
-    image: grapeslabs/pacs:1.0.0
+    image: ${MEDIA_SERVER_IMAGE:-ghcr.io/grapeslabs/media-server:1.0.0}
     environment:
       TZ: "Europe/Moscow"
     networks:
@@ -236,10 +235,9 @@ services:
       - "traefik.http.services.${TRAEFIK_SERVICE}-media.loadbalancer.server.port=8081"
       - "traefik.http.middlewares.${TRAEFIK_SERVICE}-media-strip.stripprefix.prefixes=/media"
       - "traefik.http.routers.${TRAEFIK_SERVICE}-media.middlewares=${TRAEFIK_SERVICE}-media-strip"
-
     volumes:
-      - ./media/streams:/data/streams
-      - ./media/config.toml:/app/config.toml
+      - ./media:/data/streams
+      - ./media-config.toml:/app/config.toml
 
   analytic-database:
     image: pgvector/pgvector:pg15
@@ -262,7 +260,7 @@ services:
       retries: 5
 
   analytic-api:
-    image: ghcr.io/grapeslabs/analytic-api:1.0.0
+    image: ${ANALYTIC_API_IMAGE:-ghcr.io/grapeslabs/analytic-api:1.0.0}
     environment:
       - PG_HOST=${ADB_HOST}
       - PG_PORT=${ADB_PORT}
@@ -289,7 +287,7 @@ services:
       - laravel
 
   analytic-server:
-    image: ghcr.io/grapeslabs/analytic-server:1.0.0
+    image: ${ANALYTIC_SERVER_IMAGE:-ghcr.io/grapeslabs/analytic:1.0.0}
     environment:
       - PG_HOST=${ADB_HOST}
       - PG_PORT=${ADB_PORT}
@@ -312,6 +310,7 @@ services:
         condition: service_started
     networks:
       - laravel
+
   events-processor:
     build:
       context: ./docker/php
@@ -320,7 +319,7 @@ services:
       args:
         - UID=${UID:-1000}
         - GID=${GID:-1000}
-    restart: always
+    restart: unless-stopped
     volumes:
       - ./:/var/www/html:delegated
     depends_on:
@@ -350,3 +349,4 @@ networks:
 volumes:
   app_database:
   analytic_database:
+  redis_data:
