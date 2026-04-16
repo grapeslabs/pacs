@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\OrganizationApiController;
 use App\Http\Controllers\Api\V1\GuestApiController;
 use App\Http\Middleware\VerifyApiKey;
 use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\PersonController;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
@@ -29,6 +30,13 @@ Route::prefix('v1')->group(function () {
             Route::get('people', [ReportController::class, 'people']);
             Route::get('unknown', [ReportController::class, 'unknown']);
             Route::post('unknown/{report_id}/identify', [ReportController::class, 'identify']);
+        });
+        Route::prefix('persons')->group(function () {
+            Route::get('/', [PersonController::class, 'index']);
+            Route::post('/', [PersonController::class, 'store']);
+            Route::get('/{id}', [PersonController::class, 'show']);
+            Route::post('/{id}', [PersonController::class, 'update']);
+            Route::delete('/{id}', [PersonController::class, 'destroy']);
         });
     });
 });
