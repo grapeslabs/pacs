@@ -266,7 +266,7 @@ services:
       - PG_PORT=${ADB_PORT}
       - PG_USER=${ADB_USERNAME}
       - PG_PASSWORD=${ADB_PASSWORD}
-      - FR_DB=${ADB_DATABASE}
+      - PG_DATABASE=${ADB_DATABASE}
       - API_PORT=8082
       - DEBUG_MODE=${APP_DEBUG}
       - PERSON_PHOTOS_PATH=/app/person_photos
@@ -293,7 +293,7 @@ services:
       - PG_PORT=${ADB_PORT}
       - PG_USER=${ADB_USERNAME}
       - PG_PASSWORD=${ADB_PASSWORD}
-      - FR_DB=${ADB_DATABASE}
+      - PG_DATABASE=${ADB_DATABASE}
       - PACS_API_URL=http://analytic-api:8082
       - THUMBNAIL_PATH=/app/thumbnails
       - DEBUG_MODE=${APP_DEBUG}
