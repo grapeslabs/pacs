@@ -53,7 +53,7 @@
             toggleModal();
         }
     "
-    @submit.window="if(open) { forceClose(); }"
+    @toast.window="if(open && event.detail.type === 'success') { forceClose(); }"
 >
     <template x-teleport="body">
 
