@@ -54,6 +54,14 @@ class ExportPersonPhotos extends Command
             return 1;
         }
 
+        $fullNameParts = array_filter([
+            $person->last_name,
+            $person->first_name,
+            $person->middle_name,
+        ]);
+
+        $baseName = implode('_', $fullNameParts);
+
         $zipFileName = "person_{$personId}.zip";
         $zipTempPath = storage_path("app/temp/{$zipFileName}");
         $exportDir = storage_path('app/temp');
@@ -68,15 +76,26 @@ class ExportPersonPhotos extends Command
         }
 
         $tsvLines = [];
+        $counter = count($existing) > 1 ? 1 : null;
 
         foreach ($existing as $relativePath) {
             $absolutePath = $disk->path($relativePath);
+            $extension = pathinfo($relativePath, PATHINFO_EXTENSION);
 
-            $zip->addFile($absolutePath, $relativePath);
+            if ($counter !== null) {
+                $newFilename = $baseName . '_' . $counter . '.' . $extension;
+                $counter++;
+            } else {
+                $newFilename = $baseName . '.' . $extension;
+            }
 
-            $baseName = pathinfo($relativePath, PATHINFO_FILENAME);
+            $archivePath = 'photos/' . $newFilename;
 
-            $tsvLines[] = $absolutePath . "\t" . $baseName;
+            $zip->addFile($absolutePath, $archivePath);
+
+            $nameWithoutExt = pathinfo($newFilename, PATHINFO_FILENAME);
+
+            $tsvLines[] = $relativePath . "\t" . $nameWithoutExt;
         }
 
         $tsvContent = implode("\n", $tsvLines);
