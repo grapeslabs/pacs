@@ -15,9 +15,12 @@ use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Image;
+use MoonShine\ImportExport\Contracts\HasImportExportContract;
+use MoonShine\ImportExport\Traits\ImportExportConcern;
 
-class EventReportResource extends BaseModelResource
+class EventReportResource extends BaseModelResource implements HasImportExportContract
 {
+    use ImportExportConcern;
     protected string $model = VideoAnalyticReport::class;
     protected string $title = 'Отчеты по событиям';
     protected string $column = 'name';
@@ -82,6 +85,51 @@ class EventReportResource extends BaseModelResource
                 ->onApply(function (Builder $query, $value) {
                     return $query->where('is_unknown', $value === 'true');
                 }),
+        ];
+    }
+    protected function import():array
+    {
+        return [];
+    }
+    public function exportFields(): iterable
+    {
+        return [
+            ID::make(),
+
+            Date::make('Дата и время', 'datetime')
+                ->format('d.m.Y H:i:s'),
+
+            Text::make('Камера', 'camera_id')
+                ->changeFill(function ($item) {
+                    if (empty($item->camera_id)) return 'Неизвестная камера';
+                    static $cameraCache = [];
+
+                    if (!array_key_exists($item->camera_id, $cameraCache)) {
+                        $cameraCache[$item->camera_id] = Stream::where('uid', $item->camera_id)->first()?->name;
+                    }
+
+                    return $cameraCache[$item->camera_id] ?? 'Неизвестная камера';
+                }),
+
+            Text::make('Персона', 'person_photobank_id')
+                ->changeFill(function ($item) {
+                    if (empty($item->person_photobank_id)) {
+                        $data = is_string($item->data) ? json_decode($item->data, true) : $item->data;
+                        return empty($data['unknown_uuid']) ? 'Неизвестная персона' : $data['unknown_uuid'];
+                    }
+
+                    $id = $item->person_photobank_id;
+                    static $personCache = [];
+                    if (!array_key_exists($id, $personCache)) {
+                        $person = Person::find($id);
+                        $personCache[$id] = $person ? "[$id] " . $person->getfullname() : "[$id] Данные удалены";
+                    }
+
+                    return $personCache[$id];
+                }),
+
+            Text::make('Тип распознавания', 'is_unknown')
+                ->changeFill(fn($item) => $item->is_unknown ? 'Неизвестное лицо' : 'Известное лицо'),
         ];
     }
 

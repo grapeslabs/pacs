@@ -5,7 +5,10 @@ namespace App\MoonShine\Resources;
 use App\Models\Person;
 use App\Models\GrapeslabsSkudEvent;
 use App\MoonShine\Fields\SelectField;
+use MoonShine\ImportExport\Contracts\HasImportExportContract;
+use MoonShine\ImportExport\Traits\ImportExportConcern;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
+use MoonShine\Laravel\Handlers\Handler;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Image;
 use MoonShine\UI\Fields\Text;
@@ -17,8 +20,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
 
-class SkudEventResource extends BaseModelResource
+class SkudEventResource extends BaseModelResource implements HasImportExportContract
 {
+    use ImportExportConcern;
     protected string $model = GrapeslabsSkudEvent::class;
     protected string $title = 'Отчеты СКУД';
     protected string $ex_type = 'pingate';
@@ -591,4 +595,58 @@ HTML;
         return array_unique($matchingTypes);
     }
 
+    protected function import(): array
+    {
+        return [];
+    }
+
+    public function exportFields(): iterable
+    {
+        return [
+            ID::make(),
+
+            Date::make('Дата/время', 'datetime')
+                ->format('d.m.Y H:i:s'),
+
+            Text::make('Тип оборудования', 'controller_id')
+                ->changeFill(function ($data) {
+                    static $cache = [];
+                    $id = $data->controller_id;
+
+                    if (empty($id) || $id === '{}') return null;
+
+                    if (!array_key_exists($id, $cache)) {
+                        $cache[$id] = SkudController::where('id', $id)->value('type');
+                    }
+
+                    return $cache[$id];
+                }),
+
+            Text::make('Серийный номер', 'controller.serial_number'),
+
+            Text::make('Тип события', 'type')
+                ->changeFill(function ($data) {
+                    $eventData = json_decode($data->event ?? '{}', true);
+                    return $eventData['event'] ?? '';
+                }),
+
+            Text::make('ФИО/Имя', 'subject_name')
+                ->changeFill(function ($data) {
+                    $eventData = json_decode($data->event ?? '{}', true);
+                    return $this->getSubjectName($eventData);
+                }),
+
+            Text::make('Номер удостоверения', 'certificate_number')
+                ->changeFill(function ($data) {
+                    $eventData = json_decode($data->event ?? '{}', true);
+                    return $this->getCertificateNumber($eventData);
+                }),
+
+            Text::make('Организация', 'organization_name')
+                ->changeFill(function ($data) {
+                    $eventData = json_decode($data->event ?? '{}', true);
+                    return $this->getOrganization($eventData);
+                }),
+        ];
+    }
 }

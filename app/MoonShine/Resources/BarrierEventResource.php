@@ -12,6 +12,9 @@ use App\Models\Organization;
 use App\Models\CarBrand;
 use App\Models\CarColor;
 use App\Models\SkudEventCarPlate;
+use MoonShine\ImportExport\Contracts\HasImportExportContract;
+use MoonShine\ImportExport\Traits\ImportExportConcern;
+use MoonShine\Laravel\Handlers\Handler;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
@@ -26,8 +29,9 @@ use MoonShine\Laravel\Enums\Action;
 use MoonShine\AssetManager\Css;
 use MoonShine\AssetManager\Js;
 
-class BarrierEventResource extends BaseModelResource
+class BarrierEventResource extends BaseModelResource  implements HasImportExportContract
 {
+    use ImportExportConcern;
     protected string $model = GrapeslabsSkudEvent::class;
     protected string $title = 'События автомобили';
 
@@ -649,5 +653,59 @@ class BarrierEventResource extends BaseModelResource
     </template>
 </div>
 HTML;
+    }
+    protected function import(): array
+    {
+        return [];
+    }
+
+    public function exportFields(): iterable
+    {
+        return [
+            ID::make(),
+
+            Text::make('Серийный номер оборудования', 'controller.serial_number'),
+
+            Date::make('Дата/время', 'datetime')
+                ->format('d.m.Y H:i:s'),
+
+            Text::make('Тип события', 'type')
+                ->changeFill(function ($data) {
+                    $eventData = json_decode($data->event ?? '{}', true);
+                    return $eventData['event'] ?? '';
+                }),
+            Text::make('ГРЗ', 'id') // 'id' как якорь
+            ->changeFill(fn ($data) => $data->carPlate?->car_plate ?? '—'),
+
+            Text::make('Марка', 'id')
+                ->changeFill(fn ($data) => $data->carPlate?->car?->brand?->name ?? '—'),
+
+            Text::make('Цвет', 'id')
+                ->changeFill(fn ($data) => $data->carPlate?->car?->color?->name ?? '—'),
+
+            Text::make('ФИО персоны', 'id')
+                ->changeFill(function ($data) {
+                    $people = $data->carPlate?->car?->people;
+                    if ($people && $people->isNotEmpty()) {
+                        return $people->map(fn($p) => $p->getFio())->implode(', ');
+                    }
+                    return '—';
+                }),
+
+            Text::make('Организация', 'id')
+                ->changeFill(function ($data) {
+                    $car = $data->carPlate?->car;
+                    if (!$car) return '—';
+                    if ($car->organization) {
+                        return $car->organization->short_name ?? $car->organization->full_name;
+                    }
+                    $person = $car->people->first();
+                    if ($person?->organization) {
+                        return $person->organization->short_name ?? $person->organization->full_name;
+                    }
+
+                    return '—';
+                }),
+        ];
     }
 }
