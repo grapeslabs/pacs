@@ -1,0 +1,4 @@
+rtsp_address = ":8554"
+api_type = "tcp"
+api_unix_socket = "/tmp/videostream.sock"
+api_listen_addr = "0.0.0.0:8081"

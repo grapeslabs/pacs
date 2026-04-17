@@ -114,6 +114,7 @@ services:
     volumes:
       - ./:/var/www/html:delegated
       - ../packages/:/var/www/packages:delegated
+      - ~/.ssh/:/home/laravel/.ssh
     entrypoint: [ "composer" ]
     environment:
       TZ: Europe/Moscow
@@ -238,6 +239,7 @@ services:
     volumes:
       - ./media:/data/streams
       - ./media-config.toml:/app/config.toml
+    logging: *default-logging
 
   analytic-database:
     image: pgvector/pgvector:pg15
@@ -258,6 +260,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging: *default-logging
 
   analytic-api:
     image: ${ANALYTIC_API_IMAGE:-ghcr.io/grapeslabs/analytic-api:1.0.0}
@@ -285,6 +288,7 @@ services:
         condition: service_healthy
     networks:
       - laravel
+    logging: *default-logging
 
   analytic-server:
     image: ${ANALYTIC_SERVER_IMAGE:-ghcr.io/grapeslabs/analytic:1.0.0}
@@ -310,6 +314,7 @@ services:
         condition: service_started
     networks:
       - laravel
+    logging: *default-logging
 
   events-processor:
     build:

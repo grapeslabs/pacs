@@ -13,6 +13,7 @@ use App\MoonShine\Resources\TriggerResource;
 use App\MoonShine\Resources\UnknownReportResource;
 use MoonShine\AssetManager\Css;
 use MoonShine\AssetManager\Js;
+use MoonShine\Laravel\Components\Fragment;
 use MoonShine\Laravel\Layouts\AppLayout;
 use MoonShine\ColorManager\ColorManager;
 use MoonShine\Contracts\ColorManager\ColorManagerContract;
@@ -35,6 +36,7 @@ use MoonShine\UI\Components\{Breadcrumbs,
     Layout\Logo,
     Layout\Menu,
     Layout\Sidebar,
+    Layout\Wrapper,
     Link,
     When};
 use MoonShine\MenuManager\MenuGroup;
@@ -225,6 +227,7 @@ final class MoonShineLayout extends AppLayout
     {
         return Header::make([
             Breadcrumbs::make($this->getPage()->getBreadcrumbs())->prepend($this->getHomeUrl(), icon: 'home'),
+            Div::make()->customView('components.error-notification'),
             '<img src="/images/logo.svg" style="width: 10vh; height: 7vh; object-fit: contain;">',
             SafeModal::make(
                 title: fn() => 'Редактирование',
@@ -232,6 +235,7 @@ final class MoonShineLayout extends AppLayout
             )->name($this->safeModalName),
         ]);
     }
+
     protected function getFaviconComponent(): Favicon
     {
         return parent::getFaviconComponent()->customAssets([
@@ -245,6 +249,28 @@ final class MoonShineLayout extends AppLayout
 
     public function build(): Layout
     {
-        return parent::build();
+        return Layout::make([
+            Html::make([
+                $this->getHeadComponent(),
+                Body::make([
+                    Wrapper::make([
+                        $this->getSidebarComponent(),
+                        Div::make([
+                            Fragment::make([
+                                Flash::make(),
+                                $this->getHeaderComponent(),
+                                Content::make($this->getContentComponents()),
+                                $this->getFooterComponent(),
+                            ])->class('layout-page')->name(self::CONTENT_FRAGMENT_NAME),
+                        ])->class('flex grow overflow-auto')->customAttributes(['id' => self::CONTENT_ID]),
+                    ]),
+                ]),
+            ])
+                ->customAttributes([
+                    'lang' => $this->getHeadLang(),
+                ])
+                ->withAlpineJs()
+                ->withThemes($this->isAlwaysDark()),
+        ]);
     }
 }
