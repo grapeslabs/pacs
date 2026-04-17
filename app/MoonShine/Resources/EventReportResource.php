@@ -7,6 +7,7 @@ use App\Models\Stream;
 use App\Models\VideoAnalyticReport;
 use Illuminate\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
+use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Support\Enums\SortDirection;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Fields\Date;
@@ -24,12 +25,23 @@ class EventReportResource extends BaseModelResource implements HasImportExportCo
     protected string $model = VideoAnalyticReport::class;
     protected string $title = 'Отчеты по событиям';
     protected string $column = 'name';
-    protected string $sortColumn='id';
+    protected string $sortColumn = 'id';
     protected SortDirection $sortDirection = SortDirection::DESC;
 
     protected function activeActions(): ListOf
     {
-        return  parent::activeActions()->except(Action::UPDATE, Action::CREATE, Action::VIEW, Action::DELETE, Action::MASS_DELETE);
+        return parent::activeActions()->except(
+            Action::UPDATE,
+            Action::CREATE,
+            Action::VIEW,
+            Action::DELETE,
+            Action::MASS_DELETE
+        );
+    }
+
+    public function query(): Builder
+    {
+        return parent::query()->with(['stream', 'person']);
     }
 
     public function indexFields(): iterable
@@ -37,23 +49,23 @@ class EventReportResource extends BaseModelResource implements HasImportExportCo
         return [
             ID::make()
                 ->sortable(),
+
             Date::make('Дата и время', 'datetime')
                 ->withTime()
                 ->sortable(),
-            Text::make('Камера', '', fn ($item) => Stream::where('uid', $item->camera_id)->first()->name??'Неизвестная камера')
+
+            BelongsTo::make('Камера','stream',fn($item)=>$item->name??'Камера удалена', VideoStreamResource::class)
                 ->sortable(),
-            Text::make('Персона', 'person_photobank_id', function($item) {
-                if (empty($item->person_photobank_id)) {
-                    if(empty($item->data['unknown_uuid'])) {
-                        return 'Неизвестная персона';
-                    }
-                    return $item->data['unknown_uuid'];
-                }
-                return "[$item->person_photobank_id] " . Person::find($item->person_photobank_id)?->getfullname();
-            })->sortable(),
-            Text::make('Тип распознавания', 'is_unknown', fn($item) => $item->is_unknown ? 'Неизвестное лицо' : 'Известное лицо')
-                ->sortable(),
-            Image::make('Фото', '', fn($item)=>basename($item->data['snapshot_path']))
+
+            Text::make('Персона', 'person_photobank_id', fn ($item) =>
+                $item->person?->getFullName() ?? $item->person_photobank_id
+            ),
+
+            Text::make('Тип распознавания', 'is_unknown', fn ($item) =>
+            $item->is_unknown ? 'Неизвестное лицо' : 'Известное лицо'
+            ),
+
+            Image::make('Фото', '', fn ($item) => basename($item->data['snapshot_path'] ?? ''))
                 ->disk('analytic')
                 ->dir('thumbnails')
                 ->setLabel('Фото'),
@@ -64,16 +76,19 @@ class EventReportResource extends BaseModelResource implements HasImportExportCo
     {
         return [];
     }
+
     public function filters(): array
     {
         return [
-            DateRange::make('Период отчётности',  'datetime')
+            DateRange::make('Период отчётности', 'datetime')
                 ->withTime(),
+
             Select::make('Видеопоток', 'camera_id')
                 ->placeholder('Видеопоток')
                 ->options(Stream::query()->pluck('name', 'uid')->toArray())
                 ->nullable()
                 ->searchable(),
+
             Select::make('Тип распознавания', 'is_unknown')
                 ->options([
                     'true' => 'Неизвестное лицо',
@@ -87,10 +102,12 @@ class EventReportResource extends BaseModelResource implements HasImportExportCo
                 }),
         ];
     }
+
     protected function import():array
     {
         return [];
     }
+
     public function exportFields(): iterable
     {
         return [
@@ -132,5 +149,4 @@ class EventReportResource extends BaseModelResource implements HasImportExportCo
                 ->changeFill(fn($item) => $item->is_unknown ? 'Неизвестное лицо' : 'Известное лицо'),
         ];
     }
-
 }

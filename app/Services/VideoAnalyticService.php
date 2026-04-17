@@ -83,12 +83,12 @@ class VideoAnalyticService
         return $this->request('/api/v1/person/getinfo');
     }
 
-    public function personInfo($person_id)
+    public function personInfo($person_Uid)
     {
-        return $this->request('/api/v1/person/add', ['person_id' => $person_id], 'post');
+        return $this->request('/api/v1/person/add', ['person_id' => $person_Uid], 'post');
     }
 
-    public function personCreate(string $name, array $photoPaths, string|int|null $person_id = null)
+    public function personCreate(string $name, array $photoPaths, string|int|null $person_uid = null)
     {
         if (empty($photoPaths)) return [];
 
@@ -99,7 +99,7 @@ class VideoAnalyticService
             }
 
             $data = ['user_id' => '1', 'desc' => $name];
-            if ($person_id) $data['person_id'] = $person_id;
+            if ($person_uid) $data['person_id'] = $person_uid;
             $response = $request->post($this->url . '/api/v1/person/add', $data);
             $response->throw();
             return $response->json();
@@ -112,8 +112,8 @@ class VideoAnalyticService
         }
     }
 
-    public function personDelete($person_id)
+    public function personDelete($person_Uid)
     {
-        return $this->request('/api/v1/person/del', ['person_id' => $person_id], 'delete');
+        return $this->request('/api/v1/person/del', ['person_id' => $person_Uid], 'delete');
     }
 }
