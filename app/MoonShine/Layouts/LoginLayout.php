@@ -43,7 +43,7 @@ final class LoginLayout extends BaseLayout
                 background-position: center;
                 border-radius: 1.5rem;
                 margin: 1rem;
-                padding: 3rem;
+                padding: 5rem;
                 flex-direction: column;
                 justify-content: space-between;
                 position: relative;
@@ -67,8 +67,8 @@ final class LoginLayout extends BaseLayout
                 max-width: 420px;
                 padding: 2rem;
             }
-            .title { color: white; font-size: 2.5rem; font-weight: bold; margin-top: 1rem; line-height: 1.2; }
-            .subtitle { color: rgba(255,255,255,0.9); font-size: 1.125rem; font-weight: 300; line-height: 1.5; }
+            .title { color: white; font-size: 2.5rem; font-weight: bold; margin-top: 2rem; line-height: 1.2; }
+            .subtitle { color: rgba(255,255,255,0.9); font-size: 1.75rem; font-weight: 300; line-height: 1.5; }
             .custom-form { background: transparent !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
             .custom-form button[type="submit"] {
                 background-color: #7A8AF1 !important;
