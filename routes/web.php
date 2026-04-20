@@ -7,6 +7,7 @@ use App\Models\Person;
 use \App\Http\Controllers\ChatsController;
 use \App\Http\Controllers\SettingsController;
 use \App\Http\Controllers\StreamController;
+use App\Http\Controllers\PersonPhotoArchiveController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -49,6 +50,9 @@ Route::post("/test-multipart-direct", function (Illuminate\Http\Request $request
         "is_multipart" => str_contains($request->header("Content-Type"), "multipart")
     ]);
 });
+
+Route::post('/person-photos/import', [PersonPhotoArchiveController::class, 'import'])
+    ->name('person-photos.import');
 
 
 

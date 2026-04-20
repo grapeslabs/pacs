@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Pages;
 
+use App\MoonShine\Resources\PersonResource;
 use App\MoonShine\Resources\VideoStreamResource;
 use MoonShine\Laravel\Buttons\FiltersButton;
 use MoonShine\Laravel\Components\Layout\Search;
@@ -14,6 +15,10 @@ use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Components\ActionGroup;
 use MoonShine\UI\Components\Heading;
 use MoonShine\UI\Components\Layout\Flex;
+use MoonShine\UI\Components\Modal;
+use MoonShine\UI\Fields\File;
+use MoonShine\UI\Components\FormBuilder;
+use MoonShine\Support\Enums\FormMethod;
 
 class CustomIndexPage extends IndexPage
 {
@@ -22,6 +27,8 @@ class CustomIndexPage extends IndexPage
     public function getPageButtons(): array
     {
         $resource = $this->getResource();
+        $importButton = $this->getImportButtonIfNeeded($resource);
+
         return [
             Flex::make([
                 Flex::make([
@@ -40,7 +47,6 @@ class CustomIndexPage extends IndexPage
                 ]),
 
                 Flex::make([
-
                     Search::make()->render(),
 
                     ActionGroup::make()
@@ -59,32 +65,63 @@ class CustomIndexPage extends IndexPage
                         )
                         ->class('gap-4'),
 
-                ActionButton::make(
-                    'Добавить',
-                    fn($item) => $resource->getFormPageUrl(params: [
-                        '_component_name' => $this->getListComponentName(),
-                        '_async_form' => true,
-                    ], fragment: 'crud-form')
-                )
-                    ->customAttributes([
-                        '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Добавление' })",
-                    ])
-                    ->async(selector: "#{$this->safeModalName}_content")
-                    ->primary()
-                    ->icon('plus')
-                    ->canSee(function () use ($resource) {
-                        $checkAction = function() {
-                            $actions = $this->activeActions();
-                            $actionsArray = is_array($actions) ? $actions : $actions->toArray();
-                            return in_array(Action::CREATE, $actionsArray);
-                        };
-                        return $checkAction->call($resource) && $resource->can(Ability::CREATE);
-                    })
+                    $importButton,
+
+                    ActionButton::make(
+                        'Добавить',
+                        fn($item) => $resource->getFormPageUrl(params: [
+                            '_component_name' => $this->getListComponentName(),
+                            '_async_form' => true,
+                        ], fragment: 'crud-form')
+                    )
+                        ->customAttributes([
+                            '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Добавление' })",
+                        ])
+                        ->async(selector: "#{$this->safeModalName}_content")
+                        ->primary()
+                        ->icon('plus')
+                        ->canSee(function () use ($resource) {
+                            $checkAction = function() {
+                                $actions = $this->activeActions();
+                                $actionsArray = is_array($actions) ? $actions : $actions->toArray();
+                                return in_array(Action::CREATE, $actionsArray);
+                            };
+                            return $checkAction->call($resource) && $resource->can(Ability::CREATE);
+                        })
                 ])
             ])
                 ->justifyAlign('between')
                 ->itemsAlign('center')
                 ->class('mb-6'),
         ];
+    }
+
+    /**
+     * Возвращает кнопку импорта, если текущий ресурс — PersonResource.
+     */
+    protected function getImportButtonIfNeeded($resource): ?ActionButton
+    {
+        if (!$resource instanceof PersonResource) {
+            return null;
+        }
+
+        return ActionButton::make('Импорт')
+            ->primary()
+            ->inModal(
+                title: 'Загрузка архива с фотографиями',
+                content: function () {
+                    return (string) FormBuilder::make(
+                        route('person-photos.import'),
+                        FormMethod::POST,
+                    )
+                        ->fields([
+                            File::make('ZIP-архив', 'archive')
+                                ->required()
+                                ->allowedExtensions(['zip']),
+                        ])
+                        ->submit('Загрузить', ['class' => 'btn-primary']);
+                },
+                name: 'import-person-photos',
+            );
     }
 }
