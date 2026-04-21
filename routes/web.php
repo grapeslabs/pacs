@@ -53,6 +53,8 @@ Route::post("/test-multipart-direct", function (Illuminate\Http\Request $request
 
 Route::post('/person-photos/import', [PersonPhotoArchiveController::class, 'import'])
     ->name('person-photos.import');
+Route::get('/person-photos/export-all', [PersonPhotoArchiveController::class, 'exportAll'])
+    ->name('person-photos.export-all');
 
 
 

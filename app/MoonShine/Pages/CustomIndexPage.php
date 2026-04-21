@@ -28,6 +28,7 @@ class CustomIndexPage extends IndexPage
     {
         $resource = $this->getResource();
         $importButton = $this->getImportButtonIfNeeded($resource);
+        $exportButton = $this->getExportButtonIfNeeded($resource);
 
         return [
             Flex::make([
@@ -66,6 +67,7 @@ class CustomIndexPage extends IndexPage
                         ->class('gap-4'),
 
                     $importButton,
+                    $exportButton,
 
                     ActionButton::make(
                         'Добавить',
@@ -123,5 +125,19 @@ class CustomIndexPage extends IndexPage
                 },
                 name: 'import-person-photos',
             );
+    }
+
+    /**
+     * Возвращает кнопку экспорта, если текущий ресурс — PersonResource.
+     */
+    protected function getExportButtonIfNeeded($resource): ?ActionButton
+    {
+        if (!$resource instanceof PersonResource) {
+            return null;
+        }
+
+        return ActionButton::make('Экспорт', route('person-photos.export-all'))
+            ->primary()
+            ->blank();
     }
 }
