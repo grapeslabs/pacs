@@ -151,10 +151,10 @@ final class MoonShineLayout extends AppLayout
                     ->canSee(fn () => auth()->user()->isHavePermission(OrganizationResource::class, Ability::VIEW)),
                 MenuItem::make('Ключи', KeyResource::class)
                     ->canSee(fn () => auth()->user()->isHavePermission(KeyResource::class, Ability::VIEW)),
-//                MenuItem::make('Автомобили', CarResource::class)
-//                    ->canSee(fn () => auth()->user()->isHavePermission(CarResource::class, Ability::VIEW)),
-//                MenuItem::make('Гости', GuestResource::class)
-//                    ->canSee(fn () => auth()->user()->isHavePermission(GuestResource::class, Ability::VIEW)),
+                MenuItem::make('Автомобили', CarResource::class)
+                    ->canSee(fn () => auth()->user()->isHavePermission(CarResource::class, Ability::VIEW)),
+                MenuItem::make('Гости', GuestResource::class)
+                    ->canSee(fn () => auth()->user()->isHavePermission(GuestResource::class, Ability::VIEW)),
             ])->icon(file_get_contents(public_path('icons/menu-skud.svg')),true),
 
             MenuItem::make('Боты', BotResource::class)
@@ -180,18 +180,18 @@ final class MoonShineLayout extends AppLayout
             MenuGroup::make('Оборудование', [
                 MenuItem::make('Терминалы доступа', TerminalResource::class)
                     ->canSee(fn () => auth()->user()->isHavePermission(TerminalResource::class, Ability::VIEW)),
-//                MenuItem::make('Шлагбаумы', BarrierResource::class)
-//                    ->canSee(fn () => auth()->user()->isHavePermission(BarrierResource::class, Ability::VIEW)),
+                MenuItem::make('Шлагбаумы', BarrierResource::class)
+                    ->canSee(fn () => auth()->user()->isHavePermission(BarrierResource::class, Ability::VIEW)),
                 MenuItem::make('Контроллеры СКУД', ControllerResource::class)
                     ->canSee(fn () => auth()->user()->isHavePermission(ControllerResource::class, Ability::VIEW)),
             ])->icon(file_get_contents(public_path('icons/menu-equipments.svg')),true),
 
-//            MenuGroup::make('Справочники', [
-//                MenuItem::make('Марки автомобилей', CarBrandResource::class)
-//                    ->canSee(fn () => auth()->user()->isHavePermission(CarBrandResource::class, Ability::VIEW)),
-//                MenuItem::make('Цвета автомобилей', CarColorResource::class)
-//                    ->canSee(fn () => auth()->user()->isHavePermission(CarColorResource::class, Ability::VIEW)),
-//            ])->icon(file_get_contents(public_path('icons/menu-references.svg')), true),
+            MenuGroup::make('Справочники', [
+                MenuItem::make('Марки автомобилей', CarBrandResource::class)
+                    ->canSee(fn () => auth()->user()->isHavePermission(CarBrandResource::class, Ability::VIEW)),
+                MenuItem::make('Цвета автомобилей', CarColorResource::class)
+                    ->canSee(fn () => auth()->user()->isHavePermission(CarColorResource::class, Ability::VIEW)),
+            ])->icon(file_get_contents(public_path('icons/menu-references.svg')), true),
         ];
     }
 
