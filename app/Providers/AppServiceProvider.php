@@ -40,7 +40,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        MoonshineUser::observe(MoonshineUserObserver::class);
         SkudController::observe(SkudControllerObserver::class);
         SkudEvent::observe(SkudEventObserver::class);
         Key::observe(KeyObserver::class);
