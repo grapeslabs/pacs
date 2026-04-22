@@ -62,4 +62,9 @@ class MoonShineUserRoleResource extends BaseModelResource
             PermissionMatrixField::make('Права и доступы','permissions'),
         ];
     }
+
+    protected function search(): array
+    {
+        return ['name', 'description'];
+    }
 }
