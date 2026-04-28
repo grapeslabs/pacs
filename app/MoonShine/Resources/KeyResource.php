@@ -4,6 +4,7 @@ namespace App\MoonShine\Resources;
 
 use App\Models\Key;
 use App\Models\Person;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Database\Eloquent\Model;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
@@ -54,7 +55,8 @@ class KeyResource extends BaseModelResource
     public function formFields(): iterable
     {
         return [
-            Text::make('Ключ', 'key')
+            CustomText::make('Ключ', 'key')
+                ->unique('keys', 'key', 'Ключ должен быть уникальным')
                 ->required(),
             Select::make('Тип ключа', 'type')
                 ->options([

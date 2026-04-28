@@ -6,6 +6,7 @@ use App\Models\Bot;
 use App\Models\Stream;
 use App\Models\Tag;
 use App\Models\Trigger;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\Select2Field;
 use App\MoonShine\Fields\SelectField;
 use Closure;
@@ -113,7 +114,9 @@ class TriggerResource extends BaseModelResource
 
         return [
             ID::make(),
-            Text::make('Название', 'name')
+
+            CustomText::make('Название', 'name')
+                ->unique('triggers', 'name', 'Название триггера должно быть уникальным')
                 ->required(),
 
             Select::make('Тип устройства', 'device_type')

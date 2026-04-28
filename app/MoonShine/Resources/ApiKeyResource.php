@@ -3,6 +3,8 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\ApiKey;
+use App\MoonShine\Fields\CustomDate;
+use App\MoonShine\Fields\CustomText;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Fields\Text;
@@ -66,20 +68,22 @@ class ApiKeyResource extends BaseModelResource
     public function formFields(): iterable
     {
         return [
-            Text::make('Название', 'name')
+            CustomText::make('Название', 'name')
+                ->required()
+                ->placeholder('Введите название ключа'),
+            CustomText::make('Название', 'name')
                 ->required()
                 ->placeholder('Введите название ключа'),
 
             Checkbox::make('Бессрочный', 'is_unlimited')
                 ->setValue(false),
 
-            Date::make('Срок действия', 'expires_at')
-                ->withTime(false)
+            CustomDate::make('Срок действия', 'expires_at')
+                ->after(Carbon::now(), 'Срок действия не может быть в прощлом')
                 ->format('d.m.Y')
                 ->nullable()
-                ->showWhen('is_unlimited', '=', false)
-                ->hint('Укажите дату окончания действия ключа'),
-        ];
+                ->showWhen('is_unlimited', '=', false),
+            ];
     }
 
     public function rules($item): array

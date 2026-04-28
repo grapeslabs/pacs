@@ -3,6 +3,7 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Organization;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\DadataOrganizationField;
 use App\MoonShine\Pages\CustomIndexPage;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
@@ -37,11 +38,14 @@ class OrganizationResource extends BaseModelResource
     {
         return [
             DadataOrganizationField::make('Поиск организации', 'search_query'),
-            Text::make('ИНН', 'inn')->mask('999999999999'),
-            Text::make('Название полное', 'full_name')->required(),
-            Text::make('Название сокращенное', 'short_name')->required(),
-            Text::make('Адрес', 'address'),
-            Text::make('Контактные данные', 'contact_data'),
+            CustomText::make('ИНН', 'inn')
+                ->pattern('/^(\d{10}|\d{12})$/', 'ИНН должен содержать 10 или 12 цифр')
+                ->mask('999999999999')
+                ->unique('organizations', 'inn'),
+            CustomText::make('Название полное', 'full_name')->required(),
+            CustomText::make('Название сокращенное', 'short_name')->required(),
+            CustomText::make('Адрес', 'address'),
+            CustomText::make('Контактные данные', 'contact_data'),
             Textarea::make('Комментарий', 'comment'),
         ];
     }

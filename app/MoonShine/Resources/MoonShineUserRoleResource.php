@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Resources;
 
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Contracts\Validation\Rule;
 use MoonShine\Laravel\Enums\Action;
@@ -66,7 +67,8 @@ class MoonShineUserRoleResource extends BaseModelResource
         return [
             Box::make([
                 ID::make()->sortable(),
-                Text::make(__('moonshine::ui.resource.role_name'), 'name')
+                CustomText::make(__('moonshine::ui.resource.role_name'), 'name')
+                    ->unique('moonshine_user_roles', 'name', 'Роль должна быть уникальной')
                     ->required(),
             ]),
         ];

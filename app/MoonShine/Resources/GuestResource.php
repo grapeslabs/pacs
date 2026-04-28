@@ -3,7 +3,10 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Guest;
+use App\MoonShine\Fields\CustomDate;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
+use Carbon\Carbon;
 use Dflydev\DotAccessData\Data;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Support\ListOf;
@@ -66,9 +69,11 @@ class GuestResource extends BaseModelResource
     public function formFields(): iterable
     {
         return [
-            Text::make('Внешний ID', 'external_id')
+            CustomText::make('Внешний ID', 'external_id')
+                ->unique('guests','external_id')
                 ->nullable(),
-            Text::make('ФИО', 'full_name')
+            CustomText::make('ФИО', 'full_name')
+                ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
                 ->required(),
             Phone::make('Телефон', 'phone')
                 ->nullable()
@@ -108,16 +113,14 @@ class GuestResource extends BaseModelResource
                     }
                     return $data;
                 }),
-            Text::make('Документ', 'document')
+            CustomText::make('Документ', 'document')
                 ->nullable(),
             Textarea::make('Комментарий', 'comment')
                 ->nullable(),
-            Date::make('Действует с', 'entry_start')
-                ->nullable()
-                ->withTime(),
-            Date::make('Действует до', 'entry_end')
-                ->nullable()
-                ->withTime(),
+            CustomDate::make('Действует с', 'entry_start')
+                ->after(Carbon::now(), 'Начало действия не может в прошлом'),
+            CustomDate::make('Действует до', 'entry_end')
+                ->afterField('entry_start', 'Конец действия не может быть раньше его начала'),
         ];
     }
 

@@ -5,6 +5,8 @@ namespace App\MoonShine\Resources;
 use App\Models\Key;
 use App\Models\Person;
 use App\Models\Organization;
+use App\MoonShine\Fields\CustomDate;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
 use App\Models\Tag;
 use App\MoonShine\Fields\Select2Field;
@@ -140,19 +142,33 @@ class PersonResource extends BaseModelResource
 
         return [
             ID::make(),
-            Text::make('Фамилия', 'last_name')
+            CustomText::make('Фамилия', 'last_name')
+                ->min(2,'Минимум 2 символа')
+                ->max(50, 'Максимум 50 символов')
+                ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                ->nameFormat('Фамилия должна содержать буквы')
                 ->placeholder('Иванов')
                 ->required(),
-            Text::make('Имя', 'first_name')
+            CustomText::make('Имя', 'first_name')
+                ->min(2,'Минимум 2 символа')
+                ->max(50, 'Максимум 50 символов')
+                ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                ->nameFormat()
                 ->required()
                 ->placeholder('Иван'),
-            Text::make('Отчество', 'middle_name')
+            CustomText::make('Отчество', 'middle_name')
+                ->min(2,'Минимум 2 символа')
+                ->max(50, 'Максимум 50 символов')
+                ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                ->nameFormat('Отчество должно содержать буквы')
                 ->placeholder('Иванович'),
-            Date::make('Дата рождения', 'birth_date')
-                ->placeholder('00.00.0000')
+            CustomDate::make('Дата рождения', 'birth_date')
+                ->before(Carbon::now(), 'Дата рождения не может быть будущим')
+                ->after(Carbon::now()->subYears(120), 'Дата рождения не может быть более 120 лет назад')
                 ->format('d.m.Y')
                 ->sortable(),
-            Text::make('Номер удостоверения', 'certificate_number')->placeholder('XXXXXXXXXXXXX'),
+            CustomText::make('Номер удостоверения', 'certificate_number')
+                ->unique('person', 'certificate_number', 'Номер удостоверения должен быть уникальным'),
             SelectField::make('Теги', 'tags')
                 ->options(Tag::select('id', 'name')->get())
                 ->multiple(true)

@@ -4,6 +4,8 @@ namespace App\MoonShine\Resources;
 
 use App\Models\Setting;
 use App\Models\Stream;
+use App\MoonShine\Fields\CustomNumber;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\FeatureField;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Pages\StreamPlayer;
@@ -73,13 +75,17 @@ class VideoStreamResource extends BaseModelResource
         return [
             ID::make('ID', 'id'),
             Checkbox::make('Включено', 'is_active'),
-            Text::make('Название', 'name')->required(),
-            Text::make('Локация', 'location')->nullable(),
-            Text::make('Адрес потока(RTSP)', 'rtsp')->required(),
-            Number::make('Время хранения архива(Час)', 'archive_time')
+            CustomText::make('Название', 'name')
+                ->required()
+                ->unique('streams', 'name'),
+            CustomText::make('Локация', 'location')->nullable(),
+            CustomText::make('Адрес потока(RTSP)', 'rtsp')->required()
+                ->pattern('^rtsp:\/\/([^\s\/:]+)(?::([0-9]+))?(\/.*)?$'),
+            CustomNumber::make('Время хранения архива(Час)', 'archive_time')
                 ->default(24)
-                ->min(1)
-                ->max(87600)
+                ->integer("Время хранения архива должно быть числом")
+                ->minValue(1, 'Время хранения архива не может быть меньше часа')
+                ->maxValue(87600, 'Время хранения архива не может быть больше года')
                 ->required(),
             FeatureField::make('Распознавание личности', 'is_recognize')
                 ->locked(!Setting::where('key', 'face_recognition')->value('value'))
