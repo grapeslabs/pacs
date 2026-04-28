@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Pages;
 
+use App\MoonShine\Forms\LoginForm;
 use MoonShine\Laravel\Pages\Page;
 use MoonShine\Contracts\UI\ComponentContract;
 use MoonShine\Core\Attributes\Layout;
-use MoonShine\Laravel\Forms\LoginForm;
 use MoonShine\Laravel\Layouts\LoginLayout;
 use MoonShine\MenuManager\Attributes\SkipMenu;
 
