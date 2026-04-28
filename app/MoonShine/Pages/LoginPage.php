@@ -39,13 +39,13 @@ class LoginPage extends Page
                     ->when(config('demo.enabled'), fn($field) => $field->fill(config('demo.email'))),
                 AuthPasswordField::make('Пароль', 'password')
                     ->when(config('demo.enabled'), fn($field) => $field->customAttributes([
-                        'x-init' => '$el.value = "' . Cache::get('demo_current_password', '') . '"',
+                        'x-init' => 'inputValue  = "' . Cache::get('demo_current_password', '') . '"',
                         'autocomplete' => 'current-password',
                     ]))
                     ->withoutWrapper()
                     ->required(),
 
-                Switcher::make('Запомнить', 'remember')
+                Switcher::make('Запомнить', 'remember'),
             ])->submit('Войти', [
                 'style'=>'width: 100% !important; border-radius: 9999px !important; background-color: #828df8 !important; color: #ffffff !important; padding: 0.75rem 1rem !important; font-size: 1rem !important; font-weight: 500 !important; border: none !important; transition: background-color 0.2s ease-in-out !important; cursor: pointer; margin-top: 1.5rem;'
             ])
