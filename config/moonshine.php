@@ -17,6 +17,7 @@ use MoonShine\Laravel\Pages\ErrorPage;
 use MoonShine\Laravel\Pages\LoginPage;
 use MoonShine\Laravel\Pages\ProfilePage;
 use \MoonShine\Laravel\Forms\LoginForm;
+use \App\Http\Middleware\CheckDiskSpace;
 
 return [
     'title' => 'GRAPES PACS',
