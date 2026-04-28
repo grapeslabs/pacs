@@ -71,9 +71,6 @@ class ApiKeyResource extends BaseModelResource
             CustomText::make('Название', 'name')
                 ->required()
                 ->placeholder('Введите название ключа'),
-            CustomText::make('Название', 'name')
-                ->required()
-                ->placeholder('Введите название ключа'),
 
             Checkbox::make('Бессрочный', 'is_unlimited')
                 ->setValue(false),
