@@ -14,7 +14,7 @@ use MoonShine\Laravel\Http\Middleware\ChangeLocale;
 use MoonShine\Permissions\Models\MoonshineUser;
 use App\MoonShine\Pages\Dashboard;
 use MoonShine\Laravel\Pages\ErrorPage;
-use MoonShine\Laravel\Pages\LoginPage;
+use App\MoonShine\Pages\LoginPage;
 use MoonShine\Laravel\Pages\ProfilePage;
 use \MoonShine\Laravel\Forms\LoginForm;
 use \App\Http\Middleware\CheckDiskSpace;
