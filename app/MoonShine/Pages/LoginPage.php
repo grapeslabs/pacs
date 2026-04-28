@@ -30,7 +30,6 @@ class LoginPage extends Page
             ->class('authentication-form')
             ->action(moonshineRouter()->to('authenticate'))
             ->fields([
-                'asdasdasd',
                 Text::make(__('moonshine::ui.login.username'), 'username')
                     ->required()
                     ->customAttributes([
