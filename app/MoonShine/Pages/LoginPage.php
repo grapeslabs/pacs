@@ -7,7 +7,6 @@ namespace App\MoonShine\Pages;
 use App\MoonShine\Fields\AuthPasswordField;
 use App\MoonShine\Fields\AuthUsernameField;
 use App\MoonShine\Layouts\LoginLayout;
-use App\MoonShine\Forms\LoginForm;
 use Illuminate\Support\Facades\Cache;
 use MoonShine\Laravel\Pages\Page;
 use MoonShine\Contracts\UI\ComponentContract;
@@ -37,7 +36,7 @@ class LoginPage extends Page
                         'autofocus' => true,
                         'autocomplete' => 'username',
                     ])
-                    ->when(config('demo.enabled'), fn($field) => $field->fill(config('demo.email'))),,
+                    ->when(config('demo.enabled'), fn($field) => $field->fill(config('demo.email'))),
                 AuthPasswordField::make('Пароль', 'password')
                     ->when(config('demo.enabled'), fn($field) => $field->customAttributes([
                         'x-init' => '$el.value = "' . Cache::get('demo_current_password', '') . '"',
