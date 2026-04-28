@@ -22,7 +22,7 @@ use \App\Http\Middleware\CheckDiskSpace;
 return [
     'title' => 'GRAPES PACS',
     'logo' => '/images/logo.svg',
-    'logo_small' => '/images/logo_small.svg',
+    'logo_small' => '/images/logo.svg',
     'ui' => [
         'theme' => 'light', // Принудительно светлая тема
         'dark_mode' => false, // Отключаем темный режим
@@ -91,7 +91,7 @@ return [
     'pages' => [
         'dashboard' => App\MoonShine\Pages\Dashboard::class,
         'profile' => ProfilePage::class,
-        'login' => LoginPage::class,
+        'login' => \App\MoonShine\Pages\LoginPage::class,
         'error' => ErrorPage::class,
     ],
 
