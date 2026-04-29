@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\User;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\PeopleReportResource;
 use App\MoonShine\Resources\TriggerResource;
 use App\MoonShine\Resources\SkudEventResource;
 use App\MoonShine\Resources\UnknownReportResource;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use MoonShine\Contracts\Core\DependencyInjection\ConfiguratorContract;
 use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
@@ -36,6 +38,8 @@ use App\MoonShine\Resources\BarrierEventResource;
 use App\MoonShine\Resources\ApiKeyResource;
 use App\MoonShine\Resources\InviterResource;
 use App\MoonShine\Resources\VideoStreamResource;
+use MoonShine\Contracts\Core\ResourceContract;
+use MoonShine\Laravel\Enums\Ability;
 
 class MoonShineServiceProvider extends ServiceProvider
 {
@@ -77,5 +81,21 @@ class MoonShineServiceProvider extends ServiceProvider
                 ...$config->getPages(),
                 SettingsPage::class,
             ]);
+        $config->authorizationRules(
+            static function (ResourceContract $resource, Model $user, Ability $ability): bool {
+                if (!$user instanceof User) {
+                    return false;
+                }
+
+                if ($user->moonshine_user_role_id === 1) {
+                    return true;
+                }
+
+                return $user->hasPermission(
+                    $resource::class,
+                    $ability->value
+                );
+            }
+        );
     }
 }

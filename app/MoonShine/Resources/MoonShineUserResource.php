@@ -13,7 +13,6 @@ use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Permissions\Models\MoonshineUser;
-use MoonShine\Permissions\Traits\WithPermissions;
 use MoonShine\Laravel\Models\MoonshineUserRole;
 use MoonShine\MenuManager\Attributes\Group;
 use MoonShine\MenuManager\Attributes\Order;
@@ -43,14 +42,10 @@ use Stringable;
  */
 class MoonShineUserResource extends BaseModelResource
 {
-    use WithPermissions;
-
     protected string $model = MoonshineUser::class;
     protected string $column = 'name';
     protected string $title = 'Пользователи';
     protected array $with = ['moonshineUserRole'];
-    protected bool $editInModal = false;
-
     protected function pages(): array
     {
         return [
@@ -105,7 +100,6 @@ class MoonShineUserResource extends BaseModelResource
                             formatted: static fn (MoonshineUserRole $model) => $model->name,
                             resource: MoonShineUserRoleResource::class,
                         )
-                            ->creatable()
                             ->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
 
                         Flex::make([

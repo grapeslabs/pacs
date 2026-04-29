@@ -11,7 +11,7 @@ use MoonShine\Laravel\Exceptions\MoonShineNotFoundException;
 use MoonShine\Laravel\Forms\FiltersForm;
 use MoonShine\Laravel\Http\Middleware\Authenticate;
 use MoonShine\Laravel\Http\Middleware\ChangeLocale;
-use MoonShine\Permissions\Models\MoonshineUser;
+use App\Models\User;
 use App\MoonShine\Pages\Dashboard;
 use MoonShine\Laravel\Pages\ErrorPage;
 use App\MoonShine\Pages\LoginPage;
@@ -67,7 +67,7 @@ return [
     'auth' => [
         'enabled' => true,
         'guard' => 'moonshine',
-        'model' => MoonshineUser::class,
+        'model' => User::class,
         'middleware' => Authenticate::class,
         'pipelines' => [],
     ],
