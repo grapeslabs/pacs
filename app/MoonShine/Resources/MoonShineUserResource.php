@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Resources;
 
+use App\Models\User;
+use App\MoonShine\Fields\PermissionMatrixField;
 use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
@@ -21,7 +23,9 @@ use MoonShine\Support\Enums\Color;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\Collapse;
 use MoonShine\UI\Components\Layout\Box;
+use MoonShine\UI\Components\Layout\Column;
 use MoonShine\UI\Components\Layout\Flex;
+use MoonShine\UI\Components\Layout\Grid;
 use MoonShine\UI\Components\Tabs;
 use MoonShine\UI\Components\Tabs\Tab;
 use MoonShine\UI\Fields\Date;
@@ -46,20 +50,13 @@ class MoonShineUserResource extends BaseModelResource
     protected string $column = 'name';
     protected string $title = 'Пользователи';
     protected array $with = ['moonshineUserRole'];
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
+    protected bool $createInModal=false;
+    protected bool $editInModal=false;
 
     protected function indexFields(): iterable
     {
         return [
             ID::make()->sortable(),
-
             BelongsTo::make('Роль',
                 'moonshineUserRole',
                 formatted: static fn (MoonshineUserRole $model) => $model->name,
@@ -90,48 +87,40 @@ class MoonShineUserResource extends BaseModelResource
     {
         return [
             Box::make([
-                Tabs::make([
-                    Tab::make('Основная информация', [
-                        ID::make()->sortable(),
+               Flex::make([
+                   Text::make('Имя', 'name')->required(),
+                   Email::make('E-mail', 'email')->required(),
 
-                        BelongsTo::make(
-                            'Роль',
-                            'moonshineUserRole',
-                            formatted: static fn (MoonshineUserRole $model) => $model->name,
-                            resource: MoonShineUserRoleResource::class,
-                        )
-                            ->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
-
-                        Flex::make([
-                            Text::make('Имя', 'name')
-                                ->required(),
-
-                            Email::make('E-mail', 'email')
-                                ->required(),
-                        ]),
-
-                        Image::make('Аватар', 'avatar')
-                            ->disk(moonshineConfig()->getDisk())
-                            ->dir('moonshine_users')
-                            ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
-
-                        Date::make('Дата создания', 'created_at')
-                            ->format("d.m.Y")
-                            ->default(now()->toDateTimeString()),
-                    ])->icon('user-circle'),
-
-                    Tab::make('Пароль', [
-                        Collapse::make('Изменить пароль', [
-                            Password::make('Пароль', 'password')
-                                ->customAttributes(['autocomplete' => 'new-password'])
-                                ->eye(),
-
-                            PasswordRepeat::make('Повторите пароль', 'password_repeat')
-                                ->customAttributes(['autocomplete' => 'confirm-password'])
-                                ->eye(),
-                        ])->icon('lock-closed'),
-                    ])->icon('lock-closed'),
+               ]),
+                Flex::make([
+                    BelongsTo::make(
+                        'Роль',
+                        'moonshineUserRole',
+                        formatted: static fn (MoonshineUserRole $model) => $model->name,
+                        resource: MoonShineUserRoleResource::class,
+                    )
+                        ->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
+                    Date::make('Дата создания', 'created_at')
+                        ->format("d.m.Y")
+                        ->default(now()->toDateTimeString()),
                 ]),
+
+                Image::make('Аватар', 'avatar')
+                    ->disk(moonshineConfig()->getDisk())
+                    ->dir('moonshine_users')
+                    ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
+
+                Flex::make([
+                    Password::make('Пароль', 'password')
+                        ->customAttributes(['autocomplete' => 'new-password'])
+                        ->eye(),
+
+                    PasswordRepeat::make('Повторите пароль', 'password_repeat')
+                        ->customAttributes(['autocomplete' => 'confirm-password'])
+                        ->eye(),
+                ]),
+                PermissionMatrixField::make('Права', 'permissions')
+                    ->roleField('moonshine_user_role_id')
             ]),
         ];
     }
