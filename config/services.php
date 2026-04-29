@@ -45,5 +45,9 @@ return [
     'va' => [
         'url' => env('ANALYTIC_HOST'),
         'timeout' => env('ANALYTIC_TIMEOUT')
-    ]
+    ],
+    'yacaptcha' => [
+        'secret' => env('YACAPTCHA_SECRET'),
+        'client' => env('YACAPTCHA_CLIENT'),
+    ],
 ];
