@@ -25,16 +25,6 @@ class CustomText extends Text
         return parent::required($condition);
     }
 
-    public function nullable(): static
-    {
-        $this->customClientRules = array_filter(
-            $this->customClientRules,
-            fn(array $rule): bool => $rule['type'] !== 'required'
-        );
-
-        return parent::nullable();
-    }
-
     public function min(int $length, string $message = 'Минимум символов'): static
     {
         $this->customClientRules[] =[
