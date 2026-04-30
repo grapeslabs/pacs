@@ -19,9 +19,8 @@ use MoonShine\UI\Fields\Image;
 use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
 
-class EventReportResource extends BaseModelResource implements HasImportExportContract
+class EventReportResource extends BaseModelResource
 {
-    use ImportExportConcern;
     protected string $model = VideoAnalyticReport::class;
     protected string $title = 'Отчеты по событиям';
     protected string $column = 'name';
@@ -101,11 +100,6 @@ class EventReportResource extends BaseModelResource implements HasImportExportCo
                     return $query->where('is_unknown', $value === 'true');
                 }),
         ];
-    }
-
-    protected function import():array
-    {
-        return [];
     }
 
     public function exportFields(): iterable

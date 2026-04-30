@@ -2,9 +2,14 @@
 
 namespace App\MoonShine\Resources;
 
+use App\MoonShine\Handlers\CsvExportHandler;
 use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Components\SafeModal;
 use MoonShine\Contracts\UI\ActionButtonContract;
+use MoonShine\ImportExport\Contracts\HasImportExportContract;
+use MoonShine\ImportExport\ExportHandler;
+use MoonShine\ImportExport\ImportHandler;
+use MoonShine\ImportExport\Traits\ImportExportConcern;
 use MoonShine\Laravel\Enums\Ability;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
@@ -14,8 +19,9 @@ use MoonShine\Support\Enums\HttpMethod;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\ActionButton;
 
-class BaseModelResource extends ModelResource
+class BaseModelResource extends ModelResource implements HasImportExportContract
 {
+    use ImportExportConcern;
     protected bool $createInModal=true;
     protected bool $editInModal=true;
     protected bool $detailInModal=true;
@@ -84,5 +90,29 @@ class BaseModelResource extends ModelResource
         );
     }
 
+    protected function export()
+    {
+        return null;
+    }
 
+    protected function import()
+    {
+        return null;
+    }
+
+    protected function handlers(): ListOf
+    {
+        return empty($this->exportFields())
+            ?parent::handlers():
+            parent::handlers()
+                ->add(
+                    ExportHandler::make('Экспорт Excel')
+                        ->filename('Экспорт ' . $this->getTitle())
+                )
+                ->add(
+                    CsvExportHandler::make('Экспорт CSV')
+                        ->csv()
+                        ->filename('Экспорт ' . $this->getTitle())
+                );
+    }
 }

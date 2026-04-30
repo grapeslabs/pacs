@@ -5,8 +5,6 @@ namespace App\MoonShine\Resources;
 use App\Models\Person;
 use App\Models\GrapeslabsSkudEvent;
 use App\MoonShine\Fields\SelectField;
-use MoonShine\ImportExport\Contracts\HasImportExportContract;
-use MoonShine\ImportExport\Traits\ImportExportConcern;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use MoonShine\Laravel\Handlers\Handler;
 use MoonShine\UI\Fields\ID;
@@ -20,9 +18,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
 
-class SkudEventResource extends BaseModelResource implements HasImportExportContract
+class SkudEventResource extends BaseModelResource
 {
-    use ImportExportConcern;
     protected string $model = GrapeslabsSkudEvent::class;
     protected string $title = 'Отчеты СКУД';
     protected string $ex_type = 'pingate';
@@ -593,11 +590,6 @@ HTML;
         }
 
         return array_unique($matchingTypes);
-    }
-
-    protected function import(): array
-    {
-        return [];
     }
 
     public function exportFields(): iterable
