@@ -114,6 +114,7 @@ class MoonShineUserResource extends BaseModelResource
 
                         Flex::make([
                             CustomText::make('Имя', 'name')
+                                ->min(2, 'Минимум 2 символа')
                                 ->required(),
 
                             CustomText::make('E-mail', 'email')
