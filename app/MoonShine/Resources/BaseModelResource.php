@@ -19,7 +19,7 @@ class BaseModelResource extends ModelResource
     protected bool $createInModal=true;
     protected bool $editInModal=true;
     protected bool $detailInModal=true;
-
+    protected bool $stickyTable=true;
     protected string $safeModalName = 'universal-safe-modal';
 
     protected function indexButtons(): ListOf
