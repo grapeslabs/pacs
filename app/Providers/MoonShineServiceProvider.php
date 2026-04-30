@@ -60,22 +60,24 @@ class MoonShineServiceProvider extends ServiceProvider
                 CarBrandResource::class,
                 CarColorResource::class,
                 SettingResource::class,
-                BotResource::class,
                 BotChatResource::class,
                 SkudEventResource::class,
                 BarrierEventResource::class,
-                InviterResource::class,
                 ApiKeyResource::class,
-                BotResource::class,
-                VideoStreamResource::class,
-                TriggerResource::class,
-                EventReportResource::class,
-                PeopleReportResource::class,
-                UnknownReportResource::class,
+                ...config('services.ms.enabled')?[
+                    VideoStreamResource::class,
+                ]:[],
+                ...config('services.va.enabled')?[
+                    BotResource::class,
+                    TriggerResource::class,
+                    EventReportResource::class,
+                    PeopleReportResource::class,
+                    UnknownReportResource::class,
+                ]:[],
             ])
             ->pages([
                 ...$config->getPages(),
-                SettingsPage::class,
+                ...config('services.ms.enabled')?[SettingsPage::class]:[],
             ]);
     }
 }

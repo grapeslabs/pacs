@@ -81,9 +81,11 @@ class VideoStreamResource extends BaseModelResource
                 ->min(1)
                 ->max(87600)
                 ->required(),
-            FeatureField::make('Распознание личности', 'is_recognize')
-                ->locked(!Setting::where('key', 'face_recognition')->value('value'))
-                ->unlockUrl(app(SettingsPage::class)->getUrl()),
+            ...config('services.va.enabled')?[
+                FeatureField::make('Распознание личности', 'is_recognize')
+                    ->locked(!Setting::where('key', 'face_recognition')->value('value'))
+                    ->unlockUrl(app(SettingsPage::class)->getUrl()),
+            ]:[],
         ];
     }
 
@@ -98,7 +100,9 @@ class VideoStreamResource extends BaseModelResource
             Text::make('Локация', 'location'),
             Text::make('Адрес потока(RTSP)', 'rtsp'),
             Text::make('Время хранения архива(Час)', 'archive_time'),
-            Checkbox::make('Распознание личности', 'is_recognize'),
+            ...config('services.va.enabled')?[
+                Checkbox::make('Распознание личности', 'is_recognize'),
+            ]:[],
         ];
     }
 
@@ -118,7 +122,9 @@ class VideoStreamResource extends BaseModelResource
             Checkbox::make('Включено', 'is_active'),
             Text::make('Название', 'name'),
             Text::make('Локация', 'location'),
-            Checkbox::make('Распознание личности', 'is_recognize'),
+            ...config('services.va.enabled')?[
+                Checkbox::make('Распознание личности', 'is_recognize'),
+            ]:[],
         ];
     }
 
