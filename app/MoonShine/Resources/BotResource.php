@@ -86,6 +86,7 @@ class BotResource extends BaseModelResource
         return [
             // Основные поля
             CustomText::make('Название', 'name')
+                ->unique('bots', 'name', 'Бот с таким названием уже существует')
                 ->required(),
 
             Select::make('Сервис', 'service')

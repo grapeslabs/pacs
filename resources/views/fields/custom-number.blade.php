@@ -35,6 +35,11 @@
         font-size: 0.875rem;
         margin-top: 0.25rem;
         display: block;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        z-index: 10;
     }
 
     .cnf-icon-wrapper {
