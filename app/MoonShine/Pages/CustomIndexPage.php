@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\MoonShine\Pages;
 
 use App\MoonShine\Resources\VideoStreamResource;
+use MoonShine\Contracts\UI\ActionButtonContract;
 use MoonShine\Laravel\Buttons\FiltersButton;
 use MoonShine\Laravel\Components\Layout\Search;
 use MoonShine\Laravel\Enums\Ability;
@@ -14,6 +15,7 @@ use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Components\ActionGroup;
 use MoonShine\UI\Components\Heading;
 use MoonShine\UI\Components\Layout\Flex;
+use MoonShine\UI\Components\Modal;
 
 class CustomIndexPage extends IndexPage
 {
@@ -58,33 +60,43 @@ class CustomIndexPage extends IndexPage
                             )
                         )
                         ->class('gap-4'),
-
-                ActionButton::make(
-                    'Добавить',
-                    fn($item) => $resource->getFormPageUrl(params: [
-                        '_component_name' => $this->getListComponentName(),
-                        '_async_form' => true,
-                    ], fragment: 'crud-form')
-                )
-                    ->customAttributes([
-                        '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Добавление' })",
-                    ])
-                    ->async(selector: "#{$this->safeModalName}_content")
-                    ->primary()
-                    ->icon('plus')
-                    ->canSee(function () use ($resource) {
-                        $checkAction = function() {
-                            $actions = $this->activeActions();
-                            $actionsArray = is_array($actions) ? $actions : $actions->toArray();
-                            return in_array(Action::CREATE, $actionsArray);
-                        };
-                        return $checkAction->call($resource) && $resource->can(Ability::CREATE);
-                    })
+                    $this->getCustomCreateButton(),
                 ])
             ])
                 ->justifyAlign('between')
                 ->itemsAlign('center')
                 ->class('mb-6'),
         ];
+    }
+    private function getCustomCreateButton()
+    {
+        $resource = $this->getResource();
+        if($resource->isCreateInModal()) {
+            return ActionButton::make(
+                'Добавить',
+                fn($item) => $resource->getFormPageUrl(params: [
+                    '_component_name' => $this->getListComponentName(),
+                    '_async_form' => true,
+                ], fragment: 'crud-form')
+            )
+                ->customAttributes([
+                    '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Добавление' })",
+                ])
+                ->async(selector: "#{$this->safeModalName}_content")
+                ->primary()
+                ->icon('plus')
+                ->canSee(function () use ($resource) {
+                    $checkAction = function() {
+                        $actions = $this->activeActions();
+                        $actionsArray = is_array($actions) ? $actions : $actions->toArray();
+                        return in_array(Action::CREATE, $actionsArray);
+                    };
+                    return $checkAction->call($resource) && $resource->can(Ability::CREATE);
+                });
+        }
+        return ActionButton::make('Добавить', $resource->getFormPageUrl())
+            ->canSee(static fn (): bool => $resource->hasAction(Action::CREATE) && $resource->can(Ability::CREATE))
+            ->primary()
+            ->icon('plus');
     }
 }

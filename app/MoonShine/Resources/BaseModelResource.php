@@ -19,7 +19,7 @@ class BaseModelResource extends ModelResource
     protected bool $createInModal=true;
     protected bool $editInModal=true;
     protected bool $detailInModal=true;
-
+    protected bool $stickyTable=true;
     protected string $safeModalName = 'universal-safe-modal';
 
     protected function indexButtons(): ListOf
@@ -51,7 +51,8 @@ class BaseModelResource extends ModelResource
                 '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Редактирование' })",
             ])
             ->async(selector: "#{$this->safeModalName}_content")
-            ->canSee(fn() => in_array(Action::UPDATE, $this->activeActions()->toArray()));
+            ->canSee(fn() => $this->hasAction(Action::CREATE) && $this->can(Ability::CREATE));
+
     }
 
     protected function pages(): array

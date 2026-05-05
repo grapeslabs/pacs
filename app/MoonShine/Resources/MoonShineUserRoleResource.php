@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Resources;
 
+use App\Models\Role;
+use App\MoonShine\Fields\PermissionMatrixField;
 use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Contracts\Validation\Rule;
 use MoonShine\Laravel\Enums\Action;
@@ -19,20 +21,15 @@ use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\Layout\Box;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
-use Stringable;
 
-#[Icon('bookmark')]
-#[Group('moonshine::ui.resource.system', 'users', translatable: true)]
-#[Order(1)]
-/**
- * @extends BaseModelResource<MoonshineUserRole>
- */
 class MoonShineUserRoleResource extends BaseModelResource
 {
-    protected string $model = MoonshineUserRole::class;
-
+    protected string $model = Role::class;
     protected string $title = 'Роли';
     protected string $column = 'name';
+    protected bool $editInModal=false;
+    protected bool $createInModal=false;
+    protected bool $detailInModal=false;
 
     protected function pages(): array
     {
@@ -45,48 +42,29 @@ class MoonShineUserRoleResource extends BaseModelResource
 
     protected function activeActions(): ListOf
     {
-        return parent::activeActions()->except(Action::VIEW);
+        return parent::activeActions()->only(Action::CREATE, Action::DELETE, Action::UPDATE);
     }
 
     protected function indexFields(): iterable
     {
         return [
             ID::make()->sortable(),
-            Text::make(__('moonshine::ui.resource.role_name'), 'name'),
+            Text::make('Роль', 'name'),
+            Text::make('Описание', 'description'),
         ];
-    }
-
-    protected function detailFields(): iterable
-    {
-        return $this->indexFields();
     }
 
     protected function formFields(): iterable
     {
         return [
-            Box::make([
-                ID::make()->sortable(),
-                Text::make(__('moonshine::ui.resource.role_name'), 'name')
-                    ->required(),
-            ]),
-        ];
-    }
-
-    /**
-     * @return array<string, string[]|string|list<Rule>|list<Stringable>>
-     */
-    protected function rules($item): array
-    {
-        return [
-            'name' => ['required'],
+            Text::make('Роль', 'name')->required(),
+            Text::make('Описание', 'description'),
+            PermissionMatrixField::make('Права и доступы','permissions'),
         ];
     }
 
     protected function search(): array
     {
-        return [
-            'id',
-            'name',
-        ];
+        return ['name', 'description'];
     }
 }
