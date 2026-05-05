@@ -7,7 +7,6 @@ use App\Models\Person;
 use App\Models\Organization;
 use App\MoonShine\Fields\PhotoField;
 use App\Models\Tag;
-use App\MoonShine\Fields\Select2Field;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use Carbon\Carbon;
@@ -17,9 +16,6 @@ use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use App\Services\VideoAnalyticService;
 use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
-use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
-use MoonShine\Laravel\Resources\ModelResource;
-use MoonShine\Support\Enums\PageType;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\Laravel\TypeCasts\ModelDataWrapper;
@@ -32,11 +28,7 @@ use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Textarea;
 use MoonShine\Contracts\UI\ActionButtonContract;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Contracts\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Log;
-use GrapesLabs\PinvideoSkud\Models\SkudCommand;
-use GrapesLabs\PinvideoSkud\Models\SkudController;
 
 class PersonResource extends BaseModelResource
 {
@@ -159,39 +151,9 @@ class PersonResource extends BaseModelResource
                 ->creatable(true, route('tags.store')),
             PhotoField::make('Фото', 'photo')
                 ->multiple()
-                ->removable()
+                ->disk('public')
                 ->dir('person/photos')
-                ->allowedExtensions(['jpg', 'png', 'jpeg', 'webp'])
-                ->onApply(function ($data): mixed {
-                    return $data;
-                })
-                ->onAfterApply(function ($data, false|array $values, Image $field) {
-                    $remainingValues = $field->getRemainingValues() ?? [];
-
-                    if ($remainingValues instanceof \Illuminate\Support\Collection) {
-                        $remainingValues = $remainingValues->toArray();
-                    }
-
-                    if ($values !== false) {
-                        foreach ($values as $value) {
-                            if ($value instanceof \Illuminate\Http\UploadedFile) {
-                                $path = $value->store($field->getDir(), 'public');
-                                $remainingValues[] = $path;
-                            }
-                        }
-                    }
-
-                    $data->update(['photo' => array_values($remainingValues)]);
-                    return $data;
-                })
-                ->onAfterDestroy(function ($data, mixed $values, Image $field) {
-                    if (is_array($values)) {
-                        foreach ($values as $value) {
-                            Storage::disk('public')->delete($value);
-                        }
-                    }
-                    return $data;
-                }),
+                ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
             Select::make('Организация', 'organization_id')
                 ->placeholder('Выберите организацию')
                 ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())

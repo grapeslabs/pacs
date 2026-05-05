@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Resources;
 
+ use App\MoonShine\Fields\PhotoField;
 use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
@@ -116,7 +117,7 @@ class MoonShineUserResource extends BaseModelResource
                                 ->required(),
                         ]),
 
-                        Image::make('Аватар', 'avatar')
+                        PhotoField::make('Аватар', 'avatar')
                             ->disk(moonshineConfig()->getDisk())
                             ->dir('moonshine_users')
                             ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
