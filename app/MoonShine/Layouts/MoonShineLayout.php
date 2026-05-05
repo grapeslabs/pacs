@@ -135,15 +135,17 @@ final class MoonShineLayout extends AppLayout
 //                MenuItem::make('Ключи API', ApiKeyResource::class)
 //                    ->icon(file_get_contents(public_path('icons/menu-apikeys.svg')), true)
 //                    ->canSee(fn () => auth()->user()->isHavePermission(ApiKeyResource::class, Ability::VIEW)),
-                MenuItem::make('Настройки', SettingsPage::class)
-                    ->icon('cog-8-tooth')
-                    ->canSee(fn () => auth()->user()->isHavePermission(SettingResource::class, Ability::VIEW)),
+                ...config('services.ms.enabled')?[
+                    MenuItem::make('Настройки', SettingsPage::class)
+                        ->icon('cog-8-tooth')
+                        ->canSee(fn () => auth()->user()->isHavePermission(SettingResource::class, Ability::VIEW)),
+                ]:[],
             ])->icon(file_get_contents(public_path('icons/menu-settings.svg')),true),
-
-            MenuItem::make('Видеопотоки', VideoStreamResource::class)
-                ->icon(file_get_contents(public_path('icons/menu-video.svg')),true)
-                ->canSee(fn () => auth()->user()->isHavePermission(VideoStreamResource::class, Ability::VIEW)),
-
+            ...config('services.ms.enabled')?[
+                MenuItem::make('Видеопотоки', VideoStreamResource::class)
+                    ->icon(file_get_contents(public_path('icons/menu-video.svg')),true)
+                    ->canSee(fn () => auth()->user()->isHavePermission(VideoStreamResource::class, Ability::VIEW)),
+            ]:[],
             MenuGroup::make('Данные СКУД', [
                 MenuItem::make('Персоны', PersonResource::class)
                     ->canSee(fn () => auth()->user()->isHavePermission(PersonResource::class, Ability::VIEW)),
@@ -151,47 +153,51 @@ final class MoonShineLayout extends AppLayout
                     ->canSee(fn () => auth()->user()->isHavePermission(OrganizationResource::class, Ability::VIEW)),
                 MenuItem::make('Ключи', KeyResource::class)
                     ->canSee(fn () => auth()->user()->isHavePermission(KeyResource::class, Ability::VIEW)),
-//                MenuItem::make('Автомобили', CarResource::class)
-//                    ->canSee(fn () => auth()->user()->isHavePermission(CarResource::class, Ability::VIEW)),
+                MenuItem::make('Автомобили', CarResource::class)
+                    ->canSee(fn () => auth()->user()->isHavePermission(CarResource::class, Ability::VIEW)),
 //                MenuItem::make('Гости', GuestResource::class)
 //                    ->canSee(fn () => auth()->user()->isHavePermission(GuestResource::class, Ability::VIEW)),
             ])->icon(file_get_contents(public_path('icons/menu-skud.svg')),true),
 
-            MenuItem::make('Боты', BotResource::class)
-                ->icon(file_get_contents(public_path('icons/menu-bot.svg')), true)
-                ->canSee(fn () => auth()->user()->isHavePermission(BotResource::class, Ability::VIEW)),
-            MenuItem::make('Триггеры', TriggerResource::class)
-                ->icon(file_get_contents(public_path('icons/menu-trigger.svg')), true)
-                ->canSee(fn () => auth()->user()->isHavePermission(TriggerResource::class, Ability::VIEW)),
+            ...config('services.va.enabled')?[
+                MenuItem::make('Боты', BotResource::class)
+                    ->icon(file_get_contents(public_path('icons/menu-bot.svg')), true)
+                    ->canSee(fn () => auth()->user()->isHavePermission(BotResource::class, Ability::VIEW)),
+                MenuItem::make('Триггеры', TriggerResource::class)
+                    ->icon(file_get_contents(public_path('icons/menu-trigger.svg')), true)
+                    ->canSee(fn () => auth()->user()->isHavePermission(TriggerResource::class, Ability::VIEW)),
+            ]:[],
 
             MenuGroup::make('Отчеты', [
                 MenuItem::make('Отчеты СКУД', SkudEventResource::class)
                     ->canSee(fn () => auth()->user()->isHavePermission(SkudEventResource::class, Ability::VIEW)),
                 MenuItem::make('Отчеты шлагбаум', BarrierEventResource::class)
                     ->canSee(fn () => auth()->user()->isHavePermission(BarrierEventResource::class, Ability::VIEW)),
-                 MenuItem::make('Отчеты по событиям', EventReportResource::class)
-                    ->canSee(fn () => auth()->user()->isHavePermission(EventReportResource::class, Ability::VIEW)),
-                MenuItem::make('Отчеты по персонам', PeopleReportResource::class)
-                    ->canSee(fn () => auth()->user()->isHavePermission(PeopleReportResource::class, Ability::VIEW)),
-                MenuItem::make('Отчеты по неизвестным', UnknownReportResource::class)
-                    ->canSee(fn () => auth()->user()->isHavePermission(UnknownReportResource::class, Ability::VIEW)),
+                ...config('services.va.enabled')?[
+                    MenuItem::make('Отчеты по событиям', EventReportResource::class)
+                        ->canSee(fn () => auth()->user()->isHavePermission(EventReportResource::class, Ability::VIEW)),
+                    MenuItem::make('Отчеты по персонам', PeopleReportResource::class)
+                        ->canSee(fn () => auth()->user()->isHavePermission(PeopleReportResource::class, Ability::VIEW)),
+                    MenuItem::make('Отчеты по неизвестным', UnknownReportResource::class)
+                        ->canSee(fn () => auth()->user()->isHavePermission(UnknownReportResource::class, Ability::VIEW)),
+                ]:[],
             ])->icon(file_get_contents(public_path('icons/menu-reports.svg')), true),
 
             MenuGroup::make('Оборудование', [
                 MenuItem::make('Терминалы доступа', TerminalResource::class)
                     ->canSee(fn () => auth()->user()->isHavePermission(TerminalResource::class, Ability::VIEW)),
-//                MenuItem::make('Шлагбаумы', BarrierResource::class)
-//                    ->canSee(fn () => auth()->user()->isHavePermission(BarrierResource::class, Ability::VIEW)),
+                MenuItem::make('Шлагбаумы', BarrierResource::class)
+                    ->canSee(fn () => auth()->user()->isHavePermission(BarrierResource::class, Ability::VIEW)),
                 MenuItem::make('Контроллеры СКУД', ControllerResource::class)
                     ->canSee(fn () => auth()->user()->isHavePermission(ControllerResource::class, Ability::VIEW)),
             ])->icon(file_get_contents(public_path('icons/menu-equipments.svg')),true),
 
-//            MenuGroup::make('Справочники', [
-//                MenuItem::make('Марки автомобилей', CarBrandResource::class)
-//                    ->canSee(fn () => auth()->user()->isHavePermission(CarBrandResource::class, Ability::VIEW)),
-//                MenuItem::make('Цвета автомобилей', CarColorResource::class)
-//                    ->canSee(fn () => auth()->user()->isHavePermission(CarColorResource::class, Ability::VIEW)),
-//            ])->icon(file_get_contents(public_path('icons/menu-references.svg')), true),
+            MenuGroup::make('Справочники', [
+                MenuItem::make('Марки автомобилей', CarBrandResource::class)
+                    ->canSee(fn () => auth()->user()->isHavePermission(CarBrandResource::class, Ability::VIEW)),
+                MenuItem::make('Цвета автомобилей', CarColorResource::class)
+                    ->canSee(fn () => auth()->user()->isHavePermission(CarColorResource::class, Ability::VIEW)),
+            ])->icon(file_get_contents(public_path('icons/menu-references.svg')), true),
         ];
     }
 

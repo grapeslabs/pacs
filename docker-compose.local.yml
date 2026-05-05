@@ -21,9 +21,6 @@ services:
       NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-20M}
     depends_on:
       - php
-      - media-server
-      - analytic-server
-      - events-processor
     networks:
       - laravel
       - traefik-public
