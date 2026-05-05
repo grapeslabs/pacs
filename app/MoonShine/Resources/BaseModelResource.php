@@ -102,17 +102,34 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
 
     protected function handlers(): ListOf
     {
-        return empty($this->exportFields())
-            ?parent::handlers():
-            parent::handlers()
-                ->add(
-                    ExportHandler::make('Экспорт Excel')
-                        ->filename('Экспорт ' . $this->getTitle())
-                )
-                ->add(
-                    CsvExportHandler::make('Экспорт CSV')
-                        ->csv()
-                        ->filename('Экспорт ' . $this->getTitle())
-                );
+        if (empty($this->exportFields())) {
+            return parent::handlers();
+        }
+
+        $csvHandler = CsvExportHandler::make('Экспорт CSV')
+            ->csv()
+            ->filename('Экспорт ' . $this->getTitle())
+            ->setResource($this);
+
+        $excelHandler = ExportHandler::make('Экспорт Excel')
+            ->filename('Экспорт ' . $this->getTitle())
+            ->setResource($this);
+
+        $csvHandler->modifyButton(function (ActionButtonContract $button) {
+            return $button->customView('null');
+        });
+
+        $excelHandler->modifyButton(function (ActionButtonContract $button) use ($csvHandler) {
+            return $button
+                ->customView('components.export-button')
+                ->customAttributes([
+                    'data-csv-url' => $csvHandler->getUrl(),
+                    'data-excel-url' => $button->getUrl(),
+                ]);
+        });
+
+        return parent::handlers()
+            ->add($excelHandler)
+            ->add($csvHandler);
     }
 }
