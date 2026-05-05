@@ -38,12 +38,14 @@ return [
         'timeout' => env('DADATA_TIMEOUT', 10),
     ],
     'ms' => [
+        'enabled' => env('MEDIA_SERVER_ENABLED', false) || env('ANALYTIC_ENABLED', false),
         'url' => env('MEDIA_SERVER_API_URL'),
         'rtsp_url' => env('MEDIA_SERVER_RTSP'),
         'timeout' => env('MEDIA_SERVER_API_TIMEOUT', 5),
     ],
     'va' => [
+        'enabled'=> env('ANALYTIC_ENABLED', false),
         'url' => env('ANALYTIC_HOST'),
-        'timeout' => env('ANALYTIC_TIMEOUT')
+        'timeout' => env('ANALYTIC_TIMEOUT', 5)
     ]
 ];

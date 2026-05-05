@@ -32,11 +32,12 @@ class SettingsPage extends Page
 
                 ])
                 ->fields([
-                    Box::make('Распознание личности', [
-                        Box::make('')->customView('components.warning-alert'),
-                        Checkbox::make('Я понимаю риски и хочу включить функцию', 'face_recognition')
-                    ]),
-
+                    ...config('services.va.enabled')?[
+                        Box::make('Распознание личности', [
+                            Box::make('')->customView('components.warning-alert'),
+                            Checkbox::make('Я понимаю риски и хочу включить функцию', 'face_recognition')
+                        ]),
+                    ]:[],
                     Box::make('Системные параметры', [
                         Number::make('Порог оставшегося места на диске(МБ)', 'drive_limit')
                             ->default(100)
