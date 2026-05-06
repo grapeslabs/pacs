@@ -37,7 +37,7 @@ is_enabled() {
 }
 
 log "Starting app..."
-if $DOCKER_COMPOSE up -d app; then
+if $DOCKER_COMPOSE up -d reverse-proxy app; then
     log "App started."
 else
     error "Starting failed"
@@ -50,5 +50,5 @@ fi
 
 if is_enabled "ANALYTIC_ENABLED"; then
     log "Starting analytic services..."
-    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server media-server || warn "FAILED"
+    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server events-processor media-server || warn "FAILED"
 fi
