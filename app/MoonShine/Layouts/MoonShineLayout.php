@@ -116,9 +116,12 @@ final class MoonShineLayout extends AppLayout
                 ),
             ])->customAttributes([
                 'class' => 'menu',
-                ':class' => "asideMenuOpen && '_is-opened'",
             ]),
-        ])->collapsed();
+        ])
+            ->customAttributes([
+                ':class' => "asideMenuOpen ? '_is-opened' : ''"
+            ])
+            ->collapsed();
     }
 
     protected function menu(): array
@@ -226,6 +229,7 @@ final class MoonShineLayout extends AppLayout
     protected function getHeaderComponent(): Header
     {
         return Header::make([
+            Burger::make(),
             Breadcrumbs::make($this->getPage()->getBreadcrumbs())->prepend($this->getHomeUrl(), icon: 'home'),
             Div::make()->customView('components.error-notification'),
             '<img src="/images/logo.svg" style="width: 10vh; height: 7vh; object-fit: contain;">',
