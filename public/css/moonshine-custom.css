@@ -553,7 +553,7 @@ body {
 }
 
 .layout-navigation {
-    @media (min-width: 769px) {
+    @media (min-width: 1024px) {
         button {
             display: none !important;
         }

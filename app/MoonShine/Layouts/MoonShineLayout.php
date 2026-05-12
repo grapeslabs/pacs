@@ -114,12 +114,10 @@ final class MoonShineLayout extends AppLayout
                         $this->getProfileComponent(sidebar: true),
                     ],
                 ),
-            ])->customAttributes([
-                'class' => 'menu',
-            ]),
+            ])->class('menu'),
         ])
             ->customAttributes([
-                ':class' => "asideMenuOpen ? '_is-opened' : ''"
+                'x-effect' => '$el.classList.toggle("_is-opened", asideMenuOpen)',
             ])
             ->collapsed();
     }
