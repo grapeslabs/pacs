@@ -97,7 +97,7 @@ class Dashboard extends Page
                     Column::make([
                         ValueMetric::make('Боты')
                             ->value(Bot::all()->count())
-                            ->icon(file_get_contents(asset('icons/menu-bot.svg')), true)
+                            ->icon(file_get_contents(public_path('icons/menu-bot.svg')), true)
                             ->customAttributes([
                                 'onclick' => "window.location.href='{$botUrl}'",
                                 'class' => 'cursor-pointer hover:shadow-lg transition-all',
@@ -122,7 +122,7 @@ class Dashboard extends Page
                 Column::make([
                     InfoPanel::make('Инструкция Pacs')
                         ->description('Актуальное руководство по использованию системы: настройка интерфейса, ботов и оборудования СКУД.')
-                        ->icon(asset('icons/menu-guide.svg'))
+                        ->icon(public_path('icons/menu-guide.svg'))
                         ->btnText('Перейти к инструкции')
                         ->btnUrl('https://grapeslabs.ru/projects')
                 ])->columnSpan(6)
