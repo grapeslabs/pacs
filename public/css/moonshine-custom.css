@@ -615,7 +615,7 @@ div[x-show="asideMenuOpen"] {
     .menu-bottom {
         padding-bottom: 30px;
     }
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
         position: fixed !important;
         inset: 0 !important;
         width: 100% !important;
