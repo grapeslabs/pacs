@@ -57,7 +57,7 @@ class Dashboard extends Page
                     Column::make([
                         ValueMetric::make('Активные камеры')
                             ->value(Stream::query()->count())
-                            ->icon(file_get_contents(asset('icons/menu-video.svg')), true)
+                            ->icon(file_get_contents(public_path('icons/menu-video.svg')), true)
                             ->customAttributes([
                                 'onclick' => "window.location.href='{$streamUrl}'",
                                 'class' => 'cursor-pointer hover:shadow-lg transition-all',
@@ -68,7 +68,7 @@ class Dashboard extends Page
                     Column::make([
                         ValueMetric::make('Распознавание лиц')
                             ->value(VideoAnalyticReport::query()->count())
-                            ->icon(file_get_contents(asset('icons/menu-reports.svg')), true)
+                            ->icon(file_get_contents(public_path('icons/menu-reports.svg')), true)
                             ->customAttributes([
                                 'onclick' => "window.location.href='{$eventReportUrl}'",
                                 'class' => 'cursor-pointer hover:shadow-lg transition-all',
@@ -78,7 +78,7 @@ class Dashboard extends Page
                 Column::make([
                     ValueMetric::make('Персоны')
                         ->value(Person::all()->count())
-                        ->icon(file_get_contents(asset('icons/menu-skud.svg')), true)
+                        ->icon(file_get_contents(public_path('icons/menu-skud.svg')), true)
                         ->customAttributes([
                             'onclick' => "window.location.href='{$personUrl}'",
                             'class' => 'cursor-pointer hover:shadow-lg transition-all',
@@ -88,7 +88,7 @@ class Dashboard extends Page
                     Column::make([
                         ValueMetric::make('Триггеры')
                             ->value(Trigger::query()->count())
-                            ->icon(file_get_contents(asset('icons/menu-trigger.svg')), true)
+                            ->icon(file_get_contents(public_path('icons/menu-trigger.svg')), true)
                             ->customAttributes([
                                 'onclick' => "window.location.href='{$triggerUrl}'",
                                 'class' => 'cursor-pointer hover:shadow-lg transition-all',
@@ -97,7 +97,7 @@ class Dashboard extends Page
                     Column::make([
                         ValueMetric::make('Боты')
                             ->value(Bot::all()->count())
-                            ->icon(file_get_contents(asset('icons/menu-bot.svg')), true)
+                            ->icon(file_get_contents(public_path('icons/menu-bot.svg')), true)
                             ->customAttributes([
                                 'onclick' => "window.location.href='{$botUrl}'",
                                 'class' => 'cursor-pointer hover:shadow-lg transition-all',
@@ -122,7 +122,7 @@ class Dashboard extends Page
                 Column::make([
                     InfoPanel::make('Инструкция Pacs')
                         ->description('Актуальное руководство по использованию системы: настройка интерфейса, ботов и оборудования СКУД.')
-                        ->icon(asset('icons/menu-guide.svg'))
+                        ->icon(public_path('icons/menu-guide.svg'))
                         ->btnText('Перейти к инструкции')
                         ->btnUrl('https://grapeslabs.ru/projects')
                 ])->columnSpan(6)
