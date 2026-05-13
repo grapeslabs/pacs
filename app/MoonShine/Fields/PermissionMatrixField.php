@@ -45,24 +45,21 @@ class PermissionMatrixField extends Field
     public function apply(Closure $default, mixed $data): mixed
     {
         $isCustomized = request()->input('is_customized_permissions');
-        if ($isCustomized === '0') {
-            $data->{$this->getColumn()} =[];
-            return $data;
-        }
-        $requestValue = request()->input($this->getColumn(), []);
         $cleanPermissions =[];
-
-        if (is_array($requestValue)) {
-            foreach ($requestValue as $resourceClass => $actions) {
-                foreach ($actions as $actionKey => $value) {
-                    if ($value) {
-                        $cleanPermissions[$resourceClass][$actionKey] = true;
+        if ($isCustomized !== '0') {
+            $requestValue = request()->input($this->getColumn(),[]);
+            if (is_array($requestValue)) {
+                foreach ($requestValue as $resourceClass => $actions) {
+                    foreach ($actions as $actionKey => $value) {
+                        if ($value) {
+                            $cleanPermissions[$resourceClass][$actionKey] = true;
+                        }
                     }
                 }
             }
         }
-
-        $data->{$this->getColumn()} = $cleanPermissions;
+        $hasCast = $data instanceof \Illuminate\Database\Eloquent\Model && $data->hasCast($this->getColumn(), ['array', 'json', 'object', 'collection']);
+        $data->{$this->getColumn()} = $hasCast ? $cleanPermissions : json_encode($cleanPermissions);
         return $data;
     }
 
