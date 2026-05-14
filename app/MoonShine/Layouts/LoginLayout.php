@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Moonshine\Layouts;
 
+use MoonShine\AssetManager\Js;
 use MoonShine\Laravel\Layouts\BaseLayout;
 use MoonShine\Laravel\Traits\WithComponentsPusher;
 use MoonShine\UI\Components\Components;
@@ -19,6 +20,14 @@ final class LoginLayout extends BaseLayout
     protected function isAlwaysDark(): bool
     {
         return false;
+    }
+
+    protected function assets(): array
+    {
+        return [
+            ...parent::assets(),
+            Js::make('https://smartcaptcha.yandexcloud.net/captcha.js')->defer()
+        ];
     }
 
     public function build(): Layout

@@ -47,5 +47,9 @@ return [
         'enabled'=> env('ANALYTIC_ENABLED', false),
         'url' => env('ANALYTIC_HOST'),
         'timeout' => env('ANALYTIC_TIMEOUT', 5)
-    ]
+    ],
+    'yacaptcha' => [
+        'secret' => env('YACAPTCHA_SECRET'),
+        'client' => env('YACAPTCHA_CLIENT'),
+    ],
 ];
