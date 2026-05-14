@@ -2,6 +2,7 @@
 
 namespace App\MoonShine\Fields;
 
+use App\Models\Role;
 use Closure;
 use MoonShine\UI\Fields\Field;
 use App\Services\PermissionService;
@@ -9,16 +10,20 @@ use App\Services\PermissionService;
 class PermissionMatrixField extends Field
 {
     protected string $view = 'fields.permission-matrix';
-    protected array $tree = [
-
-    ];
-
+    protected array $tree =[];
+    protected  string $roleField = 'moonshine_user_role_id';
     public function __construct(Closure|string $label, ?string $column = null, ?Closure $formatted = null)
     {
         parent::__construct($label, $column, $formatted);
 
         $service = app(PermissionService::class);
         $this->tree = $service->getPermissionTree();
+    }
+
+    public function roleField(string $column): static
+    {
+        $this->roleField = $column;
+        return $this;
     }
 
     public function tree(): array
@@ -34,29 +39,40 @@ class PermissionMatrixField extends Field
             return json_decode($value, true) ?? [];
         }
 
-        return is_array($value) ? $value : [];
+        return is_array($value) ? $value :[];
     }
 
     public function apply(Closure $default, mixed $data): mixed
     {
-        $requestValue = request()->input($this->getColumn(), []);
-        $cleanPermissions = [];
-        if (is_array($requestValue)) {
-            foreach ($requestValue as $resourceClass => $actions) {
-                foreach ($actions as $actionKey => $value) {
-                    if ($value) {
-                        $cleanPermissions[$resourceClass][$actionKey] = true;
+        $isCustomized = request()->input('is_customized_permissions');
+        $cleanPermissions =[];
+        if ($isCustomized !== '0') {
+            $requestValue = request()->input($this->getColumn(),[]);
+            if (is_array($requestValue)) {
+                foreach ($requestValue as $resourceClass => $actions) {
+                    foreach ($actions as $actionKey => $value) {
+                        if ($value) {
+                            $cleanPermissions[$resourceClass][$actionKey] = true;
+                        }
                     }
                 }
             }
         }
-        $data->{$this->getColumn()} = $cleanPermissions;
+        $hasCast = $data instanceof \Illuminate\Database\Eloquent\Model && $data->hasCast($this->getColumn(), ['array', 'json', 'object', 'collection']);
+        $data->{$this->getColumn()} = $hasCast ? $cleanPermissions : json_encode($cleanPermissions);
         return $data;
     }
+
     protected function viewData(): array
     {
-        return [
-            'element' => $this
+        $roles = Role::all()->keyBy('id')->map(function($role) {
+            return is_string($role->permissions) ? json_decode($role->permissions, true) : ($role->permissions ?? []);
+        })->toArray();
+
+        return[
+            'element' => $this,
+            'rolePermissions' => $roles,
+            'roleField' => $this->roleField,
         ];
     }
 }

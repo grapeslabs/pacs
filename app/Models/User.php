@@ -18,11 +18,13 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'permissions',
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'permissions' => 'array',
     ];
     public function role()
     {
@@ -31,18 +33,14 @@ class User extends Authenticatable
 
     public function hasPermission(string $resourceClass, string|\BackedEnum $action): bool
     {
-        if ($this->id === 1 || $this->moonshine_user_role_id === 1) {
-            return true;
-        }
+        if ($this->id === 1 || $this->moonshine_user_role_id === 1) { return true; }
 
         if ($action instanceof \BackedEnum) {
             $action = $action->value;
         }
-
-        if (!$this->role || empty($this->role->permissions)) {
-            return false;
+        if (is_array($this->permissions) && count($this->permissions) > 0) {
+            return !empty($this->permissions[$resourceClass][$action]);
         }
-
-        return !empty($this->role->permissions[$resourceClass][$action]);
+        return !empty($this?->role?->permissions[$resourceClass][$action]);
     }
 }
