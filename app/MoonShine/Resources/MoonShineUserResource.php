@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 namespace App\MoonShine\Resources;
 
 use App\MoonShine\Fields\CustomDate;
@@ -29,6 +26,7 @@ use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\Collapse;
 use MoonShine\UI\Components\Layout\Box;
 use MoonShine\UI\Components\Layout\Column;
+use MoonShine\UI\Components\Layout\Div;
 use MoonShine\UI\Components\Layout\Flex;
 use MoonShine\UI\Components\Layout\Grid;
 use MoonShine\UI\Components\Tabs;
@@ -92,51 +90,49 @@ class MoonShineUserResource extends BaseModelResource
     {
         return [
             Box::make([
-                Tabs::make([
-                    Tab::make('Основная информация', [
-                        ID::make()->sortable(),
+                Flex::make([
+                    CustomText::make('Имя', 'name')
+                        ->min(2, 'Минимум 2 символа')
+                        ->required(),
 
-                        BelongsTo::make(
-                            'Роль',
-                            'moonshineUserRole',
-                            formatted: static fn (MoonshineUserRole $model) => $model->name,
-                            resource: MoonShineUserRoleResource::class,
-                        )
-                            ->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
+                    CustomText::make('E-mail', 'email')
+                        ->email()
+                        ->unique('moonshine_users', 'email','Почта должна быть уникальной')
+                        ->required(),
+                ]),
+                Flex::make([
+                    BelongsTo::make(
+                        'Роль',
+                        'moonshineUserRole',
+                        formatted: static fn (MoonshineUserRole $model) => $model->name,
+                        resource: MoonShineUserRoleResource::class,
+                    )
+                        ->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
+                    CustomDate::make('Дата создания', 'created_at')
+                        ->before(Carbon::now(), 'Дата создания не может быть будущим')
+                ]),
 
-                        Flex::make([
-                            CustomText::make('Имя', 'name')
-                                ->min(2, 'Минимум 2 символа')
-                                ->required(),
+                Grid::make([
+                    Column::make([
+                        CustomPassword::make('Пароль', 'password')
+                            ->min(6, 'Пароль должен содержать не менее 6 символов')
+                            ->hasUpper()
+                            ->hasLower()
+                            ->hasDigit()
+                            ->customAttributes(['autocomplete' => 'new-password'])
+                            ->eye(),
 
-                            CustomText::make('E-mail', 'email')
-                                ->email()
-                                ->unique('moonshine_users', 'email','Почта должна быть уникальной')
-                                ->required(),
-                        ]),
-
+                        CustomPassword::make('Повторите пароль', 'password_repeat')
+                            ->confirm('password')
+                            ->customAttributes(['autocomplete' => 'confirm-password'])
+                            ->eye(),
+                    ])->columnSpan(6),
+                    Column::make([
                         PhotoField::make('Аватар', 'avatar')
                             ->disk(moonshineConfig()->getDisk())
                             ->dir('moonshine_users')
                             ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
-                    ])->icon('user-circle'),
-
-                    Tab::make('Пароль', [
-                        Collapse::make('Изменить пароль', [
-                            CustomPassword::make('Пароль', 'password')
-                                ->min(6, 'Пароль должен содержать не менее 6 символов')
-                                ->hasUpper()
-                                ->hasLower()
-                                ->hasDigit()
-                                ->customAttributes(['autocomplete' => 'new-password'])
-                                ->eye(),
-
-                            CustomPassword::make('Повторите пароль', 'password_repeat')
-                                ->confirm('password')
-                                ->customAttributes(['autocomplete' => 'confirm-password'])
-                                ->eye(),
-                        ])->icon('lock-closed'),
-                    ])->icon('lock-closed'),
+                    ])->columnSpan(6),
                 ]),
                 PermissionMatrixField::make('Права', 'permissions')
                     ->roleField('moonshine_user_role_id')
