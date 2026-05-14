@@ -125,6 +125,7 @@ class MoonShineUserResource extends BaseModelResource
                         CustomPassword::make('Повторите пароль', 'password_repeat')
                             ->confirm('password')
                             ->customAttributes(['autocomplete' => 'confirm-password'])
+                            ->onApply(fn($query, $value, $field) => $query)
                             ->eye(),
                     ])->columnSpan(6),
                     Column::make([
