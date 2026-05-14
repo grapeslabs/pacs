@@ -208,6 +208,10 @@ class UnknownReportResource extends BaseModelResource implements HasImportExport
         $person->photo = $finalPhotos;
         $person->save();
 
+        VideoAnalyticReport::query()->toBase()
+            ->where('person_photobank_id', $person->grapesva_uuid)
+            ->update(['is_unknown' => false]);
+
         return MoonShineJsonResponse::make()
             ->toast('Персона успешно идентифицирована!', ToastType::SUCCESS)
             ->redirect($this->getUrl());
