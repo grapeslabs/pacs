@@ -67,6 +67,7 @@ class VideoStreamResource extends BaseModelResource
             Text::make('Локация', 'location'),
             Text::make('Адрес потока(RTSP)', 'rtsp'),
             Number::make('Время хранения архива(Час)', 'archive_time'),
+            Checkbox::make('Распознавание личности', 'is_recognize'),
         ];
     }
 

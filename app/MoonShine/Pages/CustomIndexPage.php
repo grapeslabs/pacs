@@ -68,7 +68,7 @@ class CustomIndexPage extends IndexPage
                 ->class('mb-6'),
         ];
     }
-    private function getCustomCreateButton()
+    protected function getCustomCreateButton()
     {
         $resource = $this->getResource();
         if($resource->isCreateInModal()) {
