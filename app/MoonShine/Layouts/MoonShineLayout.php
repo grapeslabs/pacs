@@ -155,8 +155,8 @@ final class MoonShineLayout extends AppLayout
                     ->canSee(fn () => auth()->user()->hasPermission(KeyResource::class, Ability::VIEW_ANY)),
                 MenuItem::make('Автомобили', CarResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(CarResource::class, Ability::VIEW_ANY)),
-//                MenuItem::make('Гости', GuestResource::class)
-//                    ->canSee(fn () => auth()->user()->hasPermission(GuestResource::class, Ability::VIEW_ANY)),
+                MenuItem::make('Гости', GuestResource::class)
+                    ->canSee(fn () => auth()->user()->hasPermission(GuestResource::class, Ability::VIEW)),
             ])->icon(file_get_contents(public_path('icons/menu-skud.svg')),true),
 
             ...config('services.va.enabled')?[
