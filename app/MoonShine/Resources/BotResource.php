@@ -66,12 +66,12 @@ class BotResource extends BaseModelResource
     {
         return [
             ID::make()->sortable(),
-            CustomText::make('Название', 'name')
+            Text::make('Название', 'name')
                 ->sortable(),
             Select::make('Сервис', 'service')
                 ->options(Bot::SERVICES)
                 ->sortable(),
-            CustomText::make('Токен', 'token')
+            Text::make('Токен', 'token')
                 ->sortable(),
             Url::make('API URL', 'api_url')
                 ->sortable(),
