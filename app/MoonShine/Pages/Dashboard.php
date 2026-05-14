@@ -122,7 +122,7 @@ class Dashboard extends Page
                 Column::make([
                     InfoPanel::make('Инструкция Pacs')
                         ->description('Актуальное руководство по использованию системы: настройка интерфейса, ботов и оборудования СКУД.')
-                        ->icon(public_path('icons/menu-guide.svg'))
+                        ->icon(asset('icons/menu-guide.svg'))
                         ->btnText('Перейти к инструкции')
                         ->btnUrl('https://grapeslabs.ru/projects')
                 ])->columnSpan(6)
