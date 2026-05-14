@@ -7,6 +7,7 @@ namespace App\MoonShine\Resources;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomPassword;
 use App\MoonShine\Fields\CustomText;
+use App\MoonShine\Fields\PhotoField;
 use App\MoonShine\Pages\CustomIndexPage;
 use Carbon\Carbon;
 use Illuminate\Contracts\Database\Eloquent\Builder;
@@ -117,7 +118,7 @@ class MoonShineUserResource extends BaseModelResource
                                 ->required(),
                         ]),
 
-                        Image::make('Аватар', 'avatar')
+                        PhotoField::make('Аватар', 'avatar')
                             ->disk(moonshineConfig()->getDisk())
                             ->dir('moonshine_users')
                             ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
