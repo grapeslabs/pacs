@@ -14,14 +14,11 @@ use MoonShine\Support\ListOf;
 use MoonShine\UI\Fields\Date;
 use MoonShine\UI\Fields\DateRange;
 use MoonShine\UI\Fields\Image;
-use MoonShine\ImportExport\Contracts\HasImportExportContract;
-use MoonShine\ImportExport\Traits\ImportExportConcern;
 use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Text;
 
-class PeopleReportResource extends BaseModelResource  implements HasImportExportContract
+class PeopleReportResource extends BaseModelResource
 {
-    use ImportExportConcern;
     protected string $model = VideoAnalyticReport::class;
     protected string $title = 'Отчеты по персонам';
     protected string $column = 'name';
@@ -107,11 +104,6 @@ class PeopleReportResource extends BaseModelResource  implements HasImportExport
                 ->nullable()
                 ->searchable()
         ];
-    }
-
-    protected function import(): array
-    {
-        return [];
     }
 
     protected array $personCache = [];

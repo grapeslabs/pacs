@@ -2,9 +2,14 @@
 
 namespace App\MoonShine\Resources;
 
+use App\MoonShine\Handlers\CsvExportHandler;
 use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Components\SafeModal;
 use MoonShine\Contracts\UI\ActionButtonContract;
+use MoonShine\ImportExport\Contracts\HasImportExportContract;
+use MoonShine\ImportExport\ExportHandler;
+use MoonShine\ImportExport\ImportHandler;
+use MoonShine\ImportExport\Traits\ImportExportConcern;
 use MoonShine\Laravel\Enums\Ability;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
@@ -14,8 +19,9 @@ use MoonShine\Support\Enums\HttpMethod;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\ActionButton;
 
-class BaseModelResource extends ModelResource
+class BaseModelResource extends ModelResource implements HasImportExportContract
 {
+    use ImportExportConcern;
     protected bool $createInModal=true;
     protected bool $editInModal=true;
     protected bool $detailInModal=true;
@@ -85,5 +91,46 @@ class BaseModelResource extends ModelResource
         );
     }
 
+    protected function export()
+    {
+        return null;
+    }
 
+    protected function import()
+    {
+        return null;
+    }
+
+    protected function handlers(): ListOf
+    {
+        if (empty($this->exportFields())) {
+            return parent::handlers();
+        }
+
+        $csvHandler = CsvExportHandler::make('Экспорт CSV')
+            ->csv()
+            ->filename('Экспорт ' . $this->getTitle())
+            ->setResource($this);
+
+        $excelHandler = ExportHandler::make('Экспорт Excel')
+            ->filename('Экспорт ' . $this->getTitle())
+            ->setResource($this);
+
+        $csvHandler->modifyButton(function (ActionButtonContract $button) {
+            return $button->customView('null');
+        });
+
+        $excelHandler->modifyButton(function (ActionButtonContract $button) use ($csvHandler) {
+            return $button
+                ->customView('components.export-button')
+                ->customAttributes([
+                    'data-csv-url' => $csvHandler->getUrl(),
+                    'data-excel-url' => $button->getUrl(),
+                ]);
+        });
+
+        return parent::handlers()
+            ->add($excelHandler)
+            ->add($csvHandler);
+    }
 }

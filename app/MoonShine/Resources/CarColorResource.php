@@ -14,12 +14,11 @@ use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Text;
 
-class CarColorResource extends BaseModelResource implements HasImportExportContract
+class CarColorResource extends BaseModelResource
 {
     protected string $model = CarColor::class;
     protected string $title = 'Цвета автомобилей';
     protected string $column = 'name';
-    use ImportExportConcern;
     protected function pages(): array
     {
         return [
@@ -27,11 +26,6 @@ class CarColorResource extends BaseModelResource implements HasImportExportContr
             DetailPage::class,
             FormPage::class,
         ];
-    }
-
-    protected function export()
-    {
-        return false;
     }
 
     protected function importFields():iterable

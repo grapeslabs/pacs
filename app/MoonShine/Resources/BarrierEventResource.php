@@ -29,9 +29,8 @@ use MoonShine\Laravel\Enums\Action;
 use MoonShine\AssetManager\Css;
 use MoonShine\AssetManager\Js;
 
-class BarrierEventResource extends BaseModelResource  implements HasImportExportContract
+class BarrierEventResource extends BaseModelResource
 {
-    use ImportExportConcern;
     protected string $model = GrapeslabsSkudEvent::class;
     protected string $title = 'События автомобили';
 
@@ -653,10 +652,6 @@ class BarrierEventResource extends BaseModelResource  implements HasImportExport
     </template>
 </div>
 HTML;
-    }
-    protected function import(): array
-    {
-        return [];
     }
 
     public function exportFields(): iterable

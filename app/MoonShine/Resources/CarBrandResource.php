@@ -14,9 +14,8 @@ use MoonShine\UI\Fields\Text;
 use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
 
-class CarBrandResource extends BaseModelResource implements HasImportExportContract
+class CarBrandResource extends BaseModelResource
 {
-    use ImportExportConcern;
     protected string $model = CarBrand::class;
     protected string $title = 'Марки автомобилей';
     protected string $column = 'name';
@@ -35,11 +34,6 @@ class CarBrandResource extends BaseModelResource implements HasImportExportContr
             ID::make()->sortable(),
             Text::make('Название', 'name')->sortable(),
         ];
-    }
-
-    protected function export(): ?Handler
-    {
-        return null;
     }
 
     public function formFields(): iterable

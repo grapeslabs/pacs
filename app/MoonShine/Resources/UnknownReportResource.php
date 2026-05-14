@@ -31,9 +31,8 @@ use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Textarea;
 
-class UnknownReportResource extends BaseModelResource implements HasImportExportContract
+class UnknownReportResource extends BaseModelResource
 {
-    use ImportExportConcern;
     protected string $model = VideoAnalyticReport::class;
     protected string $title = 'Отчеты по неизвестным';
     protected string $column = 'name';
@@ -231,11 +230,6 @@ class UnknownReportResource extends BaseModelResource implements HasImportExport
                 ->nullable()
                 ->searchable(),
         ];
-    }
-
-    protected function import():array
-    {
-        return [];
     }
 
     public function exportFields(): iterable
