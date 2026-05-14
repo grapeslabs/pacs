@@ -3,6 +3,7 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\CarBrand;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Pages\CustomIndexPage;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
@@ -45,7 +46,7 @@ class CarBrandResource extends BaseModelResource implements HasImportExportContr
     {
         return [
             ID::make(),
-            Text::make('Название', 'name')->required(),
+            CustomText::make('Название', 'name')->required()->unique('car_brands', 'name'),
         ];
     }
 

@@ -4,6 +4,7 @@ namespace App\MoonShine\Resources;
 
 use App\Models\Bot;
 use App\MoonShine\Fields\BotChatsField;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Pages\BotFormPage;
 use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
@@ -65,12 +66,12 @@ class BotResource extends BaseModelResource
     {
         return [
             ID::make()->sortable(),
-            Text::make('Название', 'name')
+            CustomText::make('Название', 'name')
                 ->sortable(),
             Select::make('Сервис', 'service')
                 ->options(Bot::SERVICES)
                 ->sortable(),
-            Text::make('Токен', 'token')
+            CustomText::make('Токен', 'token')
                 ->sortable(),
             Url::make('API URL', 'api_url')
                 ->sortable(),
@@ -84,19 +85,21 @@ class BotResource extends BaseModelResource
 
         return [
             // Основные поля
-            Text::make('Название', 'name')
+            CustomText::make('Название', 'name')
+                ->unique('bots', 'name', 'Бот с таким названием уже существует')
                 ->required(),
 
             Select::make('Сервис', 'service')
                 ->options(Bot::SERVICES)
                 ->required(),
 
-            Text::make('Токен', 'token')
+            CustomText::make('Токен', 'token')
+                ->pattern('/^[0-9]{8,10}:[a-zA-Z0-9_-]{35}$/')
                 ->required()
                 ->hint('Для Telegram: получить у @BotFather'),
 
-            Url::make('API URL', 'api_url')
-                ->nullable()
+            CustomText::make('API URL', 'api_url')
+                ->pattern('/^https?:\/\//i')
                 ->hint('Оставьте пустым для использования стандартного API'),
 
             BotChatsField::make('Чаты', 'chats')

@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Resources;
 
+use App\MoonShine\Fields\CustomDate;
+use App\MoonShine\Fields\CustomPassword;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Pages\CustomIndexPage;
+use Carbon\Carbon;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 use MoonShine\Laravel\Enums\Action;
@@ -103,10 +107,13 @@ class MoonShineUserResource extends BaseModelResource
                             ->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
 
                         Flex::make([
-                            Text::make('Имя', 'name')
+                            CustomText::make('Имя', 'name')
+                                ->min(2, 'Минимум 2 символа')
                                 ->required(),
 
-                            Email::make('E-mail', 'email')
+                            CustomText::make('E-mail', 'email')
+                                ->email()
+                                ->unique('moonshine_users', 'email','Почта должна быть уникальной')
                                 ->required(),
                         ]),
 
@@ -114,19 +121,20 @@ class MoonShineUserResource extends BaseModelResource
                             ->disk(moonshineConfig()->getDisk())
                             ->dir('moonshine_users')
                             ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
-
-                        Date::make('Дата создания', 'created_at')
-                            ->format("d.m.Y")
-                            ->default(now()->toDateTimeString()),
                     ])->icon('user-circle'),
 
                     Tab::make('Пароль', [
                         Collapse::make('Изменить пароль', [
-                            Password::make('Пароль', 'password')
+                            CustomPassword::make('Пароль', 'password')
+                                ->min(6, 'Пароль должен содержать не менее 6 символов')
+                                ->hasUpper()
+                                ->hasLower()
+                                ->hasDigit()
                                 ->customAttributes(['autocomplete' => 'new-password'])
                                 ->eye(),
 
-                            PasswordRepeat::make('Повторите пароль', 'password_repeat')
+                            CustomPassword::make('Повторите пароль', 'password_repeat')
+                                ->confirm('password')
                                 ->customAttributes(['autocomplete' => 'confirm-password'])
                                 ->eye(),
                         ])->icon('lock-closed'),

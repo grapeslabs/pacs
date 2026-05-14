@@ -7,6 +7,7 @@ use App\Models\Person;
 use \App\Http\Controllers\ChatsController;
 use \App\Http\Controllers\SettingsController;
 use \App\Http\Controllers\StreamController;
+use \App\Http\Controllers\CustomFieldController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -17,6 +18,8 @@ Route::prefix('tags')->group(function() {
     Route::post('store', [TagController::class, 'store'])->name('tags.store');
     Route::delete('{tag}', [TagController::class, 'store'])->name('tags.destroy');
 });
+
+Route::post('/field-validation', [CustomFieldController::class, 'validate'])->name('field.validation');
 
 Route::prefix('settings')->group(function() {
    Route::post('store', [SettingsController::class, 'store'])->name('settings.store');

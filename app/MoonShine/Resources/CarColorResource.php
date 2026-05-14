@@ -1,6 +1,7 @@
 <?php
 
 namespace App\MoonShine\Resources;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Pages\CustomIndexPage;
 use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
@@ -51,7 +52,7 @@ class CarColorResource extends BaseModelResource implements HasImportExportContr
     {
         return [
             ID::make(),
-            Text::make('Название', 'name')->required(),
+            CustomText::make('Название', 'name')->required(),
         ];
     }
 

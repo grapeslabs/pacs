@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Resources;
 
+use App\MoonShine\Fields\CustomText;
 use App\Models\Role;
 use App\MoonShine\Fields\PermissionMatrixField;
 use App\MoonShine\Pages\CustomIndexPage;
@@ -57,8 +58,11 @@ class MoonShineUserRoleResource extends BaseModelResource
     protected function formFields(): iterable
     {
         return [
-            Text::make('Роль', 'name')->required(),
-            Text::make('Описание', 'description'),
+            ID::make()->sortable(),
+            CustomText::make(__('moonshine::ui.resource.role_name'), 'name')
+                ->unique('moonshine_user_roles', 'name', 'Роль должна быть уникальной')
+                ->required(),
+            CustomText::make('Описание', 'description'),
             PermissionMatrixField::make('Права и доступы','permissions'),
         ];
     }
