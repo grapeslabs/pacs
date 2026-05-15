@@ -62,7 +62,9 @@ class KeyController extends Controller
     {
         try {
             $data = $request->validated();
-
+            if(!in_array($data['type'],Key::TYPES)) {
+                return response()->json(['error'=>'Данный тип ключа не поддерживается'], 401);
+            }
             $key = Key::create($data);
 
             return response()->json($this->formatKey($key->load(['person'])), 201);
