@@ -14,7 +14,7 @@ class StorePersonRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'first_name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'birth_date' => ['nullable', 'date', 'before_or_equal:today'],
@@ -34,6 +34,7 @@ class StorePersonRequest extends FormRequest
     {
         return [
             'birth_date.before_or_equal' => 'Дата рождения не может быть в будущем',
+            'first_name.required' => 'Поле "Имя" обязательно для заполнения',
             'last_name.required' => 'Поле "Фамилия" обязательно для заполнения',
             'photo.*.file' => 'Недопустимый формат файла',
             'photo.*.mimes' => 'Допустимые форматы: JPG, JPEG, PNG, WEBP',
