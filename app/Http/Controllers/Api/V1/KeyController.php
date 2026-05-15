@@ -81,14 +81,15 @@ class KeyController extends Controller
     public function update(UpdateKeyRequest $request, int $id): JsonResponse
     {
         $key = Key::find($id);
-
         if (!$key) {
             return response()->json(['message' => 'Ключ не найден'], 404);
         }
 
         try {
             $data = $request->validated();
-
+            if(!in_array($data['type'],Key::TYPES)) {
+                return response()->json(['error'=>'Данный тип ключа не поддерживается'], 401);
+            }
             $key->update($data);
 
             return response()->json($this->formatKey($key->fresh(['person'])));
