@@ -55,9 +55,7 @@ class KeyResource extends BaseModelResource
             Text::make('Ключ', 'key')
                 ->required(),
             Select::make('Тип ключа', 'type')
-                ->options([
-                    'Mifare' => 'Mifare',
-                ])
+                ->options(Key::TYPES)
                 ->required()
                 ->default('Mifare'),
             Select::make('Персона', 'person_id')
