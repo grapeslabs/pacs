@@ -17,12 +17,12 @@ class StreamObserver
 
     public function creating(Stream $stream): void
     {
-        $stream->storage_id = (string) Str::uuid();
+        $stream->uid = (string) Str::uuid();
 
         try {
             $stream->uid = $this->mediaServer->createStream(
                 $stream->rtsp,
-                $stream->storage_id,
+                $stream->uid,
                 (int) $stream->archive_time
             );
 
@@ -46,7 +46,7 @@ class StreamObserver
     public function updating(Stream $stream): void
     {
         if ($stream->isDirty(['rtsp', 'archive_time'])) {
-            $this->mediaServer->updateStream($stream->uid, $stream->storage_id,$stream->rtsp, (int)$stream->archive_time);
+            $this->mediaServer->updateStream($stream->uid,$stream->rtsp, (int)$stream->archive_time);
         }
 
         if ($stream->isDirty('is_active')) {
@@ -86,7 +86,7 @@ class StreamObserver
         }
 
         if ($wasRecognized && $isRecognizedNow) {
-            if ($stream->isDirty(['name', 'location', 'rtsp'])) {
+            if ($stream->isDirty(['name', 'location'])) {
                 $this->createVasStream($stream);
             }
         }
@@ -94,7 +94,7 @@ class StreamObserver
 
     private function createVasStream(Stream $stream): void
     {
-        $result = $this->vas->cameraCreate($stream->storage_id, $stream->uid, $stream->name, $stream->location);
+        $result = $this->vas->cameraCreate($stream->uid, $stream->name, $stream->location);
         if (empty($result['ok'])) {
             Log::error("Ошибка VAS cameraCreate", $result ?? []);
             throw new Exception("Ошибка при добавлении потока в систему видео-аналитики");

@@ -9,6 +9,7 @@ use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Pages\Dashboard;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\PeopleReportResource;
+use App\MoonShine\Resources\StorageResource;
 use App\MoonShine\Resources\TriggerResource;
 use App\MoonShine\Resources\UnknownReportResource;
 use MoonShine\AssetManager\Css;
@@ -145,7 +146,11 @@ final class MoonShineLayout extends AppLayout
                 MenuItem::make('Видеопотоки', VideoStreamResource::class)
                     ->icon(file_get_contents(public_path('icons/menu-video.svg')),true)
                     ->canSee(fn () => auth()->user()->hasPermission(MoonShineUserResource::class, Ability::VIEW_ANY)),
+                MenuItem::make('Хранилища', StorageResource::class)
+                    ->icon(file_get_contents(public_path('icons/menu-video.svg')),true)
+                    ->canSee(fn () => auth()->user()->hasPermission(StorageResource::class, Ability::VIEW_ANY)),
             ]:[],
+
             MenuGroup::make('Данные СКУД', [
                 MenuItem::make('Персоны', PersonResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(PersonResource::class, Ability::VIEW_ANY)),
