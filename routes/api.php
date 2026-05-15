@@ -35,9 +35,9 @@ Route::prefix('v1')->group(function () {
         Route::prefix('keys')->group(function () {
             Route::get('/', [KeyController::class, 'index']);
             Route::post('/', [KeyController::class, 'store']);
-            Route::get('/{id}', [KeyController::class, 'show']);
-            Route::post('/{id}', [KeyController::class, 'update']);
-            Route::delete('/{id}', [KeyController::class, 'destroy']);
+            Route::get('/{keyItem}', [KeyController::class, 'show']);
+            Route::post('/{keyItem}', [KeyController::class, 'update']);
+            Route::delete('/{keyItem}', [KeyController::class, 'destroy']);
         });
     });
 });
