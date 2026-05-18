@@ -28,7 +28,7 @@ class ReportController extends Controller
             $query->where('datetime', '<=', Carbon::parse($request->input('datetime_to')));
         }
         if ($request->filled('camera_id')) {
-            $query->whereHas('stream', fn($q) => $q->where('uid', $request->input('camera_id')));
+            $query->where('camera_id', $request->input('camera_id'));
         }
         if ($request->filled('is_unknown')) {
             $query->where('is_unknown', filter_var($request->input('is_unknown'), FILTER_VALIDATE_BOOLEAN));
