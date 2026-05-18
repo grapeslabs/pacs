@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c155c2e5027457d26547559c00e59ad8",
+    "content-hash": "9027f14fbd5b85ede2ed7a77dea49c07",
     "packages": [
         {
             "name": "brick/math",
@@ -1925,103 +1925,6 @@
             "time": "2024-09-21T08:32:55+00:00"
         },
         {
-            "name": "lee-to/fast-attributes",
-            "version": "0.3.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/lee-to/fast-attributes.git",
-                "reference": "fb0514bc370b84e3d13bc8339d96439216b15e56"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/lee-to/fast-attributes/zipball/fb0514bc370b84e3d13bc8339d96439216b15e56",
-                "reference": "fb0514bc370b84e3d13bc8339d96439216b15e56",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.0|^8.1|^8.2|^8.3|^8.4"
-            },
-            "require-dev": {
-                "phpstan/phpstan": "^2.0",
-                "phpunit/phpunit": "^12.0",
-                "rector/rector": "^2.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Leeto\\FastAttributes\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Danil Shutsky",
-                    "email": "thecutcode@gmail.com",
-                    "homepage": "https://cutocode.dev"
-                }
-            ],
-            "description": "Simplifying PHP Attribute Management",
-            "homepage": "https://cutcode.dev",
-            "keywords": [
-                "attributes",
-                "php"
-            ],
-            "support": {
-                "issues": "https://github.com/lee-to/fast-attributes/issues",
-                "source": "https://github.com/lee-to/fast-attributes"
-            },
-            "time": "2025-02-28T15:13:13+00:00"
-        },
-        {
-            "name": "lee-to/laravel-package-command",
-            "version": "0.9.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/lee-to/laravel-package-command.git",
-                "reference": "c2bcc9fb28882b1eac9abcb35b4559f41ab6eea4"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/lee-to/laravel-package-command/zipball/c2bcc9fb28882b1eac9abcb35b4559f41ab6eea4",
-                "reference": "c2bcc9fb28882b1eac9abcb35b4559f41ab6eea4",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.0|^8.1|^8.2"
-            },
-            "require-dev": {
-                "fakerphp/faker": "^1.9.2",
-                "mockery/mockery": "^1.4.4",
-                "phpunit/phpunit": "^9.5.8"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Leeto\\PackageCommand\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Danil Shutsky",
-                    "email": "info@cutcode.ru",
-                    "homepage": "https://github.com/lee-to"
-                }
-            ],
-            "description": "Package development command",
-            "support": {
-                "issues": "https://github.com/lee-to/laravel-package-command/issues",
-                "source": "https://github.com/lee-to/laravel-package-command/tree/0.9.2"
-            },
-            "time": "2024-12-22T16:01:40+00:00"
-        },
-        {
             "name": "monolog/monolog",
             "version": "3.10.0",
             "source": {
@@ -2183,181 +2086,6 @@
                 "source": "https://github.com/moonshine-software/import-export"
             },
             "time": "2025-04-30T07:15:31+00:00"
-        },
-        {
-            "name": "moonshine/moonshine",
-            "version": "3.17.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/moonshine-software/moonshine.git",
-                "reference": "f17082a7d612932c1e02c1ed9fa8c557bda6375b"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/moonshine-software/moonshine/zipball/f17082a7d612932c1e02c1ed9fa8c557bda6375b",
-                "reference": "f17082a7d612932c1e02c1ed9fa8c557bda6375b",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "illuminate/contracts": "^10|^11|^12",
-                "illuminate/filesystem": "^10|^11|^12",
-                "illuminate/support": "^10|^11|^12",
-                "illuminate/view": "^10|^11|^12",
-                "lee-to/fast-attributes": "^0.3",
-                "lee-to/laravel-package-command": "^0.9",
-                "nyholm/psr7": "^1.8",
-                "php": "^8.2",
-                "psr/container": "^2.0",
-                "psr/http-message": "^2.0",
-                "symfony/psr-http-message-bridge": "^7.2"
-            },
-            "replace": {
-                "moonshine/asset-manager": "self.version",
-                "moonshine/color-manager": "self.version",
-                "moonshine/contracts": "self.version",
-                "moonshine/core": "self.version",
-                "moonshine/laravel": "self.version",
-                "moonshine/menu-manager": "self.version",
-                "moonshine/support": "self.version",
-                "moonshine/ui": "self.version"
-            },
-            "require-dev": {
-                "friendsofphp/php-cs-fixer": "^3.68",
-                "larastan/larastan": "3.4.0",
-                "moonshine/import-export": "^1.0",
-                "orchestra/testbench": "^9.9",
-                "pestphp/pest": "^3",
-                "pestphp/pest-plugin-laravel": "^3",
-                "rector/rector": "~2.1.0",
-                "symplify/monorepo-builder": "^11.2"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "MoonShine\\Laravel\\Providers\\MoonShineServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "files": [
-                    "src/Laravel/src/helpers.php",
-                    "src/Support/src/helpers.php"
-                ],
-                "psr-4": {
-                    "MoonShine\\": "src/",
-                    "MoonShine\\UI\\": "src/UI/src",
-                    "MoonShine\\Core\\": "src/Core/src",
-                    "MoonShine\\Laravel\\": "src/Laravel/src",
-                    "MoonShine\\Support\\": "src/Support/src",
-                    "MoonShine\\Contracts\\": "src/Contracts/src",
-                    "MoonShine\\MenuManager\\": "src/MenuManager/src",
-                    "MoonShine\\AssetManager\\": "src/AssetManager/src",
-                    "MoonShine\\ColorManager\\": "src/ColorManager/src",
-                    "MoonShine\\Laravel\\Database\\Factories\\": "src/Laravel/database/factories/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Danil Shutsky",
-                    "email": "info@cutcode.ru",
-                    "homepage": "https://cutcode.dev"
-                }
-            ],
-            "description": "Laravel administration panel",
-            "homepage": "https://moonshine-laravel.com",
-            "keywords": [
-                "admin",
-                "dashboard",
-                "laravel",
-                "moonshine"
-            ],
-            "support": {
-                "issues": "https://github.com/moonshine-software/moonshine/issues",
-                "source": "https://github.com/moonshine-software/moonshine"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/moonshine-software",
-                    "type": "github"
-                },
-                {
-                    "url": "https://opencollective.com/moonshine",
-                    "type": "open_collective"
-                }
-            ],
-            "time": "2026-01-17T15:19:50+00:00"
-        },
-        {
-            "name": "moonshine/permissions",
-            "version": "2.0.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/moonshine-software/permissions.git",
-                "reference": "12ec9e3b7c1622198d13f25d817b5cd231e98648"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/moonshine-software/permissions/zipball/12ec9e3b7c1622198d13f25d817b5cd231e98648",
-                "reference": "12ec9e3b7c1622198d13f25d817b5cd231e98648",
-                "shasum": ""
-            },
-            "require": {
-                "ext-curl": "*",
-                "ext-json": "*",
-                "php": "^8.1|^8.2"
-            },
-            "conflict": {
-                "moonshine/moonshine": "<3.0"
-            },
-            "require-dev": {
-                "brianium/paratest": "^6.8",
-                "mockery/mockery": "^1.4.4",
-                "orchestra/testbench": "^4.0|^5.0|^6.0|^7.0|^8.0",
-                "phpstan/phpstan": "^1.4.7",
-                "phpunit/phpunit": "^9.5.8",
-                "rector/rector": "^1.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "MoonShine\\Permissions\\PermissionsServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "MoonShine\\Permissions\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Danil Shutsky",
-                    "email": "thecutcode@gmail.com",
-                    "homepage": "https://moonshine-laravel.com"
-                }
-            ],
-            "description": "User permissions for MoonShine",
-            "homepage": "https://moonshine-laravel.com",
-            "keywords": [
-                "moonshine",
-                "permissions"
-            ],
-            "support": {
-                "issues": "https://github.com/moonshine-software/permissions/issues",
-                "source": "https://github.com/moonshine-software/permissions"
-            },
-            "time": "2025-03-15T18:50:24+00:00"
         },
         {
             "name": "moonshine/ru",
@@ -2823,84 +2551,6 @@
                 }
             ],
             "time": "2024-11-21T10:36:35+00:00"
-        },
-        {
-            "name": "nyholm/psr7",
-            "version": "1.8.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Nyholm/psr7.git",
-                "reference": "a71f2b11690f4b24d099d6b16690a90ae14fc6f3"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Nyholm/psr7/zipball/a71f2b11690f4b24d099d6b16690a90ae14fc6f3",
-                "reference": "a71f2b11690f4b24d099d6b16690a90ae14fc6f3",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=7.2",
-                "psr/http-factory": "^1.0",
-                "psr/http-message": "^1.1 || ^2.0"
-            },
-            "provide": {
-                "php-http/message-factory-implementation": "1.0",
-                "psr/http-factory-implementation": "1.0",
-                "psr/http-message-implementation": "1.0"
-            },
-            "require-dev": {
-                "http-interop/http-factory-tests": "^0.9",
-                "php-http/message-factory": "^1.0",
-                "php-http/psr7-integration-tests": "^1.0",
-                "phpunit/phpunit": "^7.5 || ^8.5 || ^9.4",
-                "symfony/error-handler": "^4.4"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "1.8-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nyholm\\Psr7\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Tobias Nyholm",
-                    "email": "tobias.nyholm@gmail.com"
-                },
-                {
-                    "name": "Martijn van der Ven",
-                    "email": "martijn@vanderven.se"
-                }
-            ],
-            "description": "A fast PHP7 implementation of PSR-7",
-            "homepage": "https://tnyholm.se",
-            "keywords": [
-                "psr-17",
-                "psr-7"
-            ],
-            "support": {
-                "issues": "https://github.com/Nyholm/psr7/issues",
-                "source": "https://github.com/Nyholm/psr7/tree/1.8.2"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/Zegnat",
-                    "type": "github"
-                },
-                {
-                    "url": "https://github.com/nyholm",
-                    "type": "github"
-                }
-            ],
-            "time": "2024-09-09T07:06:30+00:00"
         },
         {
             "name": "openspout/openspout",
@@ -5478,94 +5128,6 @@
             "time": "2026-01-23T16:02:12+00:00"
         },
         {
-            "name": "symfony/psr-http-message-bridge",
-            "version": "v7.4.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/symfony/psr-http-message-bridge.git",
-                "reference": "929ffe10bbfbb92e711ac3818d416f9daffee067"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/symfony/psr-http-message-bridge/zipball/929ffe10bbfbb92e711ac3818d416f9daffee067",
-                "reference": "929ffe10bbfbb92e711ac3818d416f9daffee067",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=8.2",
-                "psr/http-message": "^1.0|^2.0",
-                "symfony/http-foundation": "^6.4|^7.0|^8.0"
-            },
-            "conflict": {
-                "php-http/discovery": "<1.15",
-                "symfony/http-kernel": "<6.4"
-            },
-            "require-dev": {
-                "nyholm/psr7": "^1.1",
-                "php-http/discovery": "^1.15",
-                "psr/log": "^1.1.4|^2|^3",
-                "symfony/browser-kit": "^6.4|^7.0|^8.0",
-                "symfony/config": "^6.4|^7.0|^8.0",
-                "symfony/event-dispatcher": "^6.4|^7.0|^8.0",
-                "symfony/framework-bundle": "^6.4.13|^7.1.6|^8.0",
-                "symfony/http-kernel": "^6.4.13|^7.1.6|^8.0",
-                "symfony/runtime": "^6.4.13|^7.1.6|^8.0"
-            },
-            "type": "symfony-bridge",
-            "autoload": {
-                "psr-4": {
-                    "Symfony\\Bridge\\PsrHttpMessage\\": ""
-                },
-                "exclude-from-classmap": [
-                    "/Tests/"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Fabien Potencier",
-                    "email": "fabien@symfony.com"
-                },
-                {
-                    "name": "Symfony Community",
-                    "homepage": "https://symfony.com/contributors"
-                }
-            ],
-            "description": "PSR HTTP message bridge",
-            "homepage": "https://symfony.com",
-            "keywords": [
-                "http",
-                "http-message",
-                "psr-17",
-                "psr-7"
-            ],
-            "support": {
-                "source": "https://github.com/symfony/psr-http-message-bridge/tree/v7.4.4"
-            },
-            "funding": [
-                {
-                    "url": "https://symfony.com/sponsor",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://github.com/fabpot",
-                    "type": "github"
-                },
-                {
-                    "url": "https://github.com/nicolas-grekas",
-                    "type": "github"
-                },
-                {
-                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
-                    "type": "tidelift"
-                }
-            ],
-            "time": "2026-01-03T23:30:35+00:00"
-        },
-        {
             "name": "symfony/routing",
             "version": "v6.4.32",
             "source": {
@@ -6639,6 +6201,192 @@
             "time": "2025-04-30T06:54:44+00:00"
         },
         {
+            "name": "illuminate/json-schema",
+            "version": "v12.59.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/illuminate/json-schema.git",
+                "reference": "207509531ee53b2c5b966c51c9c63355f8e96e1e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/illuminate/json-schema/zipball/207509531ee53b2c5b966c51c9c63355f8e96e1e",
+                "reference": "207509531ee53b2c5b966c51c9c63355f8e96e1e",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/contracts": "^10.50.0|^11.47.0|^12.40.2",
+                "php": "^8.1"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "12.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Illuminate\\JsonSchema\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Taylor Otwell",
+                    "email": "taylor@laravel.com"
+                }
+            ],
+            "description": "The Illuminate Json Schema package.",
+            "homepage": "https://laravel.com",
+            "support": {
+                "issues": "https://github.com/laravel/framework/issues",
+                "source": "https://github.com/laravel/framework"
+            },
+            "time": "2026-02-24T14:03:17+00:00"
+        },
+        {
+            "name": "laravel/boost",
+            "version": "v1.8.13",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravel/boost.git",
+                "reference": "cdcb12114315491f72a2cecb5130d8b9dffa0103"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laravel/boost/zipball/cdcb12114315491f72a2cecb5130d8b9dffa0103",
+                "reference": "cdcb12114315491f72a2cecb5130d8b9dffa0103",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.9",
+                "illuminate/console": "^10.49.0|^11.45.3|^12.41.1",
+                "illuminate/contracts": "^10.49.0|^11.45.3|^12.41.1",
+                "illuminate/routing": "^10.49.0|^11.45.3|^12.41.1",
+                "illuminate/support": "^10.49.0|^11.45.3|^12.41.1",
+                "laravel/mcp": "^0.5.1",
+                "laravel/prompts": "0.1.25|^0.3.6",
+                "laravel/roster": "^0.2.9",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.20.0",
+                "mockery/mockery": "^1.6.12",
+                "orchestra/testbench": "^8.36.0|^9.15.0|^10.6",
+                "pestphp/pest": "^2.36.0|^3.8.4|^4.1.5",
+                "phpstan/phpstan": "^2.1.27",
+                "rector/rector": "^2.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Laravel\\Boost\\BoostServiceProvider"
+                    ]
+                },
+                "branch-alias": {
+                    "dev-master": "1.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Laravel\\Boost\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Laravel Boost accelerates AI-assisted development by providing the essential context and structure that AI needs to generate high-quality, Laravel-specific code.",
+            "homepage": "https://github.com/laravel/boost",
+            "keywords": [
+                "ai",
+                "dev",
+                "laravel"
+            ],
+            "support": {
+                "issues": "https://github.com/laravel/boost/issues",
+                "source": "https://github.com/laravel/boost"
+            },
+            "time": "2026-03-27T17:24:01+00:00"
+        },
+        {
+            "name": "laravel/mcp",
+            "version": "v0.5.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravel/mcp.git",
+                "reference": "39b9791b989927642137dd5b55dde0529f1614f9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laravel/mcp/zipball/39b9791b989927642137dd5b55dde0529f1614f9",
+                "reference": "39b9791b989927642137dd5b55dde0529f1614f9",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "illuminate/console": "^10.49.0|^11.45.3|^12.41.1",
+                "illuminate/container": "^10.49.0|^11.45.3|^12.41.1",
+                "illuminate/contracts": "^10.49.0|^11.45.3|^12.41.1",
+                "illuminate/http": "^10.49.0|^11.45.3|^12.41.1",
+                "illuminate/json-schema": "^12.41.1",
+                "illuminate/routing": "^10.49.0|^11.45.3|^12.41.1",
+                "illuminate/support": "^10.49.0|^11.45.3|^12.41.1",
+                "illuminate/validation": "^10.49.0|^11.45.3|^12.41.1",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.20",
+                "orchestra/testbench": "^8.36|^9.15|^10.8",
+                "pestphp/pest": "^2.36.0|^3.8.4|^4.1.0",
+                "phpstan/phpstan": "^2.1.27",
+                "rector/rector": "^2.2.4"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Mcp": "Laravel\\Mcp\\Server\\Facades\\Mcp"
+                    },
+                    "providers": [
+                        "Laravel\\Mcp\\Server\\McpServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Laravel\\Mcp\\": "src/",
+                    "Laravel\\Mcp\\Server\\": "src/Server/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Taylor Otwell",
+                    "email": "taylor@laravel.com"
+                }
+            ],
+            "description": "Rapidly build MCP servers for your Laravel applications.",
+            "homepage": "https://github.com/laravel/mcp",
+            "keywords": [
+                "laravel",
+                "mcp"
+            ],
+            "support": {
+                "issues": "https://github.com/laravel/mcp/issues",
+                "source": "https://github.com/laravel/mcp"
+            },
+            "time": "2026-01-26T10:25:21+00:00"
+        },
+        {
             "name": "laravel/pint",
             "version": "v1.27.0",
             "source": {
@@ -6704,6 +6452,67 @@
                 "source": "https://github.com/laravel/pint"
             },
             "time": "2026-01-05T16:49:17+00:00"
+        },
+        {
+            "name": "laravel/roster",
+            "version": "v0.2.9",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravel/roster.git",
+                "reference": "82bbd0e2de614906811aebdf16b4305956816fa6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laravel/roster/zipball/82bbd0e2de614906811aebdf16b4305956816fa6",
+                "reference": "82bbd0e2de614906811aebdf16b4305956816fa6",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^10.0|^11.0|^12.0",
+                "illuminate/contracts": "^10.0|^11.0|^12.0",
+                "illuminate/routing": "^10.0|^11.0|^12.0",
+                "illuminate/support": "^10.0|^11.0|^12.0",
+                "php": "^8.1|^8.2",
+                "symfony/yaml": "^6.4|^7.2"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.14",
+                "mockery/mockery": "^1.6",
+                "orchestra/testbench": "^8.22.0|^9.0|^10.0",
+                "pestphp/pest": "^2.0|^3.0",
+                "phpstan/phpstan": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Laravel\\Roster\\RosterServiceProvider"
+                    ]
+                },
+                "branch-alias": {
+                    "dev-master": "1.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Laravel\\Roster\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Detect packages & approaches in use within a Laravel project",
+            "homepage": "https://github.com/laravel/roster",
+            "keywords": [
+                "dev",
+                "laravel"
+            ],
+            "support": {
+                "issues": "https://github.com/laravel/roster/issues",
+                "source": "https://github.com/laravel/roster"
+            },
+            "time": "2025-10-20T09:56:46+00:00"
         },
         {
             "name": "laravel/sail",
