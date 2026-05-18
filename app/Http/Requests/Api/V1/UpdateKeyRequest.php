@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Models\Key;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,11 +15,9 @@ class UpdateKeyRequest extends FormRequest
 
     public function rules(): array
     {
-        $id = $this->route('key') ?? $this->route('id');
-
         return [
-            'key' => ['sometimes', 'string', 'max:255', Rule::unique('keys', 'key')->ignore($id)],
-            'type' => ['sometimes', 'string', 'max:255'],
+            'key' => ['sometimes', 'string', 'max:255', Rule::unique('keys', 'key')->ignore($this->route('keyItem'))],
+            'type' => ['sometimes', Rule::in(Key::TYPES)],
             'person_id' => ['sometimes', 'integer', 'exists:person,id'],
         ];
     }

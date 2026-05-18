@@ -47,81 +47,27 @@ class KeyController extends Controller
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Key $keyItem): JsonResponse
     {
-        $key = Key::with(['person'])->find($id);
-
-        if (!$key) {
-            return response()->json(['message' => 'Ключ не найден'], 404);
-        }
-
-        return response()->json($this->formatKey($key));
+        return response()->json($this->formatKey($keyItem->load('person')));
     }
 
     public function store(StoreKeyRequest $request): JsonResponse
     {
-        try {
-            $data = $request->validated();
-
-            $key = Key::create($data);
-
-            return response()->json($this->formatKey($key->load(['person'])), 201);
-        } catch (\Exception $e) {
-            Log::error('Ошибка создания ключа', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return response()->json(['message' => 'Внутренняя ошибка сервера'], 500);
-        }
+        $key = Key::create($request->validated());
+        return response()->json($this->formatKey($key->load(['person'])), 201);
     }
 
-    public function update(UpdateKeyRequest $request, int $id): JsonResponse
+    public function update(UpdateKeyRequest $request, Key $keyItem): JsonResponse
     {
-        $key = Key::find($id);
-
-        if (!$key) {
-            return response()->json(['message' => 'Ключ не найден'], 404);
-        }
-
-        try {
-            $data = $request->validated();
-
-            $key->update($data);
-
-            return response()->json($this->formatKey($key->fresh(['person'])));
-        } catch (\Exception $e) {
-            Log::error('Ошибка обновления ключа', [
-                'key_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return response()->json(['message' => 'Внутренняя ошибка сервера'], 500);
-        }
+        $keyItem->update($request->validated());
+        return response()->json($this->formatKey($keyItem->load(['person'])));
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Key $key): JsonResponse
     {
-        $key = Key::find($id);
-
-        if (!$key) {
-            return response()->json(['message' => 'Ключ не найден'], 404);
-        }
-
-        try {
-            $key->delete();
-
-            return response()->json(['message' => 'Ключ успешно удален']);
-        } catch (\Exception $e) {
-            Log::error('Ошибка удаления ключа', [
-                'key_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return response()->json(['message' => 'Внутренняя ошибка сервера'], 500);
-        }
+        $key->delete();
+        return response()->json(['message' => 'Ключ успешно удален']);
     }
 
     private function formatKey(Key $key): array

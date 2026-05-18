@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Models\Key;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreKeyRequest extends FormRequest
 {
@@ -15,7 +17,7 @@ class StoreKeyRequest extends FormRequest
     {
         return [
             'key' => ['required', 'string', 'max:255', 'unique:keys,key'],
-            'type' => ['required', 'string', 'max:255'],
+            'type' =>['required', Rule::in(Key::TYPES)],
             'person_id' => ['required', 'integer', 'exists:person,id'],
         ];
     }
