@@ -76,7 +76,7 @@ class DriveCheck extends Command
                 }
                 $notification = new SystemNotification(
                     'info',
-                    'Видеопотоки включены — места на диске освобождено.'
+                    'Видеопотоки включены — место на диске освобождено.'
                 );
                 foreach (MoonshineUser::all() as $user) {
                     $user->notify($notification);
