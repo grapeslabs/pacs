@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Moonshine\Layouts;
+namespace App\MoonShine\Layouts;
 
 use MoonShine\AssetManager\Js;
 use MoonShine\Laravel\Layouts\BaseLayout;
