@@ -5,6 +5,7 @@ namespace App\MoonShine\Resources;
 use App\Models\Key;
 use App\Models\Person;
 use App\Models\Organization;
+use App\Models\VideoAnalyticReport;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
@@ -13,15 +14,21 @@ use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use Carbon\Carbon;
 use Closure;
+use Illuminate\Support\Facades\Storage;
 use MoonShine\Laravel\Fields\Relationships\BelongsToMany;
+use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
+use MoonShine\Laravel\MoonShineRequest;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use App\Services\VideoAnalyticService;
 use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
+use MoonShine\Support\Enums\ToastType;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\Laravel\TypeCasts\ModelDataWrapper;
 use MoonShine\UI\Components\Badge;
+use MoonShine\UI\Components\FormBuilder;
+use MoonShine\UI\Fields\Hidden;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Date;
@@ -56,12 +63,7 @@ class PersonResource extends BaseModelResource
 
     protected function indexButtons(): ListOf
     {
-        return parent::indexButtons()->prepend(
-            ActionButton::make(
-                '',
-                fn($item) => toPage('form-page', app(KeyResource::class), ['person_id' => $item->id])
-            )->icon('key')->class('btn-key')
-        );
+        return parent::indexButtons()->prepend($this->getKeyButton());
     }
 
     protected function modifyDetailButton(ActionButtonContract $button): ActionButtonContract
@@ -253,4 +255,61 @@ class PersonResource extends BaseModelResource
             'photo.*.max' => 'Размер изображения не должен превышать 5 МБ',
         ];
     }
+
+    protected function getKeyButton(): ActionButton
+    {
+        return ActionButton::make(
+            '',
+            fn($item) => $this->getAsyncMethodUrl(
+                method: 'getKeyForm',
+                params: [
+                    'item_id' => $item->getKey(),
+                    '_component_name' => $this->getListComponentName(),
+                    '_async_form' => true,
+                ]
+            )
+        )
+            ->icon('key')
+            ->class('js-key-button')
+            ->customAttributes([
+                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' })",
+            ])
+            ->async(selector: "#{$this->safeModalName}_content");
+    }
+
+    public function getKeyForm(MoonShineRequest $request): string
+    {
+        $itemId = $request->get('item_id');
+        return FormBuilder::make()
+            ->action($this->getAsyncMethodUrl('saveKey', null, ['item_id' => $itemId]))
+            ->async()
+            ->fields([
+                    Hidden::make('person_id')->default($itemId),
+                    CustomText::make('Ключ', 'key')
+                        ->unique('keys', 'key', 'Ключ должен быть уникальным')
+                        ->required(),
+                    Select::make('Тип ключа', 'type')
+                        ->options([
+                            'Mifare' => 'Mifare',
+                        ])
+                        ->required()
+                        ->default('Mifare'),
+                ]
+            )
+            ->submit('Сохранить', ['class' => 'btn-primary']);
+    }
+
+    public function saveKey(MoonShineRequest $request)
+    {
+        $data = $request->all();
+        $key = Key::create([
+            'person_id' => $data['person_id'] ?? null,
+            'type' => $data['type'] ?? null,
+            'key' => $data['key'] ?? null,
+        ]);
+        return MoonShineJsonResponse::make()
+            ->toast('Ключ успешно добавлен!', ToastType::SUCCESS)
+            ->redirect(app(KeyResource::class)->getUrl());
+    }
+
 }
