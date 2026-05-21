@@ -46,7 +46,8 @@ return [
     'va' => [
         'enabled'=> env('ANALYTIC_ENABLED', false),
         'url' => env('ANALYTIC_HOST'),
-        'timeout' => env('ANALYTIC_TIMEOUT', 5)
+        'timeout' => env('ANALYTIC_TIMEOUT', 5),
+        'timedelay' => env('ANALYTIC_TIMEDELAY', 200)
     ],
     'yacaptcha' => [
         'secret' => env('YACAPTCHA_SECRET'),
