@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\MoonShine\Pages;
 
 use App\Models\Stream;
-use App\MoonShine\Fields\ZoneEditorField;
+use App\MoonShine\Fields\SingleZoneEditorField;
 use MoonShine\Laravel\Pages\Page;
 use MoonShine\Laravel\TypeCasts\ModelCaster;
 use MoonShine\UI\Components\FormBuilder;
 
-class StreamZoneEditorPage extends Page
+class StreamFaceZoneEditorPage extends Page
 {
     public function getTitle(): string
     {
@@ -27,7 +27,7 @@ class StreamZoneEditorPage extends Page
         }
 
         $methodUrl = $resource->getAsyncMethodUrl(
-            'saveZone',
+            'saveFaceDetectionZone',
             params: ['resourceItem' => $item->getKey()]
         );
 
@@ -35,7 +35,7 @@ class StreamZoneEditorPage extends Page
             FormBuilder::make($methodUrl)
                 ->fillCast($item, new ModelCaster(Stream::class))
                 ->fields([
-                    ZoneEditorField::make('Редактирование зоны', 'va_options->face_detection_zone')
+                    SingleZoneEditorField::make('Редактирование зоны', 'va_options->face_detection_zone')
                         ->cancelUrl($resource->getIndexPageUrl())
                         ->saveUrl($resource->getIndexPageUrl())
                         ->saveText('Зона поиска лица успешно сохранена!')

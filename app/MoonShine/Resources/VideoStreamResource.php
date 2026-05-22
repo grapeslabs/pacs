@@ -2,28 +2,22 @@
 
 namespace App\MoonShine\Resources;
 
-use App\Models\Setting;
 use App\Models\Stream;
 use App\MoonShine\Decorations\FeatureBox;
 use App\MoonShine\Fields\CustomNumber;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\FeatureCheckbox;
-use App\MoonShine\Fields\FeatureField;
 use App\MoonShine\Fields\FeatureSlider;
 use App\MoonShine\Fields\FeatureSpoiler;
-use App\MoonShine\Fields\ZonePreviewField;
-use App\MoonShine\Pages\SettingsPage;
+use App\MoonShine\Fields\SingleZonePreviewField;
+use App\MoonShine\Fields\MultiZonePreviewField;
 use App\MoonShine\Pages\StreamPlayer;
 use App\MoonShine\Pages\Streams;
-use App\MoonShine\Pages\StreamZoneEditorPage;
-use App\Services\VideoAnalyticService;
-use Illuminate\Support\Facades\Http;
-use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
+use App\MoonShine\Pages\StreamFaceZoneEditorPage;
+use App\MoonShine\Pages\StreamMotionZonesEditorPage;
 use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
 use MoonShine\Laravel\MoonShineRequest;
 use MoonShine\Support\Enums\ToastType;
-use MoonShine\Laravel\Pages\Crud\FormPage;
-use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Components\Layout\Divider;
@@ -31,8 +25,6 @@ use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Number;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Checkbox;
-use Log;
-use Exception;
 
 class VideoStreamResource extends BaseModelResource
 {
@@ -64,7 +56,8 @@ class VideoStreamResource extends BaseModelResource
         $pages = parent::pages();
         $pages[] = Streams::class;
         $pages[] = StreamPlayer::class;
-        $pages[] = StreamZoneEditorPage::class;
+        $pages[] = StreamFaceZoneEditorPage::class;
+        $pages[] = StreamMotionZonesEditorPage::class;
         return $pages;
     }
 
@@ -107,10 +100,10 @@ class VideoStreamResource extends BaseModelResource
                         FeatureSpoiler::make('Поиск лица', 'va_options->is_face_detection')
                             ->nested([
                                 FeatureCheckbox::make('Задать зону поиска лица', 'va_options->has_face_detection_zone'),
-                                ZonePreviewField::make('Превью зоны', 'va_options->face_detection_zone')
-                                    ->setupUrl($this->getPageUrl(StreamZoneEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
+                                SingleZonePreviewField::make('Превью зоны', 'va_options->face_detection_zone')
+                                    ->setupUrl($this->getPageUrl(StreamFaceZoneEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
                                     ->showWhen('va_options->has_face_detection_zone', '=', true),
-                                FeatureCheckbox::make('Рsаспознание персоны', 'va_options->is_face_recognition'),
+                                FeatureCheckbox::make('Распознание персоны', 'va_options->is_face_recognition'),
                                 FeatureSlider::make('Чувствительность', 'va_options->face_recognition_sensitivity')
                                     ->showWhen('va_options->is_face_recognition', '=', true)
                                     ->default(75)
@@ -122,7 +115,12 @@ class VideoStreamResource extends BaseModelResource
                         FeatureSpoiler::make('Детекция движения', 'va_options->is_motion_detection')
                             ->nested([
                                 FeatureCheckbox::make('Детекция человека', 'va_options->is_human_motion_detection'),
-                                FeatureCheckbox::make('Задать зону детекции движения', 'va_options->has_human_detection_zone'),
+                                FeatureCheckbox::make('Задать зону детекции движения', 'va_options->has_motion_detection_zone'),
+                                MultiZonePreviewField::make('Превью зон', 'va_options->motion_detection_zones')
+                                    ->colorLines('#ef4444')
+                                    ->colorRectangles('#ef4444')
+                                    ->setupUrl($this->getPageUrl(StreamMotionZonesEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
+                                    ->showWhen('va_options->has_motion_detection_zone', '=', true),
                             ]),
                     ]),
             ]:[],
@@ -173,7 +171,7 @@ class VideoStreamResource extends BaseModelResource
         return ['name','location', 'uid', 'rtsp', 'storage_id'];
     }
 
-    public function saveZone(MoonShineRequest $request): MoonShineJsonResponse
+    public function saveFaceDetectionZone(MoonShineRequest $request): MoonShineJsonResponse
     {
         $item = $this->getItem();
 
@@ -198,6 +196,31 @@ class VideoStreamResource extends BaseModelResource
 
         return MoonShineJsonResponse::make()
             ->toast('Зона поиска сохранена!', ToastType::SUCCESS)
+            ->redirect($this->getIndexPageUrl());
+    }
+
+    public function saveMotionDetectionZones(MoonShineRequest $request): MoonShineJsonResponse
+    {
+        $item = $this->getItem();
+        $zoneData = $request->input('va_options->motion_detection_zones');
+        if (is_string($zoneData)) {
+            $zoneData = json_decode($zoneData, true);
+        }
+        $options = $item->va_options ?? [];
+        $options['motion_detection_zones'] = $zoneData;
+
+        $videoWidth  = (int) $request->input('video_width', 0);
+        $videoHeight = (int) $request->input('video_height', 0);
+        if ($videoWidth > 0 && $videoHeight > 0) {
+            $options['video_width']  = $videoWidth;
+            $options['video_height'] = $videoHeight;
+        }
+
+        $item->va_options = $options;
+        $item->save();
+
+        return MoonShineJsonResponse::make()
+            ->toast('Зоны детекции движения сохранены!', ToastType::SUCCESS)
             ->redirect($this->getIndexPageUrl());
     }
 }

@@ -86,11 +86,10 @@ class VideoAnalyticService
             ],
             "detection_figure" => [
                 "is_active" => $va_options['is_motion_detection'],
-                "direction" => $va_options['human_detection_direction']??'A',
-                "zones" => $va_options['has_human_detection_zone']?$va_options['human_detection_zone']:[],
+                "direction" => $va_options['motion_detection_direction']??'A',
+                "zones" => $this->zonesToPixels($va_options),
             ],
         ];
-        Log::info('test', $data);
         return $this->request('/api/c1/create', $data, "post");
     }
 
@@ -117,6 +116,57 @@ class VideoAnalyticService
             'y2' => (int) round($z['y2'] * $h),
         ];
     }
+
+    private function zonesToPixels(array $va_options): array
+    {
+        if (empty($va_options['has_motion_detection_zone']) || empty($va_options['motion_detection_zones'])) {
+            return [];
+        }
+
+        $z = $va_options['motion_detection_zones'];
+        if (is_string($z)) {
+            $z = json_decode($z, true);
+        }
+        if (!is_array($z)) {
+            return [];
+        }
+
+        $w = $va_options['video_width']  ?? 1920;
+        $h = $va_options['video_height'] ?? 1080;
+        $result = [];
+
+        foreach ($z as $group) {
+            $type  = $group['type']  ?? null;
+            $zones = $group['zones'] ?? [];
+
+            if (!$type || !is_array($zones)) {
+                continue;
+            }
+
+            foreach ($zones as $zone) {
+                if ($type === 'rectangles' || $type === 'lines') {
+                    $result[$type][] = [
+                        'x1' => (int) round($zone['x1'] * $w),
+                        'y1' => (int) round($zone['y1'] * $h),
+                        'x2' => (int) round($zone['x2'] * $w),
+                        'y2' => (int) round($zone['y2'] * $h),
+                    ];
+                } elseif ($type === 'polygons' && is_array($zone)) {
+                    $points = [];
+                    foreach ($zone as $point) {
+                        $points[] = [
+                            'x' => (int) round($point['x1'] * $w),
+                            'y' => (int) round($point['y1'] * $h),
+                        ];
+                    }
+                    $result['polygons'][] = $points;
+                }
+            }
+        }
+
+        return $result;
+    }
+
 
     public function cameraDelete($camera_uid)
     {

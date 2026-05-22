@@ -7,7 +7,7 @@ namespace App\MoonShine\Fields;
 use MoonShine\Contracts\Core\TypeCasts\DataWrapperContract;
 use MoonShine\UI\Fields\Field;
 
-final class ZoneEditorField extends Field
+final class SingleZoneEditorField extends Field
 {
     protected string $view = 'fields.zone-editor-field';
 

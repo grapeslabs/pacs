@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\MoonShine\Fields;
 
 use MoonShine\Contracts\Core\TypeCasts\DataWrapperContract;
 use MoonShine\UI\Fields\Field;
 
-class ZonePreviewField extends Field
+final class SingleZonePreviewField extends Field
 {
-    protected string $view = 'fields.zone-preview';
+    protected string $view = 'fields.zone-preview-field';
 
     protected string $setupUrl = '';
 
