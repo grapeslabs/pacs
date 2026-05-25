@@ -36,7 +36,7 @@ class StorageResource extends BaseModelResource
                 ->updateOnPreview()
                 ->onValue(true)
                 ->offValue(false),
-            Text::make('Коментарий', 'comment')
+            Text::make('Комментарий', 'comment')
         ];
     }
 
@@ -63,12 +63,14 @@ class StorageResource extends BaseModelResource
             Text::make('Ключ', 's3_key')
                 ->changeFill(fn($model) => $model->getData('s3_key'))
                 ->onApply(fn($model, $value) =>  $model->setData('s3_key', $value))
-                ->showWhen('type', 's3'),
+                ->showWhen('type', 's3')
+                ->customAttributes(['autocomplete' => 'off']),
             Text::make('Секретный ключ', 's3_secret')
                 ->eye()
                 ->changeFill(fn($model) => $model->getData('s3_secret'))
                 ->onApply(fn($model, $value) =>  $model->setData('s3_secret', $value))
-                ->showWhen('type', 's3'),
+                ->showWhen('type', 's3')
+                ->customAttributes(['autocomplete' => 'off']),
             Text::make('Регион', 's3_region')
                 ->changeFill(fn($model) => $model->getData('s3_region'))
                 ->onApply(fn($model, $value) =>  $model->setData('s3_region', $value))
