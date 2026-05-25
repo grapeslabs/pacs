@@ -132,7 +132,7 @@
 <div class="zones-editor-wrapper" x-data="{
     zonesData: {{ json_encode($element->getValue() ?? []) }},
     config: {{ json_encode($config) }},
-    activeTool: '',
+    activeTool: null,
     isDrawing: false,
     startPos: null,
     currentPolygon: [],
@@ -164,9 +164,23 @@
             this.zonesData = [];
         }
 
-        if (this.config.allowRectangles) this.activeTool = 'rectangles';
-        else if (this.config.allowLines) this.activeTool = 'lines';
-        else if (this.config.allowPolygons) this.activeTool = 'polygons';
+        if (!this.config.multiType && this.zonesData.length > 0 && this.zonesData[0].type) {
+            const savedTool = this.zonesData[0].type;
+
+            if (savedTool === 'rectangles' && this.config.allowRectangles) {
+                this.activeTool = 'rectangles';
+            } else if (savedTool === 'lines' && this.config.allowLines) {
+                this.activeTool = 'lines';
+            } else if (savedTool === 'polygons' && this.config.allowPolygons) {
+                this.activeTool = 'polygons';
+            }
+        }
+
+        if (!this.activeTool) {
+            if (this.config.allowRectangles) this.activeTool = 'rectangles';
+            else if (this.config.allowLines) this.activeTool = 'lines';
+            else if (this.config.allowPolygons) this.activeTool = 'polygons';
+        }
 
         const resizeObserver = new ResizeObserver(() => this.matchSize());
         resizeObserver.observe(this.$refs.playerContainer);
