@@ -286,6 +286,7 @@ class PersonResource extends BaseModelResource
             ->fields([
                     Hidden::make('person_id')->default($itemId),
                     CustomText::make('Ключ', 'key')
+                        ->max(255)
                         ->unique('keys', 'key', 'Ключ должен быть уникальным')
                         ->required(),
                     Select::make('Тип ключа', 'type')
