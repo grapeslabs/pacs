@@ -2,6 +2,7 @@
 
 namespace App\MoonShine\Resources;
 use App\MoonShine\Fields\CustomText;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
@@ -73,11 +74,10 @@ class CarColorResource extends BaseModelResource
     protected function filters(): iterable
     {
         return [
-            Select::make('Цвет', 'id')
+            SelectField::make('Цвет', 'id')
                 ->options(CarColor::query()->get()->pluck('name', 'id')->toArray())
                 ->multiple()
                 ->placeholder('Фильтрация по названию')
-                ->searchable(false)
                 ->nullable()
         ];
     }

@@ -5,6 +5,7 @@ namespace App\MoonShine\Resources;
 use App\Models\Bot;
 use App\MoonShine\Fields\BotChatsField;
 use App\MoonShine\Fields\CustomText;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Pages\BotFormPage;
 use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
@@ -89,7 +90,7 @@ class BotResource extends BaseModelResource
                 ->unique('bots', 'name', 'Бот с таким названием уже существует')
                 ->required(),
 
-            Select::make('Сервис', 'service')
+            SelectField::make('Сервис', 'service')
                 ->options(Bot::SERVICES)
                 ->required(),
 
@@ -114,7 +115,7 @@ class BotResource extends BaseModelResource
     {
         return [
             Text::make('Название', 'name'),
-            Select::make('Сервис', 'service')
+            SelectField::make('Сервис', 'service')
                 ->options(Bot::SERVICES),
             Text::make('Токен', 'token'),
             Url::make('API URL', 'api_url'),
@@ -195,10 +196,9 @@ class BotResource extends BaseModelResource
             Text::make('Название', 'name')
                 ->placeholder('Поиск по названию'),
 
-            Select::make('Сервис', 'service')
+            SelectField::make('Сервис', 'service')
                 ->options(Bot::SERVICES)
-                ->nullable()
-                ->placeholder('Все сервисы'),
+                ->nullable(),
 
             Text::make('Токен', 'token')
                 ->placeholder('Фильтр по токену (частичное совпадение)')

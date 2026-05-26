@@ -38,7 +38,7 @@ class PermissionService
                 'classes' => [MoonShineUserResource::class, MoonShineUserRoleResource::class]
             ],
             'Настройки' => [
-                'icon' => 'cog-8-tooth',
+                'icon' => file_get_contents(public_path('icons/Permissions/settings.svg')),
                 'classes' => [SettingsPage::class]
             ],
             'Видеопотоки' => [

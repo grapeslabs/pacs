@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Layouts;
 
+use App\MoonShine\Components\CustomDeleteModal;
 use App\MoonShine\Components\SafeModal;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Pages\Dashboard;
@@ -108,13 +109,16 @@ final class MoonShineLayout extends AppLayout
             Div::make([
                 ...$this->sidebarSlot(),
                 Menu::make(),
-                When::make(
-                    fn (): bool => $this->isProfileEnabled(),
-                    fn (): array => [
-                        $this->getProfileComponent(sidebar: true),
-                    ],
-                ),
             ])->class('menu'),
+
+            When::make(
+                fn (): bool => $this->isProfileEnabled(),
+                fn (): array => [
+                    Div::make([
+                        $this->getProfileComponent(sidebar: true),
+                    ])->class('menu-bottom'),
+                ],
+            ),
         ])
             ->customAttributes([
                 'x-effect' => '$el.classList.toggle("_is-opened", asideMenuOpen)',
@@ -261,6 +265,7 @@ final class MoonShineLayout extends AppLayout
             Html::make([
                 $this->getHeadComponent(),
                 Body::make([
+                    CustomDeleteModal::make(),
                     Wrapper::make([
                         $this->getSidebarComponent(),
                         Div::make([

@@ -16,6 +16,20 @@ class SelectField extends Field
     protected array $options = [];
     protected bool $isCreatable = false;
     protected bool $isMultiple = false;
+    protected string $placeholder = '';
+    protected mixed $defaultValue = null;
+
+    public function default(mixed $value): static
+    {
+        $this->defaultValue = $value;
+        return $this;
+    }
+
+    public function placeholder(string $placeholder): static
+    {
+        $this->placeholder = $placeholder;
+        return $this;
+    }
 
     public function creatable(bool $condition = true, ?string $createUrl = null): static
     {
@@ -34,13 +48,39 @@ class SelectField extends Field
 
     public function options(mixed $options): static
     {
-        $this->options = collect($options)->toArray();
+        $collection = collect($options);
+
+        if ($collection->isEmpty()) {
+            $this->options = [];
+            return $this;
+        }
+
+        $first = $collection->first();
+
+        if ($first instanceof \Illuminate\Database\Eloquent\Model) {
+            $this->options = $collection->map(fn($m) => [
+                'id'   => $m->getKey(),
+                'name' => $m->getAttribute('name') ?? (string) $m->getKey(),
+            ])->values()->toArray();
+        } elseif (is_array($first) && array_key_exists('id', $first) && array_key_exists('name', $first)) {
+            $this->options = $collection->values()->toArray();
+        } else {
+            $this->options = $collection->map(fn($name, $id) => [
+                'id'   => $id,
+                'name' => $name,
+            ])->values()->toArray();
+        }
+
         return $this;
     }
 
     protected function resolveValue(): mixed
     {
         $value = parent::resolveValue();
+
+        if (is_null($value) && ! is_null($this->defaultValue)) {
+            $value = $this->defaultValue;
+        }
 
         if ($this->isMultiple) {
             if ($value instanceof Collection) {
@@ -105,9 +145,10 @@ class SelectField extends Field
             'element'    => $this,
             'createUrl'  => $this->createUrl,
             'options'    => $this->options,
-            'selectedIds'=> $this->toValue() ?? [],
-            'isCreatable'=> $this->isCreatable,
+            'selectedIds' => $this->toValue() ?? [],
+            'isCreatable' => $this->isCreatable,
             'isMultiple' => $this->isMultiple,
+            'placeholder' => $this->placeholder,
         ];
     }
 }

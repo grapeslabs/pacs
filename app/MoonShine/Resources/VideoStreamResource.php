@@ -102,10 +102,10 @@ class VideoStreamResource extends BaseModelResource
             ID::make('ID', 'id'),
             Text::make('UID', 'uid'),
             Text::make('ID хранилища', 'storage_id'),
-            Checkbox::make('Включено', 'is_active'),
             Text::make('Название', 'name'),
             Text::make('Локация', 'location'),
             Text::make('Адрес потока(RTSP)', 'rtsp'),
+            Checkbox::make('Включение видеопотока', 'is_active'),
             Text::make('Время хранения архива(Час)', 'archive_time'),
             ...config('services.va.enabled')?[
                 Checkbox::make('Распознание личности', 'is_recognize'),

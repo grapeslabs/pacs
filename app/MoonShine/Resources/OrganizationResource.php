@@ -12,8 +12,7 @@ use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
-use MoonShine\UI\Fields\Textarea;
-use MoonShine\Contracts\UI\ActionButtonContract;
+use App\MoonShine\Fields\CustomTextarea;
 
 class OrganizationResource extends BaseModelResource
 {
@@ -29,11 +28,6 @@ class OrganizationResource extends BaseModelResource
         ];
     }
 
-    protected function modifyDetailButton(ActionButtonContract $button): ActionButtonContract
-    {
-        return $button->canSee(fn() => false);
-    }
-
     public function formFields(): iterable
     {
         return [
@@ -46,7 +40,7 @@ class OrganizationResource extends BaseModelResource
             CustomText::make('Название сокращенное', 'short_name')->required(),
             CustomText::make('Адрес', 'address'),
             CustomText::make('Контактные данные', 'contact_data'),
-            Textarea::make('Комментарий', 'comment'),
+            CustomTextarea::make('Комментарий', 'comment'),
         ];
     }
 
@@ -58,7 +52,7 @@ class OrganizationResource extends BaseModelResource
             Text::make('Название сокращенное', 'short_name')->sortable(),
             Text::make('Адрес', 'address')->sortable(),
             Text::make('Контактные данные', 'contact_data')->sortable(),
-            Textarea::make('Комментарий', 'comment')->sortable(),
+            CustomTextarea::make('Комментарий', 'comment')->sortable(),
         ];
     }
 
@@ -104,7 +98,7 @@ class OrganizationResource extends BaseModelResource
             Text::make('Контактные данные', 'contact_data')
                 ->placeholder('Фильтрация по контактным данным'),
 
-            Textarea::make('Комментарий', 'comment')
+            CustomTextarea::make('Комментарий', 'comment')
                 ->placeholder('Фильтрация по комментарию'),
         ];
     }

@@ -5,6 +5,7 @@ namespace App\MoonShine\Resources;
 use App\Models\Person;
 use App\Models\Stream;
 use App\Models\VideoAnalyticReport;
+use App\MoonShine\Fields\SelectField;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Handlers\Handler;
@@ -92,17 +93,15 @@ class PeopleReportResource extends BaseModelResource
             DateRange::make('Период отчётности', 'datetime')
                 ->withTime(),
 
-            Select::make('Видеопоток', 'camera_id')
+            SelectField::make('Видеопоток', 'camera_id')
                 ->placeholder('Видеопоток')
                 ->options(Stream::query()->pluck('name', 'uid')->toArray())
-                ->nullable()
-                ->searchable(),
+                ->nullable(),
 
-            Select::make('Персона', 'person_photobank_id')
+            SelectField::make('Персона', 'person_photobank_id')
                 ->placeholder('Персона')
                 ->options(Person::query()->limit(500)->pluck('last_name', 'grapesva_uuid')->toArray())
                 ->nullable()
-                ->searchable()
         ];
     }
 

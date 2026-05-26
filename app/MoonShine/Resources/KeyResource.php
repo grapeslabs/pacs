@@ -5,8 +5,10 @@ namespace App\MoonShine\Resources;
 use App\Models\Key;
 use App\Models\Person;
 use App\MoonShine\Fields\CustomText;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Database\Eloquent\Model;
+use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
@@ -14,7 +16,6 @@ use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Select;
-use MoonShine\Contracts\UI\ActionButtonContract;
 
 class KeyResource extends BaseModelResource
 {
@@ -30,11 +31,6 @@ class KeyResource extends BaseModelResource
         ];
     }
 
-    protected function modifyDetailButton(ActionButtonContract $button): ActionButtonContract
-    {
-        return $button->canSee(fn() => false);
-    }
-
     public function indexFields(): iterable
     {
         return [
@@ -45,9 +41,7 @@ class KeyResource extends BaseModelResource
                     'Mifare' => 'Mifare',
                 ])
                 ->sortable(),
-            Select::make('Персона', 'person_id')
-                ->options(Person::query()->pluck('last_name', 'id')->toArray())
-                ->searchable()
+            BelongsTo::make('Персона', 'person', fn($item) => trim(($item->last_name ?? '') . ' ' . ($item->first_name ?? '')), resource: PersonResource::class)
                 ->sortable()
         ];
     }
@@ -58,15 +52,14 @@ class KeyResource extends BaseModelResource
             CustomText::make('Ключ', 'key')
                 ->unique('keys', 'key', 'Ключ должен быть уникальным')
                 ->required(),
-            Select::make('Тип ключа', 'type')
+            SelectField::make('Тип ключа', 'type')
                 ->options([
                     'Mifare' => 'Mifare',
                 ])
                 ->required()
                 ->default('Mifare'),
-            Select::make('Персона', 'person_id')
+            SelectField::make('Персона', 'person_id')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray())
-                ->searchable()
                 ->required()
                 ->default(request()->person_id??null),
         ];
@@ -76,11 +69,11 @@ class KeyResource extends BaseModelResource
     {
         return [
             Text::make('Ключ', 'key'),
-            Select::make('Тип ключа', 'type')
+            SelectField::make('Тип ключа', 'type')
                 ->options([
                     'Mifare' => 'Mifare',
                 ]),
-            Select::make('Персона', 'person_id')
+            SelectField::make('Персона', 'person_id')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray()),
         ];
     }
@@ -100,14 +93,13 @@ class KeyResource extends BaseModelResource
         return [
             Text::make('Ключ', 'key')
             ->placeholder('Фильтрация по имени ключа'),
-            Select::make('Тип ключа', 'type')
+            SelectField::make('Тип ключа', 'type')
                 ->placeholder('Фильтрация по типу ключа')
                 ->options([
                     'Mifare' => 'Mifare',
                 ]),
-            Select::make('Персона', 'person_id')
+            SelectField::make('Персона', 'person_id')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray())
-                ->searchable()
                 ->placeholder('Фильтрация по имени')
                 ->nullable(),
         ];

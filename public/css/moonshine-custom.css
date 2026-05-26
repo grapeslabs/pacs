@@ -613,7 +613,8 @@ div[x-show="asideMenuOpen"] {
         color: var(--white-main);
     }
     .menu-bottom {
-        padding-bottom: 30px;
+        padding: 10px 10px 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
     @media (max-width: 1024px) {
         position: fixed !important;
@@ -1379,6 +1380,14 @@ textarea {
 .table-responsive {
     border: 1px solid var(--gray-blue-200) !important;
     border-radius: var(--radius-x4) !important;
+    height: auto !important;
+    max-height: none !important;
+}
+
+.table-sticky {
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
 }
 
 
@@ -1386,6 +1395,8 @@ textarea {
     border-collapse: collapse !important;
     border-spacing: 0 !important;
     margin: 0 !important;
+    height: auto !important;
+    max-height: none !important;
 }
 
 .table-list thead tr {
@@ -1504,6 +1515,21 @@ textarea {
     display: flex;
     align-items: center;
     gap: 0;
+}
+
+.form button[type=submit].btn-primary {
+    min-width: 136px !important;
+    max-width: calc(100% - 1rem) !important;
+}
+
+#universal-safe-modal_content .form > .grid:last-child {
+    position: sticky;
+    bottom: 0;
+    background-color: #ffffff;
+    padding: 12px 0;
+    margin: 0 -1.5rem -1.5rem;
+    border-top: 1px solid var(--gray-blue-200);
+    z-index: 10;
 }
 
 .js-filter-button {

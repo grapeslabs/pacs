@@ -13,6 +13,8 @@ use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use Carbon\Carbon;
 use Closure;
+use App\MoonShine\Resources\OrganizationResource;
+use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Fields\Relationships\BelongsToMany;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
@@ -22,13 +24,14 @@ use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\Laravel\TypeCasts\ModelDataWrapper;
 use MoonShine\UI\Components\Badge;
+use MoonShine\UI\Components\Layout\Column;
+use MoonShine\UI\Components\Layout\Grid;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Date;
 use MoonShine\UI\Fields\Image;
 use MoonShine\UI\Fields\Select;
-use MoonShine\UI\Fields\Textarea;
-use MoonShine\Contracts\UI\ActionButtonContract;
+use App\MoonShine\Fields\CustomTextarea;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
@@ -64,11 +67,6 @@ class PersonResource extends BaseModelResource
         );
     }
 
-    protected function modifyDetailButton(ActionButtonContract $button): ActionButtonContract
-    {
-        return $button->canSee(fn() => false);
-    }
-
     public function indexQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return parent::indexQuery()->with('tags');
@@ -76,13 +74,16 @@ class PersonResource extends BaseModelResource
 
     public function trAttributes(): ?Closure
     {
-        return function (mixed $item, int $index): array {
+        $parentClosure = parent::trAttributes() ?? fn() => [];
+        return function (mixed $item, int $index) use ($parentClosure): array {
+            $attrs = $parentClosure($item, $index);
+
             if ($item === null) {
-                return [];
+                return $attrs;
             }
             $model = $item instanceof ModelDataWrapper ? $item->getOriginal() : $item;
             if (!isset($model->frozen_start)) {
-                return [];
+                return $attrs;
             }
 
             $now = Carbon::now();
@@ -90,7 +91,11 @@ class PersonResource extends BaseModelResource
                 && $now->greaterThanOrEqualTo($model->frozen_start)
                 && ($model->frozen_end === null || $now->lessThan($model->frozen_end));
 
-            return $isFrozen ? ['class' => 'frozen'] : [];
+            if ($isFrozen) {
+                $attrs['class'] = trim(($attrs['class'] ?? '') . ' frozen');
+            }
+
+            return $attrs;
         };
     }
     public function indexFields(): iterable
@@ -119,12 +124,11 @@ class PersonResource extends BaseModelResource
             Image::make('Фото', 'photo')
                 ->multiple()
                 ->setLabel('Фото'),
-            Select::make('Организация', 'organization_id')
-                ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
+            BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
                 ->sortable(),
             Text::make('Комментарий', 'comment')->sortable(),
-            Date::make('Заморозить с', 'frozen_start'),
-            Date::make('Заморозить до', 'frozen_end'),
+            Date::make('Заморожен с', 'frozen_start'),
+            Date::make('Заморожен до', 'frozen_end'),
         ];
     }
 
@@ -133,55 +137,66 @@ class PersonResource extends BaseModelResource
         $this->getItem()?->load('tags');
 
         return [
-            ID::make(),
-            CustomText::make('Фамилия', 'last_name')
-                ->min(2,'Минимум 2 символа')
-                ->max(50, 'Максимум 50 символов')
-                ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
-                ->nameFormat('Фамилия должна содержать буквы')
-                ->placeholder('Иванов')
-                ->required(),
-            CustomText::make('Имя', 'first_name')
-                ->min(2,'Минимум 2 символа')
-                ->max(50, 'Максимум 50 символов')
-                ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
-                ->nameFormat()
-                ->required()
-                ->placeholder('Иван'),
-            CustomText::make('Отчество', 'middle_name')
-                ->min(2,'Минимум 2 символа')
-                ->max(50, 'Максимум 50 символов')
-                ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
-                ->nameFormat('Отчество должно содержать буквы')
-                ->placeholder('Иванович'),
-            CustomDate::make('Дата рождения', 'birth_date')
-                ->before(Carbon::now(), 'Дата рождения не может быть будущим')
-                ->after(Carbon::now()->subYears(120), 'Дата рождения не может быть более 120 лет назад')
-                ->format('d.m.Y')
-                ->sortable(),
-            CustomText::make('Номер удостоверения', 'certificate_number')
-                ->unique('person', 'certificate_number', 'Номер удостоверения должен быть уникальным'),
-            SelectField::make('Теги', 'tags')
-                ->options(Tag::select('id', 'name')->get())
-                ->multiple(true)
-                ->creatable(true, route('tags.store')),
+            Grid::make([
+                Column::make([
+                    CustomText::make('Фамилия', 'last_name')
+                        ->min(2,'Минимум 2 символа')
+                        ->max(50, 'Максимум 50 символов')
+                        ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                        ->nameFormat('Фамилия должна содержать буквы')
+                        ->placeholder('Иванов')
+                        ->required(),
+                    CustomText::make('Отчество', 'middle_name')
+                        ->min(2,'Минимум 2 символа')
+                        ->max(50, 'Максимум 50 символов')
+                        ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                        ->nameFormat('Отчество должно содержать буквы')
+                        ->placeholder('Иванович'),
+                    CustomText::make('Номер удостоверения', 'certificate_number')
+                        ->unique('person', 'certificate_number', 'Номер удостоверения должен быть уникальным'),
+                ])->columnSpan(6),
+                Column::make([
+                    CustomText::make('Имя', 'first_name')
+                        ->min(2,'Минимум 2 символа')
+                        ->max(50, 'Максимум 50 символов')
+                        ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                        ->nameFormat()
+                        ->required()
+                        ->placeholder('Иван'),
+                    CustomDate::make('Дата рождения', 'birth_date')
+                        ->before(Carbon::now(), 'Дата рождения не может быть будущим')
+                        ->after(Carbon::now()->subYears(120), 'Дата рождения не может быть более 120 лет назад')
+                        ->format('d.m.Y')
+                        ->sortable(),
+                    SelectField::make('Организация', 'organization_id')
+                        ->placeholder('Выберите организацию')
+                        ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
+                        ->nullable(),
+                ])->columnSpan(6),
+            ]),
+
             PhotoField::make('Фото', 'photo')
                 ->multiple()
                 ->disk('public')
                 ->dir('person/photos')
                 ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
-            Select::make('Организация', 'organization_id')
-                ->placeholder('Выберите организацию')
-                ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
-                ->searchable()
-                ->nullable(),
-            Textarea::make('Комментарий', 'comment'),
-            Date::make('Заморозить с', 'frozen_start')
-                ->withTime()
-                ->nullable(),
-            Date::make('Заморозить до', 'frozen_end')
-                ->withTime()
-                ->nullable()
+            SelectField::make('Теги', 'tags')
+                ->options(Tag::select('id', 'name')->get())
+                ->multiple(true)
+                ->creatable(true, route('tags.store')),
+            CustomTextarea::make('Комментарий', 'comment'),
+            Grid::make([
+                Column::make([
+                    Date::make('Заморозить с', 'frozen_start')
+                        ->withTime()
+                        ->nullable(),
+                ])->columnSpan(6),
+                Column::make([
+                    Date::make('Заморозить до', 'frozen_end')
+                        ->withTime()
+                        ->nullable()
+                ])->columnSpan(6)
+            ])
         ];
     }
 
@@ -217,10 +232,9 @@ class PersonResource extends BaseModelResource
             Date::make('Дата рождения', 'birth_date')
                 ->placeholder('Фильтрация по дате рождения'),
 
-            Select::make('Организация', 'organization_id')
+            SelectField::make('Организация', 'organization_id')
                 ->placeholder('Фильтрация по организации')
                 ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
-                ->searchable()
                 ->nullable(),
 
             SelectField::make('Теги', 'tags')

@@ -9,6 +9,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use MoonShine\Laravel\Exceptions\MoonShineNotFoundException;
 use MoonShine\Laravel\Forms\FiltersForm;
+use App\MoonShine\Forms\CustomFiltersForm;
 use MoonShine\Laravel\Http\Middleware\Authenticate;
 use MoonShine\Laravel\Http\Middleware\ChangeLocale;
 use App\Models\User;
@@ -87,7 +88,7 @@ return [
 
     'forms' => [
         'login' => LoginForm::class,
-        'filters' => FiltersForm::class,
+        'filters' => CustomFiltersForm::class,
     ],
 
     'pages' => [

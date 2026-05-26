@@ -7,7 +7,12 @@ use App\Models\CarBrand;
 use App\Models\CarColor;
 use App\Models\Organization;
 use App\Models\Person;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
+use App\MoonShine\Resources\CarBrandResource;
+use App\MoonShine\Resources\CarColorResource;
+use App\MoonShine\Resources\OrganizationResource;
+use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
@@ -15,8 +20,7 @@ use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Select;
-use MoonShine\UI\Fields\Textarea;
-use MoonShine\Contracts\UI\ActionButtonContract;
+use App\MoonShine\Fields\CustomTextarea;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -33,11 +37,6 @@ class CarResource extends BaseModelResource
             DetailPage::class,
             FormPage::class,
         ];
-    }
-
-    protected function modifyDetailButton(ActionButtonContract $button): ActionButtonContract
-    {
-        return $button->canSee(fn() => false);
     }
 
     /**
@@ -224,11 +223,9 @@ class CarResource extends BaseModelResource
     {
         return [
             Text::make('ГРЗ', 'license_plate')->sortable(),
-            Select::make('Марка', 'brand_id')
-                ->options(CarBrand::query()->pluck('name', 'id')->toArray())
+            BelongsTo::make('Марка', 'brand', 'name', resource: CarBrandResource::class)
                 ->sortable(),
-            Select::make('Цвет', 'color_id')
-                ->options(CarColor::query()->pluck('name', 'id')->toArray())
+            BelongsTo::make('Цвет', 'color', 'name', resource: CarColorResource::class)
                 ->sortable(),
             Text::make('Персоны', 'people_names')->sortable(function (
                 Builder $query,
@@ -240,12 +237,10 @@ class CarResource extends BaseModelResource
                     $direction,
                 );
             }),
-            Select::make('Организация', 'organization_id')
-                ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
-                ->searchable()
+            BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
                 ->nullable()
                 ->sortable(),
-            Textarea::make('Комментарий', 'comment')
+            CustomTextarea::make('Комментарий', 'comment')
                 ->sortable(),
         ];
     }
@@ -305,24 +300,20 @@ class CarResource extends BaseModelResource
                 ])
                 ->placeholder('А 000 АА 777')
                 ->hint('Используйте только: А, В, Е, К, М, Н, О, Р, С, Т, У, Х'),
-            Select::make('Марка', 'brand_id')
+            SelectField::make('Марка', 'brand_id')
                 ->required()
-                ->options(CarBrand::query()->pluck('name', 'id')->toArray())
-                ->searchable(),
-            Select::make('Цвет', 'color_id')
+                ->options(CarBrand::query()->pluck('name', 'id')->toArray()),
+            SelectField::make('Цвет', 'color_id')
                 ->required()
-                ->options(CarColor::query()->pluck('name', 'id')->toArray())
-                ->searchable(),
-            Select::make('Персоны', 'people_ids')
+                ->options(CarColor::query()->pluck('name', 'id')->toArray()),
+            SelectField::make('Персоны', 'people_ids')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray())
-                ->searchable()
                 ->multiple()
                 ->default($personIds),
-            Select::make('Организация', 'organization_id')
+            SelectField::make('Организация', 'organization_id')
                 ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
-                ->searchable()
                 ->nullable(),
-            Textarea::make('Комментарий', 'comment')->nullable(),
+            CustomTextarea::make('Комментарий', 'comment')->nullable(),
         ];
     }
 
@@ -331,13 +322,13 @@ class CarResource extends BaseModelResource
         return [
             ID::make(),
             Text::make('ГРЗ', 'license_plate'),
-            Select::make('Марка', 'brand_id')
+            SelectField::make('Марка', 'brand_id')
                 ->options(CarBrand::query()->pluck('name', 'id')->toArray()),
-            Select::make('Цвет', 'color_id')
+            SelectField::make('Цвет', 'color_id')
                 ->options(CarColor::query()->pluck('name', 'id')->toArray()),
-            Select::make('Организация', 'organization_id')
+            SelectField::make('Организация', 'organization_id')
                 ->options(Organization::query()->pluck('short_name', 'id')->toArray()),
-            Textarea::make('Комментарий', 'comment'),
+            CustomTextarea::make('Комментарий', 'comment'),
         ];
     }
 
@@ -406,21 +397,17 @@ class CarResource extends BaseModelResource
                     'placeholder' => 'Фильтрация по ГРЗ',
                     'maxlength' => '15'
                 ]),
-            Select::make('Марка', 'brand_id')
+            SelectField::make('Марка', 'brand_id')
                 ->options(CarBrand::query()->pluck('name', 'id')->toArray())
-                ->searchable()
                 ->nullable(),
-            Select::make('Цвет', 'color_id')
+            SelectField::make('Цвет', 'color_id')
                 ->options(CarColor::query()->pluck('name', 'id')->toArray())
-                ->searchable()
                 ->nullable(),
-            Select::make('Организация', 'organization_id')
+            SelectField::make('Организация', 'organization_id')
                 ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
-                ->searchable()
                 ->nullable(),
-            Select::make('Персоны', 'people_filter')
+            SelectField::make('Персоны', 'people_filter')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray())
-                ->searchable()
                 ->multiple()
                 ->nullable()
                 ->onApply(function (Builder $query, $value) {

@@ -3,6 +3,7 @@
 namespace App\MoonShine\Resources;
 
 //use GrapesLabs\PinvideoSkud\Models\SkudEvent;
+use App\MoonShine\Fields\SelectField;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use App\Models\GrapeslabsSkudEvent;
 use Illuminate\Support\Facades\DB;
@@ -260,7 +261,7 @@ class BarrierEventResource extends BaseModelResource
                 ->nullable(),
 
             // Фильтр по типу события
-            Select::make('Тип события', 'event_type')
+            SelectField::make('Тип события', 'event_type')
                 ->options([
                     1 => 'Доступ разрешен',
                     2 => 'Доступ запрещен',
@@ -270,8 +271,6 @@ class BarrierEventResource extends BaseModelResource
                     32 => 'Системная ошибка',
                 ])
                 ->nullable()
-                ->searchable()
-                ->placeholder('Фильтр по типу событий')
                 ->onApply(function (Builder $query, $value) {
                     if ($value) {
                         return $query->where('type', $value);
@@ -297,7 +296,7 @@ class BarrierEventResource extends BaseModelResource
                 ->placeholder('Фильтр по ГРЗ'),
 
             // Фильтр по марке автомобиля
-            Select::make('Марка автомобиля', 'car_brand')
+            SelectField::make('Марка автомобиля', 'car_brand')
                 ->options(
                     CarBrand::query()
                         ->orderBy('name')
@@ -306,7 +305,6 @@ class BarrierEventResource extends BaseModelResource
                         ->toArray()
                 )
                 ->nullable()
-                ->searchable()
                 ->placeholder('Фильтр по марке автомобиля')
                 ->onApply(function (Builder $query, $value) {
                     if ($value) {
@@ -329,7 +327,7 @@ class BarrierEventResource extends BaseModelResource
                 }),
 
             // Фильтр по цвету автомобиля
-            Select::make('Цвет автомобиля', 'car_color')
+            SelectField::make('Цвет автомобиля', 'car_color')
                 ->options(
                     CarColor::query()
                         ->orderBy('name')
@@ -338,7 +336,6 @@ class BarrierEventResource extends BaseModelResource
                         ->toArray()
                 )
                 ->nullable()
-                ->searchable()
                 ->placeholder('Фильтр по цвету автомобиля')
                 ->onApply(function (Builder $query, $value) {
                     if ($value) {
@@ -395,7 +392,7 @@ class BarrierEventResource extends BaseModelResource
                 ->placeholder('Фильтр по ФИО персоны'),
 
             // Фильтр по организации
-            Select::make('Организация', 'organization')
+            SelectField::make('Организация', 'organization')
                 ->options(
                     Organization::query()
                         ->orderBy('short_name')
@@ -407,7 +404,6 @@ class BarrierEventResource extends BaseModelResource
                         ->toArray()
                 )
                 ->nullable()
-                ->searchable()
                 ->placeholder('Фильтр по организации')
                 ->onApply(function (Builder $query, $value) {
                     if ($value) {
@@ -441,7 +437,7 @@ class BarrierEventResource extends BaseModelResource
                 }),
 
             // Фильтр по серийному номеру оборудования
-            Select::make('Оборудование', 'controller_id')
+            SelectField::make('Оборудование', 'controller_id')
                 ->options(
                     SkudController::query()
                         ->select('serial_number', 'id', 'type')
@@ -452,7 +448,6 @@ class BarrierEventResource extends BaseModelResource
                         ->toArray()
                 )
                 ->nullable()
-                ->searchable()
                 ->placeholder('Фильтр по типу оборудования')
                 ->onApply(function (Builder $query, $value) {
                     if ($value) {
