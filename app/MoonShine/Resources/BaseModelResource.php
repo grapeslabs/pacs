@@ -5,6 +5,9 @@ namespace App\MoonShine\Resources;
 use App\MoonShine\Handlers\CsvExportHandler;
 use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Components\SafeModal;
+use App\MoonShine\Traits\HasUndoNotification;
+use Illuminate\Database\Eloquent\Model;
+use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
 use MoonShine\Contracts\UI\ActionButtonContract;
 use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\ExportHandler;
@@ -21,10 +24,12 @@ use MoonShine\UI\Components\ActionButton;
 
 class BaseModelResource extends ModelResource implements HasImportExportContract
 {
+    use HasUndoNotification;
     use ImportExportConcern;
     protected bool $createInModal=true;
     protected bool $editInModal=true;
     protected bool $detailInModal=true;
+    protected bool $softDelete=true;
     protected bool $stickyTable=true;
     protected string $safeModalName = 'universal-safe-modal';
 
@@ -132,5 +137,14 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
         return parent::handlers()
             ->add($excelHandler)
             ->add($csvHandler);
+    }
+    protected function afterDeleted(mixed $item): mixed
+    {
+        if($this->softDelete) {
+            if ($item instanceof Model) {
+                $this->notifyDeletedWithUndo($item);
+            }
+        }
+        return $item;
     }
 }
