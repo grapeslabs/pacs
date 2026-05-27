@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\GuestApiController;
 use App\Http\Middleware\VerifyApiKey;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\PersonController;
+use \App\Http\Controllers\Api\V1\KeyController;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
@@ -37,6 +38,14 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}', [PersonController::class, 'show']);
             Route::post('/{id}', [PersonController::class, 'update']);
             Route::delete('/{id}', [PersonController::class, 'destroy']);
+        });
+
+        Route::prefix('keys')->group(function () {
+            Route::get('/', [KeyController::class, 'index']);
+            Route::post('/', [KeyController::class, 'store']);
+            Route::get('/{keyItem}', [KeyController::class, 'show']);
+            Route::post('/{keyItem}', [KeyController::class, 'update']);
+            Route::delete('/{keyItem}', [KeyController::class, 'destroy']);
         });
     });
 });

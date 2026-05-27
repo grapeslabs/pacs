@@ -41,9 +41,7 @@ class KeyResource extends BaseModelResource
             Text::make('Ключ', 'key')
                 ->sortable(),
             Select::make('Тип ключа', 'type')
-                ->options([
-                    'Mifare' => 'Mifare',
-                ])
+                ->options(Key::TYPES)
                 ->sortable(),
             Select::make('Персона', 'person_id')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray())
@@ -59,9 +57,7 @@ class KeyResource extends BaseModelResource
                 ->unique('keys', 'key', 'Ключ должен быть уникальным')
                 ->required(),
             Select::make('Тип ключа', 'type')
-                ->options([
-                    'Mifare' => 'Mifare',
-                ])
+                ->options(Key::TYPES)
                 ->required()
                 ->default('Mifare'),
             Select::make('Персона', 'person_id')

@@ -10,9 +10,12 @@ class Key extends Model
 {
     use HasFactory;
 
+    public const TYPES =[
+        'Mifare' => 'Mifare',
+    ];
     protected $fillable = [
         'key',
-        'type', 
+        'type',
         'person_id'
     ];
 
