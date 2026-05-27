@@ -151,9 +151,9 @@ final class MoonShineLayout extends AppLayout
                 MenuItem::make('Видеопотоки', VideoStreamResource::class)
                     ->icon(file_get_contents(public_path('icons/menu-video.svg')),true)
                     ->canSee(fn () => auth()->user()->hasPermission(MoonShineUserResource::class, Ability::VIEW_ANY)),
-                MenuItem::make('Хранилища', StorageResource::class)
-                    ->icon(file_get_contents(public_path('icons/menu-video.svg')),true)
-                    ->canSee(fn () => auth()->user()->hasPermission(StorageResource::class, Ability::VIEW_ANY)),
+//                MenuItem::make('Хранилища', StorageResource::class)
+//                    ->icon(file_get_contents(public_path('icons/menu-video.svg')),true)
+//                    ->canSee(fn () => auth()->user()->hasPermission(StorageResource::class, Ability::VIEW_ANY)),
             ]:[],
 
             MenuGroup::make('Данные СКУД', [

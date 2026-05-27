@@ -21,6 +21,9 @@ class Stream extends Model
         'is_active',
         'is_recognize',
         'va_options',
+        'va_options->global_enable',
+        'va_options->is_face_detection',
+        'va_options->is_motion_detection',
     ];
     protected $casts = [
         'va_options' => 'json',

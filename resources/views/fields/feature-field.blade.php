@@ -9,7 +9,7 @@
     .ff-wrapper {
         height: 50px;
         width: 100%;
-        margin-bottom: 1rem;
+        margin-bottom: 0;
         font-family: inherit;
         background-color: #FFFFFF;
         border-radius: 8px;
@@ -179,6 +179,11 @@
             if (!{{ $locked ? 'true' : 'false' }}) {
                 this.value = !this.value;
             }
+        },
+        init() {
+            this.$watch('value', (val) => {
+                this.$dispatch('feature-field-change', { column: '{{ $field->getColumn() }}', value: val });
+            });
         }
     }"
     class="ff-wrapper"

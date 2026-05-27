@@ -43,6 +43,34 @@
     }
 </style>
 
+@php
+    $hasCondition = $element->hasShowWhen();
+    if ($hasCondition) {
+        $cond = $element->getShowWhenData();
+        $condColumn = $cond['column'];
+        $condExpected = $cond['value'] ? 'true' : 'false';
+    }
+@endphp
+
+@if($hasCondition)
+<div
+    x-data="{
+        show: false,
+        init() {
+            this.$nextTick(() => {
+                const form = this.$el.closest('form');
+                if (!form) return;
+                const cb = form.querySelector('input[type=checkbox][name=\'{{ $condColumn }}\']');
+                if (cb) this.show = cb.checked === {{ $condExpected }};
+            });
+        }
+    }"
+    @feature-field-change.window="if ($event.detail.column === '{{ $condColumn }}') show = ($event.detail.value === {{ $condExpected }})"
+    x-show="show"
+    style="display: none;"
+>
+@endif
+
 <div class="feature-box-wrapper">
     <div class="feature-box-header">
         @if($element->getIcon())
@@ -59,3 +87,7 @@
         />
     </div>
 </div>
+
+@if($hasCondition)
+</div>
+@endif

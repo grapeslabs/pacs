@@ -29,7 +29,7 @@ class StreamObserver
             if (!$stream->is_active) {
                 $this->mediaServer->pauseStream($stream->uid);
             }
-            $this->vas->cameraCreate($stream->storage_id, $stream->uid, $stream->name, $stream->location, $stream->va_options);
+            $this->vas->cameraCreate($stream->uid, $stream->name, $stream->location, $stream->va_options ?? []);
         } catch (Exception $e) {
             if (!empty($stream->uid)) {
                 try { $this->mediaServer->deleteStream($stream->uid); } catch (\Throwable $t) {}
@@ -54,7 +54,7 @@ class StreamObserver
         }
 
         if ($stream->isDirty('va_options')) {
-            $this->vas->cameraCreate($stream->storage_id, $stream->uid, $stream->name, $stream->location, $stream->va_options);
+            $this->vas->handleStreamUpdate($stream);
         }
     }
 

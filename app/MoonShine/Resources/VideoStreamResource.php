@@ -2,15 +2,18 @@
 
 namespace App\MoonShine\Resources;
 
+use App\Models\Setting;
 use App\Models\Stream;
 use App\MoonShine\Decorations\FeatureBox;
 use App\MoonShine\Fields\CustomNumber;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\FeatureCheckbox;
+use App\MoonShine\Fields\FeatureField;
 use App\MoonShine\Fields\FeatureSlider;
 use App\MoonShine\Fields\FeatureSpoiler;
 use App\MoonShine\Fields\SingleZonePreviewField;
 use App\MoonShine\Fields\MultiZonePreviewField;
+use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Pages\StreamPlayer;
 use App\MoonShine\Pages\Streams;
 use App\Services\VideoAnalyticService;
@@ -37,6 +40,7 @@ class VideoStreamResource extends BaseModelResource
     protected string $model = Stream::class;
     protected string $title = 'Видеопотоки';
     protected string $column = 'name';
+    protected bool $softDelete=false;
 
     public function getRedirectAfterDelete(): string
     {
@@ -78,7 +82,6 @@ class VideoStreamResource extends BaseModelResource
             Text::make('Локация', 'location'),
             Text::make('Адрес потока(RTSP)', 'rtsp'),
             Number::make('Время хранения архива(Час)', 'archive_time'),
-            Checkbox::make('Распознавание личности', 'is_recognize'),
         ];
     }
 
@@ -91,8 +94,8 @@ class VideoStreamResource extends BaseModelResource
                 ->unique('streams', 'name'),
             CustomText::make('Локация', 'location')->nullable(),
             CustomText::make('Адрес потока(RTSP)', 'rtsp')->required()
-                ->pattern('^rtsp:\/\/([^\s\/:]+)(?::([0-9]+))?(\/.*)?$'),
-            BelongsTo::make('Хранилище', 'storage', 'name', StorageResource::class),
+                ->pattern('^rtsp:\/\/(([^\s\/:@]+)(:([^\s\/@]+))?@)?([^\s\/:]+)(?::([0-9]+))?(\/.*)?$'),
+//            BelongsTo::make('Хранилище', 'storage', 'name', StorageResource::class),
             Checkbox::make('Включение видеопотока', 'is_active'),
             CustomNumber::make('Время хранения архива(Час)', 'archive_time')
                 ->default(24)
@@ -101,8 +104,14 @@ class VideoStreamResource extends BaseModelResource
                 ->maxValue(87600, 'Время хранения архива не может быть больше года')
                 ->required(),
             ...config('services.va.enabled')?[
+                FeatureField::make('AI аналитика', 'va_options->global_enable')
+                    ->offValue(0)
+                    ->onValue(1)
+                    ->locked(!(boolean)Setting::where('key', 'face_recognition')->value('value'))
+                    ->unlockUrl(app(SettingsPage::class)->getUrl()),
                 FeatureBox::make('AI аналитика')
                     ->icon(file_get_contents(public_path('icons/icon-feature.svg')))
+                    ->showWhen('va_options->global_enable', '=', true)
                     ->fields([
                         FeatureSpoiler::make('Поиск лица', 'va_options->is_face_detection')
                             ->nested([
@@ -146,7 +155,10 @@ class VideoStreamResource extends BaseModelResource
             Checkbox::make('Включение видеопотока', 'is_active'),
             Text::make('Время хранения архива(Час)', 'archive_time'),
             ...config('services.va.enabled')?[
-                Checkbox::make('Распознание личности', 'is_recognize'),
+                Checkbox::make('Поиск лица', 'va_options->is_face_detection'),
+                Checkbox::make('Распознание личности', 'va_options->is_face_recognition'),
+                Checkbox::make('Детекция движения', 'va_options->is_motion_detection'),
+                Checkbox::make('Детекция человека', 'va_options->is_human_motion_detection')
             ]:[],
         ];
     }

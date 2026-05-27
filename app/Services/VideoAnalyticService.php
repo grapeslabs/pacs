@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Stream;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -62,7 +63,7 @@ class VideoAnalyticService
         return $this->request('/api/c1/list', ['cam_id' => $camera_uid]);
     }
 
-    public function cameraCreate($camera_uid, $name='', $description='')
+    public function cameraCreate($camera_uid, $name='', $description='', $va_options=[])
     {
         $data = [
             "stream_info" => [
@@ -167,6 +168,19 @@ class VideoAnalyticService
         return $result;
     }
 
+
+    public function handleStreamUpdate(Stream $stream): void
+    {
+        $options = $stream->va_options ?? [];
+
+        if (empty($options['global_enable'])) {
+            $options['is_face_detection'] = 0;
+            $options['is_motion_detection'] = 0;
+            $stream->va_options = $options;
+        }
+
+        $this->cameraCreate($stream->uid, $stream->name, $stream->location, $stream->va_options ?? []);
+    }
 
     public function cameraDelete($camera_uid)
     {
