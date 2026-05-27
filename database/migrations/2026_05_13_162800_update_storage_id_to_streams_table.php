@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->dropColumn('storage_id');
         });
         Schema::table('streams', function (Blueprint $table) {
-            $table->foreignId('storage_id')->constrained('storages')->cascadeOnDelete();
+            $table->foreignId('storage_id')->nullable()->constrained('storages')->cascadeOnDelete();
         });
     }
 
