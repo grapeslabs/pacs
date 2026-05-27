@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Stream extends Model
 {
-    use HasFactory, , SoftDeletes;
+    use HasFactory, SoftDeletes;
     protected $connection='pgsql';
     protected $table = 'streams';
     protected $fillable = [
