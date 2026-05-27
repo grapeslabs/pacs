@@ -257,7 +257,7 @@
 
     <input type="hidden" name="is_customized_permissions" :value="isCustomized ? '1' : '0'" :disabled="!hasRoleContext">
 
-    <div class="perm-header-bar" x-show="hasRoleContext" style="display: none;">
+    <div class="perm-header-bar" x-show="hasRoleContext && isCustomized" style="display: none;">
         <div class="perm-header-left">
             <span x-show="isCustomized" x-transition class="perm-badge" style="display: none;">
                 Индивидуальные настройки

@@ -115,7 +115,7 @@ final class MoonShineLayout extends AppLayout
                 fn (): bool => $this->isProfileEnabled(),
                 fn (): array => [
                     Div::make([
-                        $this->getProfileComponent(sidebar: true),
+                        Profile::make(),
                     ])->class('menu-bottom'),
                 ],
             ),

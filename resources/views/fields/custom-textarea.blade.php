@@ -14,7 +14,7 @@
         width: 100%;
         border-radius: 0.5rem;
         border: 1px solid #d1d5db;
-        padding: 0.75rem 2.25rem 0.75rem 0.75rem;
+        padding: 1rem 2rem 0.5rem 0.75rem;
         background-color: transparent;
         transition: all 0.2s;
         outline: none;
@@ -124,7 +124,5 @@
             </template>
         </div>
     </div>
-    <template x-if="error !== null">
-        <span class="cta-error-msg" x-text="error"></span>
-    </template>
+    <span class="cta-error-msg" x-show="error !== null" x-text="error ?? ''"></span>
 </div>

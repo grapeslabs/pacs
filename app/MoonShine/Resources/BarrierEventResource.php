@@ -482,11 +482,11 @@ class BarrierEventResource extends BaseModelResource
                 ->format('d.m.Y H:i:s')
                 ->withTime(),
             Text::make('Контроллер', 'controller_info')
-                ->changeFill(function(SkudEvent $item) {
+                ->changeFill(function(GrapeslabsSkudEvent $item) {
                     return $item->controller->serial_number . ' (' . $item->controller->type . ')';
                 }),
             Text::make('Тип события', 'type')
-                ->changeFill(function(SkudEvent $item) {
+                ->changeFill(function(GrapeslabsSkudEvent $item) {
                     $eventData = json_decode($item->event ?? [], true);
                     $event_type = $eventData['event'] ?? null;
 
@@ -494,13 +494,13 @@ class BarrierEventResource extends BaseModelResource
                 }),
             Text::make('ID события', 'event_id'),
             Text::make('ГРЗ', 'car_plate_detail')
-                ->changeFill(function(SkudEvent $item) {
+                ->changeFill(function(GrapeslabsSkudEvent $item) {
                     $carPlate = SkudEventCarPlate::where('event_id', $item->id)->value('car_plate');
                     return $carPlate ?? '—';
                 }),
 
             Text::make('Марка', 'car_brand')
-                ->changeFill(function (SkudEvent $data) {
+                ->changeFill(function (GrapeslabsSkudEvent $data) {
                     $carPlate = SkudEventCarPlate::where('event_id', $data->id)->value('car_plate');
 
                     if (!$carPlate) return '—';
@@ -513,7 +513,7 @@ class BarrierEventResource extends BaseModelResource
                 }),
 
             Text::make('Цвет', 'car_color')
-                ->changeFill(function (SkudEvent $data) {
+                ->changeFill(function (GrapeslabsSkudEvent $data) {
                     $carPlate = SkudEventCarPlate::where('event_id', $data->id)->value('car_plate');
 
                     if (!$carPlate) return '—';
@@ -526,7 +526,7 @@ class BarrierEventResource extends BaseModelResource
                 }),
 
             Text::make('ФИО персоны', 'person_name')
-                ->changeFill(function (SkudEvent $data) {
+                ->changeFill(function (GrapeslabsSkudEvent $data) {
                     $carPlate = SkudEventCarPlate::where('event_id', $data->id)->value('car_plate');
 
                     if (!$carPlate) return '—';
@@ -545,7 +545,7 @@ class BarrierEventResource extends BaseModelResource
                 }),
 
             Text::make('Организация', 'organization_name')
-                ->changeFill(function (SkudEvent $data) {
+                ->changeFill(function (GrapeslabsSkudEvent $data) {
                     $carPlate = SkudEventCarPlate::where('event_id', $data->id)->value('car_plate');
 
                     if (!$carPlate) return '—';

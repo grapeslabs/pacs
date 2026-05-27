@@ -87,7 +87,7 @@
 
                 <div style="display: flex; flex-direction: column; height: 100vh; max-height: 100vh; width: 100%;">
 
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; flex-shrink: 0;" class="dark:border-moonshine-dark-500">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; flex-shrink: 0;">
                         <h3 style="font-size: 1.125rem; font-weight: 500; margin: 0;" class="text-gray-900 dark:text-gray-100" x-text="modalTitle"></h3>
                         <button @click="tryClose()" type="button" style="background: transparent; border: none; cursor: pointer; padding: 0.25rem;" class="text-gray-400 hover:text-gray-500">
                             <x-moonshine::icon icon="x-mark" size="6" />
@@ -95,11 +95,9 @@
                     </div>
 
                     <div style="flex: 1 1 0%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; position: relative;">
-
                         <div id="{{ $name }}_content" style="padding: 1.5rem;" @input="isDirty = true" @change="isDirty = true">
                             {{ $slot ?? '' }}
                         </div>
-
                     </div>
 
                 </div>

@@ -191,7 +191,5 @@
             </template>
         </div>
     </div>
-    <template x-if="error !== null">
-        <span class="cnf-error-msg" x-text="error"></span>
-    </template>
+    <span class="cnf-error-msg" x-show="error !== null" x-text="error ?? ''"></span>
 </div>

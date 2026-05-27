@@ -18,6 +18,27 @@ class SelectField extends Field
     protected bool $isMultiple = false;
     protected string $placeholder = '';
     protected mixed $defaultValue = null;
+    protected array $customClientRules = [];
+
+    public function required(\Closure|bool|string|null $condition = null, string $message = 'Обязательное поле'): static
+    {
+        if (is_string($condition)) {
+            $message = $condition;
+            $condition = null;
+        }
+
+        $this->customClientRules[] = [
+            'type'    => 'required',
+            'message' => $message,
+        ];
+
+        return parent::required($condition);
+    }
+
+    public function getCustomClientRules(): array
+    {
+        return $this->customClientRules;
+    }
 
     public function default(mixed $value): static
     {
@@ -91,7 +112,10 @@ class SelectField extends Field
             if ($value instanceof Model) {
                 return [$value->getKey()];
             }
-            return $value ? [$value] : [];
+            if (is_array($value)) {
+                return $value;
+            }
+            return $value !== null && $value !== '' ? [$value] : [];
         }
     }
 
@@ -129,11 +153,19 @@ class SelectField extends Field
     {
         parent::resolveFill($raw, $casted, $index);
         $value = $this->toValue();
-        if ($this->isMultiple && $value instanceof Collection) {
-            $this->setValue($value->modelKeys());
-        }
-        elseif (!$this->isMultiple && $value instanceof Model) {
-            $this->setValue([$value->getKey()]);
+
+        if ($this->isMultiple) {
+            if ($value instanceof Collection) {
+                $this->setValue($value->modelKeys());
+            } elseif (!is_array($value)) {
+                $this->setValue($value !== null && $value !== '' ? [$value] : []);
+            }
+        } else {
+            if ($value instanceof Model) {
+                $this->setValue([$value->getKey()]);
+            } elseif (!is_array($value)) {
+                $this->setValue($value !== null && $value !== '' ? [$value] : []);
+            }
         }
 
         return $this;
@@ -142,13 +174,14 @@ class SelectField extends Field
     protected function viewData(): array
     {
         return [
-            'element'    => $this,
-            'createUrl'  => $this->createUrl,
-            'options'    => $this->options,
-            'selectedIds' => $this->toValue() ?? [],
-            'isCreatable' => $this->isCreatable,
-            'isMultiple' => $this->isMultiple,
-            'placeholder' => $this->placeholder,
+            'element'           => $this,
+            'createUrl'         => $this->createUrl,
+            'options'           => $this->options,
+            'selectedIds'       => $this->toValue() ?? [],
+            'isCreatable'       => $this->isCreatable,
+            'isMultiple'        => $this->isMultiple,
+            'placeholder'       => $this->placeholder,
+            'customClientRules' => $this->customClientRules,
         ];
     }
 }

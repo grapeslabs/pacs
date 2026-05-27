@@ -134,7 +134,5 @@
             </template>
         </div>
     </div>
-    <template x-if="error !== null">
-        <span class="cpf-error-msg" x-text="error"></span>
-    </template>
+    <span class="cpf-error-msg" x-show="error !== null" x-text="error ?? ''"></span>
 </div>

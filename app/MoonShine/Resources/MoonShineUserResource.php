@@ -102,32 +102,44 @@ class MoonShineUserResource extends BaseModelResource
         return [
             Box::make([
                 Grid::make([
-                   Column::make([
-                       CustomText::make('Имя', 'name')
-                           ->min(2, 'Минимум 2 символа')
-                           ->required(),
-                       BelongsTo::make(
-                           'Роль',
-                           'moonshineUserRole',
-                           formatted: static fn (MoonshineUserRole $model) => $model->name,
-                           resource: MoonShineUserRoleResource::class,
-                       )
-                           ->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
-                       CustomPassword::make('Пароль', 'password')
-                           ->min(6, 'Пароль должен содержать не менее 6 символов')
-                           ->hasUpper()
-                           ->hasLower()
-                           ->hasDigit()
-                           ->customAttributes(['autocomplete' => 'new-password'])
-                           ->eye(),
-                   ])->columnSpan(3),
+                    Column::make([
+                        CustomText::make('Имя', 'name')
+                            ->min(2, 'Минимум 2 символа')
+                            ->required(),
+                    ])->columnSpan(3),
                     Column::make([
                         CustomText::make('E-mail', 'email')
                             ->email()
                             ->unique('moonshine_users', 'email','Почта должна быть уникальной')
                             ->required(),
+                    ])->columnSpan(3),
+                ]),
+                Grid::make([
+                    Column::make([
+                        BelongsTo::make(
+                            'Роль',
+                            'moonshineUserRole',
+                            formatted: static fn (MoonshineUserRole $model) => $model->name,
+                            resource: MoonShineUserRoleResource::class,
+                        )
+                            ->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
+                    ])->columnSpan(3),
+                    Column::make([
                         CustomDate::make('Дата создания', 'created_at')
                             ->before(Carbon::now(), 'Дата создания не может быть будущим'),
+                    ])->columnSpan(3),
+                ]),
+                Grid::make([
+                    Column::make([
+                        CustomPassword::make('Пароль', 'password')
+                            ->min(6, 'Пароль должен содержать не менее 6 символов')
+                            ->hasUpper()
+                            ->hasLower()
+                            ->hasDigit()
+                            ->customAttributes(['autocomplete' => 'new-password'])
+                            ->eye(),
+                    ])->columnSpan(3),
+                    Column::make([
                         CustomPassword::make('Повторите пароль', 'password_repeat')
                             ->confirm('password')
                             ->customAttributes(['autocomplete' => 'confirm-password'])
@@ -146,11 +158,9 @@ class MoonShineUserResource extends BaseModelResource
                 ]),
                 PermissionMatrixField::make('Права', 'permissions')
                     ->roleField('moonshine_user_role_id'),
-                Flex::make([
-                    ActionButton::make('Сохранить')
-                        ->customAttributes(['type' => 'submit', 'style' => 'width: 100%'])
-                        ->primary(),
-                ]),
+                ActionButton::make('Сохранить')
+                    ->customAttributes(['type' => 'submit', 'style' => 'width: 136px'])
+                    ->primary(),
             ]),
         ];
     }

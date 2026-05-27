@@ -64,6 +64,8 @@
     .multiselect-arrow {
         display: flex; align-items: center; color: #A1A5B7;
         pointer-events: none; transition: transform 0.2s;
+        margin-left: auto;
+        flex-shrink: 0;
     }
     .multiselect-arrow.rotated {
         transform: rotate(180deg);
@@ -125,6 +127,18 @@
         color: #8A93FF;
         display: flex;
         align-items: center; }
+
+    .multiselect-box.select-error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 1px #ef4444 !important;
+    }
+
+    .select-error-msg {
+        color: #ef4444;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: block;
+    }
 </style>
 
 <div x-data="{
@@ -135,34 +149,68 @@
     creatable: {{ $isCreatable ? 'true' : 'false' }},
     multiple: {{ $isMultiple ? 'true' : 'false' }},
     placeholder: '{{ addslashes($placeholder) }}',
+    rules: {{ json_encode($customClientRules) }},
 
     search: '',
     open: false,
     isLoading: false,
     maxOptionsHeight: 220,
+    error: null,
+    touched: false,
 
     init() {
+        if (!window.selectFieldsInitialized) {
+            window.selectFieldsInitialized = true;
+            document.addEventListener('submit', function(event) {
+                const errorField = document.querySelector('.select-error');
+                if (errorField) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    errorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, true);
+        }
+
+        this.$watch('selectedIds', () => { this.validate(); });
+
         const form = this.$el.closest('form');
         if (form) {
             form.addEventListener('reset', () => {
                 this.selectedIds = [];
                 this.search = '';
+                this.touched = false;
+                this.error = null;
             });
         }
 
         document.addEventListener('moonshine:filter-reset', () => {
             this.selectedIds = [];
             this.search = '';
+            this.touched = false;
+            this.error = null;
         });
 
         this.$watch('open', value => {
-            if (!value) return;
-            this.$nextTick(() => {
-                const rect = this.$el.getBoundingClientRect();
-                const spaceBelow = window.innerHeight - rect.bottom;
-                this.maxOptionsHeight = Math.max(80, spaceBelow - 4 - 12 - 8);
-            });
+            if (value) {
+                this.$nextTick(() => {
+                    const rect = this.$el.getBoundingClientRect();
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    this.maxOptionsHeight = Math.max(80, spaceBelow - 4 - 12 - 8);
+                });
+            } else {
+                this.touched = true;
+                this.validate();
+            }
         });
+    },
+
+    validate() {
+        if (!this.touched) return;
+        this.error = null;
+        const isRequired = this.rules.find(r => r.type === 'required');
+        if (isRequired && this.selectedIds.length === 0) {
+            this.error = isRequired.message;
+        }
     },
 
     get selectedOptions() { return this.selectedIds.map(id => this.options.find(o => o.id == id)).filter(Boolean); },
@@ -218,7 +266,7 @@
      class="multiselect-wrapper"
      @click.outside="open = false"
 >
-    <div @click="open = true; $nextTick(() => $refs.searchInput?.focus())" class="multiselect-box" :class="{ 'active': open }">
+    <div @click="open = true; $nextTick(() => $refs.searchInput?.focus())" class="multiselect-box" :class="{ 'active': open, 'select-error': error !== null }">
         <template x-if="multiple">
             <template x-for="option in selectedOptions" :key="option.id">
                 <span class="multiselect-tag">
@@ -288,4 +336,6 @@
     <template x-if="!multiple">
         <input type="hidden" :name="name" :value="selectedIds.length > 0 ? selectedIds[0] : ''">
     </template>
+
+    <span class="select-error-msg" x-text="error ?? ''" :style="!error ? 'visibility: hidden' : ''"></span>
 </div>

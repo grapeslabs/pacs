@@ -80,14 +80,12 @@ class MoonShineUserRoleResource extends BaseModelResource
                             ->unique('moonshine_user_roles', 'name', 'Роль должна быть уникальной')
                             ->required(),
                         CustomText::make('Описание', 'description'),
-                    ])->columnSpan(6)
+                    ])->style('min-width: 400px; max-width: 600px')
                 ]),
                 PermissionMatrixField::make('Права и доступы','permissions'),
-                Flex::make([
-                    ActionButton::make('Сохранить')
-                        ->customAttributes(['type' => 'submit', 'style' => 'width: 100%'])
-                        ->primary(),
-                ]),
+                ActionButton::make('Сохранить')
+                    ->customAttributes(['type' => 'submit', 'style' => 'width: 136px'])
+                    ->primary(),
             ]),
         ];
     }

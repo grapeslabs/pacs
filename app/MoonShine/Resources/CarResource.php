@@ -20,6 +20,7 @@ use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Select;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\CustomTextarea;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -253,50 +254,29 @@ class CarResource extends BaseModelResource
         }
 
         return [
-            Text::make('ГРЗ', 'license_plate')
+            CustomText::make('ГРЗ', 'license_plate')
                 ->required()
                 ->customAttributes([
-                    'x-data' => '{ licensePlate: $el.value || "" }',
-                    'x-model' => 'licensePlate',
                     'x-on:input' => '
                     let value = $event.target.value.toUpperCase();
-                    let formatted = "";
-                    let cursorPos = $event.target.selectionStart;
-
                     value = value.replace(/[^А-Я0-9\s]/g, "");
-
                     let chars = value.replace(/\s/g, "").split("");
                     let result = [];
-
                     for (let i = 0; i < chars.length; i++) {
-                        if (i === 0) {
-                            if (/[А-Я]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        } else if (i >= 1 && i <= 3) {
-                            if (/[0-9]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        } else if (i >= 4 && i <= 5) {
-                            if (/[А-Я]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        } else if (i >= 6 && i <= 8) {
-                            if (/[0-9]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        }
+                        if (i === 0) { if (/[А-Я]/.test(chars[i])) result.push(chars[i]); }
+                        else if (i >= 1 && i <= 3) { if (/[0-9]/.test(chars[i])) result.push(chars[i]); }
+                        else if (i >= 4 && i <= 5) { if (/[А-Я]/.test(chars[i])) result.push(chars[i]); }
+                        else if (i >= 6 && i <= 8) { if (/[0-9]/.test(chars[i])) result.push(chars[i]); }
                     }
-
+                    let formatted = "";
                     if (result.length > 0) formatted += result[0];
                     if (result.length > 1) formatted += " " + result.slice(1, 4).join("");
                     if (result.length > 4) formatted += " " + result.slice(4, 6).join("");
                     if (result.length > 6) formatted += " " + result.slice(6, 9).join("");
-
                     $event.target.value = formatted;
                 ',
                     'placeholder' => 'А 123 БЦ 78',
-                    'maxlength' => '15'
+                    'maxlength' => '15',
                 ])
                 ->placeholder('А 000 АА 777')
                 ->hint('Используйте только: А, В, Е, К, М, Н, О, Р, С, Т, У, Х'),
@@ -353,49 +333,28 @@ class CarResource extends BaseModelResource
     public function filters(): array
     {
         return [
-            Text::make('ГРЗ', 'license_plate')
+            CustomText::make('ГРЗ', 'license_plate')
                 ->customAttributes([
-                    'x-data' => '{ licensePlate: "" }',
-                    'x-model' => 'licensePlate',
                     'x-on:input' => '
                     let value = $event.target.value.toUpperCase();
-                    let formatted = "";
-                    let cursorPos = $event.target.selectionStart;
-
                     value = value.replace(/[^А-Я0-9\s]/g, "");
-
                     let chars = value.replace(/\s/g, "").split("");
                     let result = [];
-
                     for (let i = 0; i < chars.length; i++) {
-                        if (i === 0) {
-                            if (/[А-Я]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        } else if (i >= 1 && i <= 3) {
-                            if (/[0-9]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        } else if (i >= 4 && i <= 5) {
-                            if (/[А-Я]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        } else if (i >= 6 && i <= 8) {
-                            if (/[0-9]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        }
+                        if (i === 0) { if (/[А-Я]/.test(chars[i])) result.push(chars[i]); }
+                        else if (i >= 1 && i <= 3) { if (/[0-9]/.test(chars[i])) result.push(chars[i]); }
+                        else if (i >= 4 && i <= 5) { if (/[А-Я]/.test(chars[i])) result.push(chars[i]); }
+                        else if (i >= 6 && i <= 8) { if (/[0-9]/.test(chars[i])) result.push(chars[i]); }
                     }
-
+                    let formatted = "";
                     if (result.length > 0) formatted += result[0];
                     if (result.length > 1) formatted += " " + result.slice(1, 4).join("");
                     if (result.length > 4) formatted += " " + result.slice(4, 6).join("");
                     if (result.length > 6) formatted += " " + result.slice(6, 9).join("");
-
                     $event.target.value = formatted;
                 ',
                     'placeholder' => 'Фильтрация по ГРЗ',
-                    'maxlength' => '15'
+                    'maxlength' => '15',
                 ]),
             SelectField::make('Марка', 'brand_id')
                 ->options(CarBrand::query()->pluck('name', 'id')->toArray())

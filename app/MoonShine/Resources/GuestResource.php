@@ -75,9 +75,9 @@ class GuestResource extends BaseModelResource
             CustomText::make('ФИО', 'full_name')
                 ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
                 ->required(),
-            Phone::make('Телефон', 'phone')
+            CustomText::make('Телефон', 'phone')
                 ->nullable()
-                ->mask('+7 (999) 999-99-99'),
+                ->phone(),
             PhotoField::make('Фото', 'photo')
                 ->multiple()
                 ->removable()

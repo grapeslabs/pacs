@@ -146,14 +146,6 @@ class PersonResource extends BaseModelResource
                         ->nameFormat('Фамилия должна содержать буквы')
                         ->placeholder('Иванов')
                         ->required(),
-                    CustomText::make('Отчество', 'middle_name')
-                        ->min(2,'Минимум 2 символа')
-                        ->max(50, 'Максимум 50 символов')
-                        ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
-                        ->nameFormat('Отчество должно содержать буквы')
-                        ->placeholder('Иванович'),
-                    CustomText::make('Номер удостоверения', 'certificate_number')
-                        ->unique('person', 'certificate_number', 'Номер удостоверения должен быть уникальным'),
                 ])->columnSpan(6),
                 Column::make([
                     CustomText::make('Имя', 'first_name')
@@ -163,11 +155,31 @@ class PersonResource extends BaseModelResource
                         ->nameFormat()
                         ->required()
                         ->placeholder('Иван'),
+                ])->columnSpan(6),
+            ]),
+            Grid::make([
+                Column::make([
+                    CustomText::make('Отчество', 'middle_name')
+                        ->min(2,'Минимум 2 символа')
+                        ->max(50, 'Максимум 50 символов')
+                        ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                        ->nameFormat('Отчество должно содержать буквы')
+                        ->placeholder('Иванович'),
+                ])->columnSpan(6),
+                Column::make([
                     CustomDate::make('Дата рождения', 'birth_date')
                         ->before(Carbon::now(), 'Дата рождения не может быть будущим')
                         ->after(Carbon::now()->subYears(120), 'Дата рождения не может быть более 120 лет назад')
                         ->format('d.m.Y')
                         ->sortable(),
+                ])->columnSpan(6),
+            ]),
+            Grid::make([
+                Column::make([
+                    CustomText::make('Номер удостоверения', 'certificate_number')
+                        ->unique('person', 'certificate_number', 'Номер удостоверения должен быть уникальным'),
+                ])->columnSpan(6),
+                Column::make([
                     SelectField::make('Организация', 'organization_id')
                         ->placeholder('Выберите организацию')
                         ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
@@ -187,12 +199,12 @@ class PersonResource extends BaseModelResource
             CustomTextarea::make('Комментарий', 'comment'),
             Grid::make([
                 Column::make([
-                    Date::make('Заморозить с', 'frozen_start')
+                    CustomDate::make('Заморозить с', 'frozen_start')
                         ->withTime()
                         ->nullable(),
                 ])->columnSpan(6),
                 Column::make([
-                    Date::make('Заморозить до', 'frozen_end')
+                    CustomDate::make('Заморозить до', 'frozen_end')
                         ->withTime()
                         ->nullable()
                 ])->columnSpan(6)

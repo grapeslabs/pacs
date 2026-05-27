@@ -101,7 +101,7 @@ final readonly class CustomFiltersForm implements FormContract
                     $this->getResetButton($resource->isAsync(), true),
                 ]);
             })
-            ->submit('Применить', ['class' => 'btn-primary', 'style' => 'width: 100%'])
+            ->submit('Применить', ['class' => 'btn-primary', 'style' => 'width: 136px'])
             ->when(
                 $resource->getFilterParams() !== [],
                 fn (FormBuilderContract $form): FormBuilderContract => $form->buttons([

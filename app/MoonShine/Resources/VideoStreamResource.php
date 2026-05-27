@@ -75,13 +75,13 @@ class VideoStreamResource extends BaseModelResource
     {
         return [
             ID::make('ID', 'id'),
-            Checkbox::make('Включено', 'is_active'),
             CustomText::make('Название', 'name')
                 ->required()
                 ->unique('streams', 'name'),
             CustomText::make('Локация', 'location')->nullable(),
             CustomText::make('Адрес потока(RTSP)', 'rtsp')->required()
                 ->pattern('^rtsp:\/\/([^\s\/:]+)(?::([0-9]+))?(\/.*)?$'),
+            Checkbox::make('Включение видеопотока', 'is_active'),
             CustomNumber::make('Время хранения архива(Час)', 'archive_time')
                 ->default(24)
                 ->integer("Время хранения архива должно быть числом")
