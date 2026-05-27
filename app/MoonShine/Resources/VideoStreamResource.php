@@ -4,6 +4,7 @@ namespace App\MoonShine\Resources;
 
 use App\Models\Setting;
 use App\Models\Stream;
+use App\MoonShine\Fields\ArchiveDuration;
 use App\MoonShine\Fields\CustomNumber;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\FeatureField;
@@ -82,12 +83,7 @@ class VideoStreamResource extends BaseModelResource
             CustomText::make('Локация', 'location')->nullable(),
             CustomText::make('Адрес потока(RTSP)', 'rtsp')->required()
                 ->pattern('^rtsp:\/\/([^\s\/:]+)(?::([0-9]+))?(\/.*)?$'),
-            CustomNumber::make('Время хранения архива(Час)', 'archive_time')
-                ->default(24)
-                ->integer("Время хранения архива должно быть числом")
-                ->minValue(1, 'Время хранения архива не может быть меньше часа')
-                ->maxValue(87600, 'Время хранения архива не может быть больше года')
-                ->required(),
+            ArchiveDuration::make('Архив', 'archive_time'),
             ...config('services.va.enabled')?[
                 FeatureField::make('Распознание личности', 'is_recognize')
                     ->locked(!Setting::where('key', 'face_recognition')->value('value'))
@@ -118,7 +114,9 @@ class VideoStreamResource extends BaseModelResource
         return [
             'name' => ['required', 'string', 'max:255'],
             'location' => ['nullable','string', 'max:255'],
-            'archive_time' => ['required','integer', 'min:0'],
+            'archive_time' => ['required', 'array'],
+            'archive_time.value' => ['required', 'integer', 'min:0'],
+            'archive_time.unit' => ['required', 'integer'],
             'rtsp' => ['string', 'max:255'],
         ];
     }
