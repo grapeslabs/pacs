@@ -5,6 +5,7 @@ namespace App\MoonShine\Resources;
 use App\Models\Person;
 use App\Models\Stream;
 use App\Models\VideoAnalyticReport;
+use App\MoonShine\Fields\SelectField;
 use Illuminate\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
@@ -82,20 +83,18 @@ class EventReportResource extends BaseModelResource
             DateRange::make('Период отчётности', 'datetime')
                 ->withTime(),
 
-            Select::make('Видеопоток', 'camera_id')
+            SelectField::make('Видеопоток', 'camera_id')
                 ->placeholder('Видеопоток')
                 ->options(Stream::query()->pluck('name', 'uid')->toArray())
-                ->nullable()
-                ->searchable(),
+                ->nullable(),
 
-            Select::make('Тип распознавания', 'is_unknown')
+            SelectField::make('Тип распознавания', 'is_unknown')
                 ->options([
                     'true' => 'Неизвестное лицо',
                     'false' => 'Известное лицо',
                 ])
                 ->placeholder('Тип распознавания')
                 ->nullable()
-                ->searchable()
                 ->onApply(function (Builder $query, $value) {
                     return $query->where('is_unknown', $value === 'true');
                 }),

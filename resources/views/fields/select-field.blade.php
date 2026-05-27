@@ -9,8 +9,9 @@
         align-items: center;
         gap: 8px;
         width: 100%;
-        min-height: 46px;
-        padding: 6px 12px;
+        box-sizing: border-box;
+        min-height: 42px;
+        padding: 0 12px;
         border-radius: 12px;
         cursor: text;
         transition: all 0.2s ease-in-out;
@@ -63,6 +64,8 @@
     .multiselect-arrow {
         display: flex; align-items: center; color: #A1A5B7;
         pointer-events: none; transition: transform 0.2s;
+        margin-left: auto;
+        flex-shrink: 0;
     }
     .multiselect-arrow.rotated {
         transform: rotate(180deg);
@@ -70,7 +73,7 @@
 
     .multiselect-dropdown {
         position: absolute; top: 100%; left: 0; width: 100%;
-        margin-top: 8px;
+        margin-top: 4px;
         padding: 6px;
         background-color: #FFFFFF;
         box-shadow: 0 0 0 0.2rem #F3F3F3;
@@ -80,7 +83,6 @@
     }
 
     .multiselect-options-list {
-        max-height: 220px;
         overflow-y: auto;
         padding-right: 4px;
     }
@@ -125,6 +127,18 @@
         color: #8A93FF;
         display: flex;
         align-items: center; }
+
+    .multiselect-box.select-error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 1px #ef4444 !important;
+    }
+
+    .select-error-msg {
+        color: #ef4444;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: block;
+    }
 </style>
 
 <div x-data="{
@@ -134,24 +148,69 @@
     createUrl: '{{ $createUrl }}',
     creatable: {{ $isCreatable ? 'true' : 'false' }},
     multiple: {{ $isMultiple ? 'true' : 'false' }},
+    placeholder: '{{ addslashes($placeholder) }}',
+    rules: {{ json_encode($customClientRules) }},
 
     search: '',
     open: false,
     isLoading: false,
+    maxOptionsHeight: 220,
+    error: null,
+    touched: false,
 
     init() {
+        if (!window.selectFieldsInitialized) {
+            window.selectFieldsInitialized = true;
+            document.addEventListener('submit', function(event) {
+                const errorField = document.querySelector('.select-error');
+                if (errorField) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    errorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, true);
+        }
+
+        this.$watch('selectedIds', () => { this.validate(); });
+
         const form = this.$el.closest('form');
         if (form) {
             form.addEventListener('reset', () => {
                 this.selectedIds = [];
                 this.search = '';
+                this.touched = false;
+                this.error = null;
             });
         }
 
         document.addEventListener('moonshine:filter-reset', () => {
             this.selectedIds = [];
             this.search = '';
+            this.touched = false;
+            this.error = null;
         });
+
+        this.$watch('open', value => {
+            if (value) {
+                this.$nextTick(() => {
+                    const rect = this.$el.getBoundingClientRect();
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    this.maxOptionsHeight = Math.max(80, spaceBelow - 4 - 12 - 8);
+                });
+            } else {
+                this.touched = true;
+                this.validate();
+            }
+        });
+    },
+
+    validate() {
+        if (!this.touched) return;
+        this.error = null;
+        const isRequired = this.rules.find(r => r.type === 'required');
+        if (isRequired && this.selectedIds.length === 0) {
+            this.error = isRequired.message;
+        }
     },
 
     get selectedOptions() { return this.selectedIds.map(id => this.options.find(o => o.id == id)).filter(Boolean); },
@@ -164,6 +223,10 @@
         const lowerSearch = this.search.toLowerCase();
         return available.filter(o => o.name.toLowerCase().includes(lowerSearch));
     },
+    get selectedSingleLabel() {
+        if (this.multiple || this.selectedIds.length === 0) return '';
+        return this.selectedOptions[0]?.name ?? '';
+    },
     get showCreate() {
         if (!this.creatable || this.search.trim() === '') return false;
         return !this.options.some(o => o.name.toLowerCase() === this.search.trim().toLowerCase());
@@ -175,11 +238,17 @@
             this.$refs.searchInput.focus();
         } else {
             this.selectedIds = [option.id];
-            this.search = option.name;
+            this.search = '';
             this.open = false;
         }
     },
-    removeOption(id) { this.selectedIds = this.selectedIds.filter(i => i != id); },
+    removeOption(id) {
+        this.selectedIds = this.selectedIds.filter(i => i != id);
+        this.search = '';
+        if (!this.multiple) {
+            this.$nextTick(() => this.$refs.searchInput?.focus());
+        }
+    },
     async createTag() {
         if (!this.creatable || !this.showCreate || this.isLoading) return;
         this.isLoading = true;
@@ -197,11 +266,23 @@
      class="multiselect-wrapper"
      @click.outside="open = false"
 >
-    <div @click="open = true" class="multiselect-box" :class="{ 'active': open }">
-        <template x-for="option in selectedOptions" :key="option.id">
+    <div @click="open = true; $nextTick(() => $refs.searchInput?.focus())" class="multiselect-box" :class="{ 'active': open, 'select-error': error !== null }">
+        <template x-if="multiple">
+            <template x-for="option in selectedOptions" :key="option.id">
+                <span class="multiselect-tag">
+                    <span x-text="option.name"></span>
+                    <button type="button" @click.stop="removeOption(option.id)" class="multiselect-tag-remove">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                    </button>
+                </span>
+            </template>
+        </template>
+
+        {{-- Single: chip when selected --}}
+        <template x-if="!multiple && selectedIds.length > 0">
             <span class="multiselect-tag">
-                <span x-text="option.name"></span>
-                <button type="button" @click.stop="removeOption(option.id)" class="multiselect-tag-remove">
+                <span x-text="selectedOptions[0]?.name"></span>
+                <button type="button" @click.stop="removeOption(selectedIds[0])" class="multiselect-tag-remove">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
                 </button>
             </span>
@@ -210,7 +291,9 @@
         <input
             x-ref="searchInput"
             type="text"
+            x-show="multiple || selectedIds.length === 0 || open"
             x-model="search"
+            :placeholder="selectedIds.length === 0 ? placeholder : (open ? 'Поиск...' : '')"
             @focus="open = true"
             @keydown.enter.prevent="createTag()"
             @keydown.backspace="search === '' && selectedIds.length > 0 ? removeOption(selectedIds[selectedIds.length - 1]) : null"
@@ -223,7 +306,7 @@
     </div>
 
     <div x-show="open" x-transition class="multiselect-dropdown">
-        <div class="multiselect-options-list">
+        <div class="multiselect-options-list" :style="'max-height: ' + maxOptionsHeight + 'px'">
             <template x-for="option in filteredOptions" :key="option.id">
                 <div @click="selectOption(option)" class="multiselect-option" x-text="option.name"></div>
             </template>
@@ -253,4 +336,6 @@
     <template x-if="!multiple">
         <input type="hidden" :name="name" :value="selectedIds.length > 0 ? selectedIds[0] : ''">
     </template>
+
+    <span class="select-error-msg" x-text="error ?? ''" :style="!error ? 'visibility: hidden' : ''"></span>
 </div>

@@ -8,8 +8,12 @@ use App\MoonShine\Components\SafeModal;
 use App\MoonShine\Traits\HasUndoNotification;
 use Illuminate\Database\Eloquent\Model;
 use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
+use Closure;
 use MoonShine\Contracts\UI\ActionButtonContract;
+use MoonShine\Contracts\UI\ComponentContract;
+use MoonShine\Contracts\UI\FormBuilderContract;
 use MoonShine\ImportExport\Contracts\HasImportExportContract;
+use MoonShine\UI\Components\Table\TableBuilder;
 use MoonShine\ImportExport\ExportHandler;
 use MoonShine\ImportExport\ImportHandler;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
@@ -32,6 +36,11 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
     protected bool $softDelete=true;
     protected bool $stickyTable=true;
     protected string $safeModalName = 'universal-safe-modal';
+
+    protected function activeActions(): ListOf
+    {
+        return parent::activeActions()->except(Action::MASS_DELETE);
+    }
 
     protected function indexButtons(): ListOf
     {
@@ -59,11 +68,42 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             ->icon('pencil')
             ->class('js-edit-button')
             ->customAttributes([
-                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Редактирование' })",
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Редактирование' })",
             ])
             ->async(selector: "#{$this->safeModalName}_content")
             ->canSee(fn() => $this->hasAction(Action::CREATE) && $this->can(Ability::CREATE));
 
+    }
+
+    public function getSearch(): array
+    {
+        return $this->search();
+    }
+
+    public function modifyFormComponent(ComponentContract $component): ComponentContract
+    {
+        if ($component instanceof FormBuilderContract) {
+            $component->submit(null, ['style' => 'width: 136px; margin-left: 1.5rem']);
+        }
+        return $component;
+    }
+
+    public function modifyListComponent(ComponentContract $component): ComponentContract
+    {
+        return $component;
+    }
+    public function getQueryParamsKeys(): array
+    {
+        return [...parent::getQueryParamsKeys(), 'per_page'];
+    }
+
+    protected function getItemsPerPage(): int
+    {
+        $perPage = (int) $this->getQueryParams()->get('per_page', 0);
+        if ($perPage > 0 && in_array($perPage, [10, 25, 50, 100])) {
+            return $perPage;
+        }
+        return $this->itemsPerPage;
     }
 
     protected function pages(): array
@@ -76,14 +116,56 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
 
     }
 
-    protected function modifyDeleteButton(ActionButtonContract $button): ActionButtonContract
+    protected function hasDetailView(): bool
     {
-        return $button->withConfirm(
-            title: 'Подтверждение',
-            content: 'Вы уверены, что хотите удалить данный элемент?',
-            button: 'Подтвердить',
-            method: HttpMethod::DELETE,
-        );
+        $method = new \ReflectionMethod(static::class, 'detailFields');
+        return $method->getDeclaringClass()->getName() === static::class;
+    }
+
+    protected function modifyDetailButton(ActionButtonContract $button): ActionButtonContract
+    {
+        if (! $this->hasDetailView()) {
+            return $button->canSee(fn() => false);
+        }
+        return $button->customAttributes(['style' => 'display: none !important;']);
+    }
+
+    public function trAttributes(): ?Closure
+    {
+        if (! $this->hasDetailView()) {
+            return null;
+        }
+        return function (mixed $item, int $index): array {
+            return [
+                '@click' => "if(\$event.target.closest('a,button,input,label')) return; \$event.currentTarget.querySelector('.js-detail-button')?.click();",
+                'style' => 'cursor: pointer;',
+            ];
+        };
+    }
+
+    public function getDeleteButton(
+        ?string $componentName = null,
+        ?string $redirectAfterDelete = null,
+        bool $isAsync = true,
+        string $modalName = 'resource-delete-modal',
+    ): ActionButtonContract {
+        return ActionButton::make(
+            '',
+            url: fn($item) => $this->getRoute('crud.destroy', $item->getKey())
+        )
+            ->name('resource-delete-button')
+            ->withoutLoading()
+            ->customAttributes([
+                '@click.prevent.stop' => "window.dispatchEvent(new CustomEvent('open-custom-delete-modal', {detail: {url: \$el.href}}));",
+            ])
+            ->canSee(
+                fn($item) => $item->getKey()
+                    && $this->hasAction(Action::DELETE)
+                    && $this->setItem($item)->can(Ability::DELETE)
+            )
+            ->error()
+            ->icon('trash')
+            ->showInLine();
     }
 
     protected function modifyMassDeleteButton(ActionButtonContract $button): ActionButtonContract

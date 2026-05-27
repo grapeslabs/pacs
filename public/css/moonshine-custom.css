@@ -613,7 +613,9 @@ div[x-show="asideMenuOpen"] {
         color: var(--white-main);
     }
     .menu-bottom {
-        padding-bottom: 30px;
+        padding: 10px 10px 20px;
+        border-top: none !important;
+        border-bottom: none !important;
     }
     @media (max-width: 1024px) {
         position: fixed !important;
@@ -726,6 +728,20 @@ textarea {
     background: var(--gray-blue-200);
     color: var(--white-main);
     cursor: pointer;
+}
+
+.form-checkbox {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+}
+
+.form-switcher .form-checkbox {
+    width: unset !important;
+    height: unset !important;
+    min-width: unset !important;
+    min-height: unset !important;
 }
 
 .form-checkbox:checked {
@@ -1379,6 +1395,15 @@ textarea {
 .table-responsive {
     border: 1px solid var(--gray-blue-200) !important;
     border-radius: var(--radius-x4) !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-x: auto !important;
+}
+
+.table-sticky {
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
 }
 
 
@@ -1386,6 +1411,9 @@ textarea {
     border-collapse: collapse !important;
     border-spacing: 0 !important;
     margin: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    font-size: 14px !important;
 }
 
 .table-list thead tr {
@@ -1467,6 +1495,16 @@ textarea {
     border-color: gray !important;
 }
 
+.choices {
+    height: 42px !important;
+    overflow: hidden !important;
+}
+
+.choices__inner {
+    min-height: 42px !important;
+    box-sizing: border-box !important;
+}
+
 .choices .choices__list--multiple .choices__item {
     background-color: #7E92F8 !important;
 
@@ -1504,6 +1542,20 @@ textarea {
     display: flex;
     align-items: center;
     gap: 0;
+}
+
+.form button[type=submit].btn-primary {
+    min-width: 136px !important;
+    max-width: calc(100% - 1rem) !important;
+}
+
+#universal-safe-modal_content .form > .grid:last-child {
+    position: sticky;
+    bottom: 0;
+    background-color: #ffffff;
+    padding: 12px 0;
+    margin: 0 -1.5rem -1.5rem;
+    z-index: 10;
 }
 
 .js-filter-button {

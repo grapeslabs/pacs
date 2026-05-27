@@ -3,6 +3,7 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Setting;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
@@ -11,7 +12,7 @@ use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Select;
-use MoonShine\UI\Fields\Textarea;
+use App\MoonShine\Fields\CustomTextarea;
 use MoonShine\UI\Fields\Checkbox;
 use MoonShine\UI\Fields\Number;
 use MoonShine\UI\Fields\Json;
@@ -120,10 +121,10 @@ class SettingResource extends BaseModelResource
             Text::make('Название', 'name')
                 ->required(),
 
-            Textarea::make('Описание', 'description')
+            CustomTextarea::make('Описание', 'description')
                 ->nullable(),
 
-            Select::make('Тип поля', 'type')
+            SelectField::make('Тип поля', 'type')
                 ->options([
                     Setting::TYPE_TEXT => 'Текст',
                     Setting::TYPE_TEXTAREA => 'Текстовое поле',
@@ -143,7 +144,7 @@ class SettingResource extends BaseModelResource
                 ->removable()
                 ->nullable(),
 
-            Select::make('Группа', 'group')
+            SelectField::make('Группа', 'group')
                 ->options([
                     Setting::GROUP_GENERAL => 'Основные',
                     Setting::GROUP_SYSTEM => 'Системные',
@@ -171,7 +172,7 @@ class SettingResource extends BaseModelResource
 
         switch ($type) {
             case Setting::TYPE_TEXTAREA:
-                return Textarea::make('Значение', 'value')
+                return CustomTextarea::make('Значение', 'value')
                     ->nullable();
 
             case Setting::TYPE_NUMBER:
@@ -202,7 +203,7 @@ class SettingResource extends BaseModelResource
             ID::make(),
             Text::make('Ключ', 'key'),
             Text::make('Название', 'name'),
-            Textarea::make('Описание', 'description'),
+            CustomTextarea::make('Описание', 'description'),
             Text::make('Тип поля', 'type')
                 ->setValue(fn($item) => $item->type_label),
             Text::make('Значение', 'value'),
@@ -244,7 +245,7 @@ class SettingResource extends BaseModelResource
     public function filters(): array
     {
         return [
-            Select::make('Группа', 'group')
+            SelectField::make('Группа', 'group')
                 ->options([
                     Setting::GROUP_GENERAL => 'Основные',
                     Setting::GROUP_SYSTEM => 'Системные',
@@ -255,7 +256,7 @@ class SettingResource extends BaseModelResource
                 ])
                 ->nullable(),
 
-            Select::make('Тип', 'type')
+            SelectField::make('Тип', 'type')
                 ->options([
                     Setting::TYPE_TEXT => 'Текст',
                     Setting::TYPE_TEXTAREA => 'Текстовое поле',
@@ -265,7 +266,6 @@ class SettingResource extends BaseModelResource
                     Setting::TYPE_JSON => 'JSON',
                     Setting::TYPE_PASSWORD => 'Пароль',
                 ])
-                ->searchable(false)
                 ->nullable()
                 ->placeholder('Фильтрация по типу'),
         ];

@@ -5,6 +5,7 @@ namespace App\MoonShine\Resources;
 use App\Models\ApiKey;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
+use App\MoonShine\Fields\SelectField;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Fields\Text;
@@ -151,7 +152,7 @@ class ApiKeyResource extends BaseModelResource
                     return $query;
                 }),
 
-            Select::make('Активен', 'is_active')
+            SelectField::make('Активен', 'is_active')
                 ->options([
                     '' => 'Все',
                     'active' => 'Активен',
@@ -169,7 +170,7 @@ class ApiKeyResource extends BaseModelResource
                     return $query;
                 }),
 
-            Select::make('Бессрочный', 'is_unlimited')
+            SelectField::make('Бессрочный', 'is_unlimited')
                 ->options([
                     '' => 'Все',
                     'unlimited' => 'Бессрочные',

@@ -43,7 +43,7 @@ class CustomIndexPage extends IndexPage
 
                 Flex::make([
 
-                    Search::make()->render(),
+                    Search::make(placeholder: $this->buildSearchPlaceholder())->render(),
 
                     ActionGroup::make()
                         ->when(
@@ -68,6 +68,30 @@ class CustomIndexPage extends IndexPage
                 ->class('mb-6'),
         ];
     }
+    private function buildSearchPlaceholder(): string
+    {
+        $resource = $this->getResource();
+        $searchColumns = method_exists($resource, 'getSearch') ? $resource->getSearch() : [];
+
+        if (empty($searchColumns)) {
+            return __('moonshine::ui.search') . ' (Ctrl+K)';
+        }
+
+        $fieldLabels = collect($resource->getIndexFields()->onlyFields())
+            ->mapWithKeys(fn($field) => [$field->getColumn() => $field->getLabel()]);
+
+        $labels = collect($searchColumns)
+            ->map(fn(string $col) =>
+                $fieldLabels->get($col)
+                ?? $fieldLabels->get(explode('.', $col)[0])
+            )
+            ->filter()
+            ->unique()
+            ->join(', ');
+
+        return 'Поиск: ' . $labels . ' (Ctrl+K)';
+    }
+
     protected function getCustomCreateButton()
     {
         $resource = $this->getResource();

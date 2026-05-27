@@ -38,74 +38,59 @@ class SkudEventResource extends BaseModelResource
         return $builder->whereHas('cardNumber');
     }
 
-    /**
-     * Получить тип субъекта (Персона/Гость) из данных события
-     */
-    private function getSubjectType($eventData): string
+    private function getPersonByCardNumber(?string $cardNumber): ?Person
     {
-        // Если есть card_number - это может быть персона с key_uid
-        if (isset($eventData['card_number'])) {
-            $person = Person::where('key_uid', $eventData['card_number'])->first();
-            if ($person) {
-                return 'Персона';
-            }
+        if (!$cardNumber) return null;
+
+        static $cache = [];
+
+        if (!array_key_exists($cardNumber, $cache)) {
+            $cache[$cardNumber] = Person::select('id', 'key_uid', 'first_name', 'last_name', 'middle_name', 'certificate_number', 'organization_id', 'photo')
+                ->with('organization:id,short_name,full_name')
+                ->where('key_uid', $cardNumber)
+                ->first();
         }
 
-        elseif (isset($eventData['card_number'])) {
-            // Если не нашли персону по key_uid, но есть card_number
-            return 'По карте';
-        }
-        return 'Неизвестно';
+        return $cache[$cardNumber];
     }
 
-    /**
-     * Получить ФИО/имя субъекта
-     */
-    private function getSubjectName($eventData): string
+    private function getControllerType(mixed $controllerId): ?string
     {
-        // Пытаемся найти персону по card_number (это uid person)
-        if (isset($eventData['card_number'])) {
-            $person = Person::where('key_uid', $eventData['card_number'])->first();
-            if ($person) {
-                return $person->getFullName();
-            }
-            // Если не нашли персону, показываем номер карты
-            return 'Карта: ' . $eventData['card_number'];
+        if (!$controllerId || $controllerId === '{}') return null;
+
+        static $cache = [];
+
+        if (!array_key_exists($controllerId, $cache)) {
+            $cache[$controllerId] = SkudController::where('id', $controllerId)->value('type');
         }
+
+        return $cache[$controllerId];
+    }
+
+    private function getSubjectName(array $eventData): string
+    {
+        $person = $this->getPersonByCardNumber($eventData['card_number'] ?? null);
+
+        if ($person) return $person->getFullName();
+        if (isset($eventData['card_number'])) return 'Карта: ' . $eventData['card_number'];
 
         return '—';
     }
 
-    /**
-     * Получить номер удостоверения/документа
-     */
-    private function getCertificateNumber($eventData): string
+    private function getCertificateNumber(array $eventData): string
     {
-        // Ищем персону по card_number (uid person)
-        if (isset($eventData['card_number'])) {
-            $person = Person::where('key_uid', $eventData['card_number'])->first();
-            if ($person && $person->certificate_number) {
-                return $person->certificate_number;
-            }
-        }
+        $person = $this->getPersonByCardNumber($eventData['card_number'] ?? null);
 
-        return '—';
+        return $person?->certificate_number ?? '—';
     }
 
-    /**
-     * Получить организацию
-     */
-    private function getOrganization($eventData): string
+    private function getOrganization(array $eventData): string
     {
-        // Ищем персону по card_number (uid person)
-        if (isset($eventData['card_number'])) {
-            $person = Person::where('key_uid', $eventData['card_number'])->first();
-            if ($person && $person->organization) {
-                return $person->organization->short_name ?? $person->organization->full_name ?? '—';
-            }
-        }
+        $person = $this->getPersonByCardNumber($eventData['card_number'] ?? null);
 
-        return '—';
+        return $person?->organization?->short_name
+            ?? $person?->organization?->full_name
+            ?? '—';
     }
 
 
@@ -122,8 +107,7 @@ class SkudEventResource extends BaseModelResource
             Text::make('Тип оборудования', 'controller_id')
                 ->sortable('controller_id')
                 ->changeFill(function ($data) {
-                    $controller_type = SkudController::where('id', $data->controller_id ?? '{}', true)->value('type');
-                    return $controller_type;
+                    return $this->getControllerType($data->controller_id);
                 }),
 
             Text::make('Серийный номер', 'controller.serial_number')
@@ -168,7 +152,9 @@ class SkudEventResource extends BaseModelResource
                 }),
 
             Image::make('Фото', 'photo', function ($item) {
-                return Person::where('key_uid',json_decode($item->event,true)['card_number']??null)->first()?->photo[0]??null;
+                $eventData = is_array($item->event) ? $item->event : json_decode($item->event ?? '{}', true);
+                $person = $this->getPersonByCardNumber($eventData['card_number'] ?? null);
+                return $person?->photo[0] ?? null;
             }),
 
             Text::make('Номер удостоверения', 'certificate_number')
@@ -231,7 +217,7 @@ class SkudEventResource extends BaseModelResource
                 }),
 
             // Фильтр по серийному номеру контроллера
-            Select::make('Серийный номер', 'controller_serial')
+            SelectField::make('Серийный номер', 'controller_serial')
                 ->options(function() {
                     // Получаем все контроллеры, исключая pingate
                     return SkudController::where('type', '!=', $this->ex_type)
@@ -247,7 +233,6 @@ class SkudEventResource extends BaseModelResource
                         ->toArray();
                 })
                 ->nullable()
-                ->searchable()
                 ->placeholder('Фильтр по серийному номеру')
                 ->onApply(function (Builder $query, $value) {
                     if ($value) {

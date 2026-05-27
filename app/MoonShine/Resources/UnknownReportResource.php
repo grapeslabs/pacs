@@ -29,7 +29,7 @@ use MoonShine\UI\Fields\Hidden;
 use MoonShine\UI\Fields\Image;
 use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Text;
-use MoonShine\UI\Fields\Textarea;
+use App\MoonShine\Fields\CustomTextarea;
 
 class UnknownReportResource extends BaseModelResource
 {
@@ -147,13 +147,12 @@ class UnknownReportResource extends BaseModelResource
                     ->removable()
                     ->allowedExtensions(['jpg', 'png', 'jpeg', 'webp']),
 
-                Select::make('Организация', 'organization_id')
+                SelectField::make('Организация', 'organization_id')
                     ->placeholder('Выберите организацию')
                     ->options(Organization::pluck('short_name', 'id')->toArray())
-                    ->searchable()
                     ->nullable(),
 
-                Textarea::make('Комментарий', 'comment'),
+                CustomTextarea::make('Комментарий', 'comment'),
             ])
             ->submit('Сохранить', ['class' => 'btn-primary']);
     }
@@ -225,10 +224,9 @@ class UnknownReportResource extends BaseModelResource
     {
         return [
             DateRange::make('Период отчётности',  'datetime')->withTime(),
-            Select::make('Видеопоток', 'camera_id')
+            SelectField::make('Видеопоток', 'camera_id')
                 ->options(Stream::query()->pluck('name', 'uid')->toArray())
-                ->nullable()
-                ->searchable(),
+                ->nullable(),
         ];
     }
 

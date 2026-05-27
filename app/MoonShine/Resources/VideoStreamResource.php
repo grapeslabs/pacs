@@ -86,7 +86,6 @@ class VideoStreamResource extends BaseModelResource
     {
         return [
             ID::make('ID', 'id'),
-            Checkbox::make('Включено', 'is_active'),
             CustomText::make('Название', 'name')
                 ->required()
                 ->unique('streams', 'name'),
@@ -94,6 +93,7 @@ class VideoStreamResource extends BaseModelResource
             CustomText::make('Адрес потока(RTSP)', 'rtsp')->required()
                 ->pattern('^rtsp:\/\/([^\s\/:]+)(?::([0-9]+))?(\/.*)?$'),
             BelongsTo::make('Хранилище', 'storage', 'name', StorageResource::class),
+            Checkbox::make('Включение видеопотока', 'is_active'),
             CustomNumber::make('Время хранения архива(Час)', 'archive_time')
                 ->default(24)
                 ->integer("Время хранения архива должно быть числом")
@@ -140,10 +140,10 @@ class VideoStreamResource extends BaseModelResource
             ID::make('ID', 'id'),
             Text::make('UID', 'uid'),
             BelongsTo::make('Хранилище', 'storage', 'name', StorageResource::class),
-            Checkbox::make('Включено', 'is_active'),
             Text::make('Название', 'name'),
             Text::make('Локация', 'location'),
             Text::make('Адрес потока(RTSP)', 'rtsp'),
+            Checkbox::make('Включение видеопотока', 'is_active'),
             Text::make('Время хранения архива(Час)', 'archive_time'),
             ...config('services.va.enabled')?[
                 Checkbox::make('Распознание личности', 'is_recognize'),

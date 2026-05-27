@@ -9,6 +9,8 @@ use App\Models\Role;
 use App\MoonShine\Fields\PermissionMatrixField;
 use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Contracts\Validation\Rule;
+use MoonShine\Contracts\UI\ComponentContract;
+use MoonShine\Contracts\UI\FormBuilderContract;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Models\MoonshineUserRole;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
@@ -19,7 +21,11 @@ use MoonShine\MenuManager\Attributes\Group;
 use MoonShine\MenuManager\Attributes\Order;
 use MoonShine\Support\Attributes\Icon;
 use MoonShine\Support\ListOf;
+use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Components\Layout\Box;
+use MoonShine\UI\Components\Layout\Column;
+use MoonShine\UI\Components\Layout\Flex;
+use MoonShine\UI\Components\Layout\Grid;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 
@@ -55,15 +61,32 @@ class MoonShineUserRoleResource extends BaseModelResource
         ];
     }
 
+    public function modifyFormComponent(ComponentContract $component): ComponentContract
+    {
+        if ($component instanceof FormBuilderContract) {
+            $component->hideSubmit();
+        }
+        return $component;
+    }
+
     protected function formFields(): iterable
     {
         return [
-            ID::make()->sortable(),
-            CustomText::make(__('moonshine::ui.resource.role_name'), 'name')
-                ->unique('moonshine_user_roles', 'name', 'Роль должна быть уникальной')
-                ->required(),
-            CustomText::make('Описание', 'description'),
-            PermissionMatrixField::make('Права и доступы','permissions'),
+            Box::make([
+                Grid::make([
+                    Column::make([
+                        ID::make()->sortable(),
+                        CustomText::make(__('moonshine::ui.resource.role_name'), 'name')
+                            ->unique('moonshine_user_roles', 'name', 'Роль должна быть уникальной')
+                            ->required(),
+                        CustomText::make('Описание', 'description'),
+                    ])->style('min-width: 400px; max-width: 600px')
+                ]),
+                PermissionMatrixField::make('Права и доступы','permissions'),
+                ActionButton::make('Сохранить')
+                    ->customAttributes(['type' => 'submit', 'style' => 'width: 136px'])
+                    ->primary(),
+            ]),
         ];
     }
 

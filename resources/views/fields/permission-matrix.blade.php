@@ -2,7 +2,6 @@
     .perm-matrix-container {
         display: flex;
         flex-direction: column;
-        gap: 1rem;
     }
 
     .perm-main-label {
@@ -56,6 +55,11 @@
         flex-shrink: 0;
     }
 
+    .perm-tab svg path {
+        fill: #7F7F9D;
+        transition: fill 0.2s;
+    }
+
     .perm-tab:hover {
         background: #f1f5f9;
         color: #0f172a;
@@ -64,6 +68,10 @@
     .perm-tab.active {
         background: #eef2ff;
         color: #4f46e5;
+    }
+
+    .perm-tab.active svg path {
+        fill: #4f46e5;
     }
 
     .perm-dot {
@@ -121,6 +129,8 @@
     .perm-checkbox-group input {
         margin-top: 0.15rem;
         cursor: pointer;
+        width: 1.25rem;
+        height: 1.25rem;
     }
 
     .perm-checkbox-group label {
@@ -157,9 +167,17 @@
         color: #f8fafc;
     }
 
+    .dark .perm-tab svg path {
+        fill: #7F7F9D;
+    }
+
     .dark .perm-tab.active {
         background: #312e81;
         color: #818cf8;
+    }
+
+    .dark .perm-tab.active svg path {
+        fill: #818cf8;
     }
 
     .dark .perm-dot {
@@ -239,7 +257,7 @@
 
     <input type="hidden" name="is_customized_permissions" :value="isCustomized ? '1' : '0'" :disabled="!hasRoleContext">
 
-    <div class="perm-header-bar" x-show="hasRoleContext" style="display: none;">
+    <div class="perm-header-bar" x-show="hasRoleContext && isCustomized" style="display: none;">
         <div class="perm-header-left">
             <span x-show="isCustomized" x-transition class="perm-badge" style="display: none;">
                 Индивидуальные настройки
@@ -286,14 +304,15 @@
                     <div class="perm-content-header">
                         Настройка прав для <strong x-text="activeTab"></strong>
                     </div>
-
-                    <div class="perm-checkbox-group mb-6">
-                        <input type="checkbox" :id="'toggle_cat_{{ md5($categoryName) }}'" class="form-checkbox"
-                               @change="toggleCategory($event, '{{ $categoryName }}')"
-                               :checked="isCategoryFullyChecked('{{ $categoryName }}')">
-                        <label :for="'toggle_cat_{{ md5($categoryName) }}'"
-                               class="font-medium text-black dark:text-white">Включить все</label>
-                    </div>
+                    @if(count($categoryData['resources']) > 1)
+                        <div class="perm-checkbox-group mb-6">
+                            <input type="checkbox" :id="'toggle_cat_{{ md5($categoryName) }}'" class="form-checkbox"
+                                   @change="toggleCategory($event, '{{ $categoryName }}')"
+                                   :checked="isCategoryFullyChecked('{{ $categoryName }}')">
+                                <label :for="'toggle_cat_{{ md5($categoryName) }}'"
+                                       class="font-medium text-black dark:text-white">Включить все</label>
+                        </div>
+                    @endif
 
                     <div class="perm-grid">
                         @foreach($categoryData['resources'] as $resource)
