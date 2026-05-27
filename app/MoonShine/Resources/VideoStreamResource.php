@@ -13,11 +13,13 @@ use App\MoonShine\Pages\Streams;
 use App\Services\VideoAnalyticService;
 use Illuminate\Support\Facades\Http;
 use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
+use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Number;
+use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Checkbox;
 use Log;
@@ -61,7 +63,7 @@ class VideoStreamResource extends BaseModelResource
         return [
             ID::make('ID', 'id'),
             Text::make('UID', 'uid'),
-            Text::make('ID хранилища', 'storage_id'),
+            BelongsTo::make('Хранилище', 'storage', 'name', StorageResource::class),
             Checkbox::make('Включено', 'is_active'),
             Text::make('Название', 'name'),
             Text::make('Локация', 'location'),
@@ -82,6 +84,7 @@ class VideoStreamResource extends BaseModelResource
             CustomText::make('Локация', 'location')->nullable(),
             CustomText::make('Адрес потока(RTSP)', 'rtsp')->required()
                 ->pattern('^rtsp:\/\/([^\s\/:]+)(?::([0-9]+))?(\/.*)?$'),
+            BelongsTo::make('Хранилище', 'storage', 'name', StorageResource::class),
             CustomNumber::make('Время хранения архива(Час)', 'archive_time')
                 ->default(24)
                 ->integer("Время хранения архива должно быть числом")
@@ -101,7 +104,7 @@ class VideoStreamResource extends BaseModelResource
         return [
             ID::make('ID', 'id'),
             Text::make('UID', 'uid'),
-            Text::make('ID хранилища', 'storage_id'),
+            BelongsTo::make('Хранилище', 'storage', 'name', StorageResource::class),
             Checkbox::make('Включено', 'is_active'),
             Text::make('Название', 'name'),
             Text::make('Локация', 'location'),

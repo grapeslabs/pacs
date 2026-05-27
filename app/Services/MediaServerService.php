@@ -57,15 +57,16 @@ class MediaServerService
         }
     }
 
-    public function createStream(string $rtspUrl, string $storageId, int $depthHours): string
+    public function createStream(string $rtspUrl, string $stream_uid, int $depthHours): string
     {
         $data = [
+            'stream_uid' => $stream_uid,
             'url' => $rtspUrl,
-            'output_dir' => '/data/streams/' . $storageId,
+            'output_dir' => '/data/streams/' . $stream_uid,
             'segment_duration' => 10,
             'enable_hls' => true,
             'enable_rtsp' => true,
-            'mount_path' => '/rtsp/' . $storageId,
+            'mount_path' => '/rtsp/' . $stream_uid,
             'depthhours' => $depthHours,
         ];
 
@@ -78,7 +79,7 @@ class MediaServerService
         return $response['data']['stream_uid'];
     }
 
-    public function updateStream(string $streamUid, string $storageId, string $rtspUrl, int $depthHours): array
+    public function updateStream(string $streamUid, string $rtspUrl, int $depthHours): array
     {
         $data = [
             'stream_uid' => $streamUid,
@@ -86,7 +87,7 @@ class MediaServerService
             'depthhours' => $depthHours,
             'enable_hls' => true,
             'enable_rtsp' => true,
-            'mount_path' => '/rtsp/' . $storageId,
+            'mount_path' => '/rtsp/' . $streamUid,
         ];
 
         return $this->request('/api/v1/stream/update', $data);

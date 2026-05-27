@@ -8,6 +8,7 @@ use App\Models\User;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\PeopleReportResource;
+use App\MoonShine\Resources\StorageResource;
 use App\MoonShine\Resources\TriggerResource;
 use App\MoonShine\Resources\SkudEventResource;
 use App\MoonShine\Resources\UnknownReportResource;
@@ -70,6 +71,7 @@ class MoonShineServiceProvider extends ServiceProvider
                 ApiKeyResource::class,
                 ...config('services.ms.enabled')?[
                     VideoStreamResource::class,
+                    StorageResource::class,
                 ]:[],
                 ...config('services.va.enabled')?[
                     BotResource::class,

@@ -62,10 +62,10 @@ class VideoAnalyticService
         return $this->request('/api/c1/list', ['cam_id' => $camera_uid]);
     }
 
-    public function cameraCreate($storage_id, $camera_uid='', $name='', $description='')
+    public function cameraCreate($camera_uid, $name='', $description='')
     {
         $data = [
-            'stream_to_parse' => "$this->rtsp/rtsp/$storage_id",
+            'stream_to_parse' => "$this->rtsp/rtsp/$camera_uid",
             'cam_id' => $camera_uid,
             'name' => $name,
             'desc' => $description

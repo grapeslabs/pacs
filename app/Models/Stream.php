@@ -21,4 +21,8 @@ class Stream extends Model
         'is_active',
         'is_recognize'
     ];
+
+    public function storage() {
+        return $this->belongsTo(Storage::class);
+    }
 }
