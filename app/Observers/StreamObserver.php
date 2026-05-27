@@ -29,11 +29,7 @@ class StreamObserver
             if (!$stream->is_active) {
                 $this->mediaServer->pauseStream($stream->uid);
             }
-
-            if ($stream->is_recognize) {
-                $this->createVasStream($stream);
-            }
-
+            $this->vas->cameraCreate($stream->storage_id, $stream->uid, $stream->name, $stream->location, $stream->va_options);
         } catch (Exception $e) {
             if (!empty($stream->uid)) {
                 try { $this->mediaServer->deleteStream($stream->uid); } catch (\Throwable $t) {}
@@ -57,56 +53,17 @@ class StreamObserver
             }
         }
 
-        $this->handleVasUpdate($stream);
+        if ($stream->isDirty('va_options')) {
+            $this->vas->cameraCreate($stream->storage_id, $stream->uid, $stream->name, $stream->location, $stream->va_options);
+        }
     }
 
     public function deleting(Stream $stream): void
     {
         $this->mediaServer->deleteStream($stream->uid);
-
         $result = $this->vas->cameraDelete($stream->uid);
         if (empty($result['ok'])) {
             Log::warning("Ошибка удаления из VAS", ['uid' => $stream->uid]);
-        }
-    }
-
-    private function handleVasUpdate(Stream $stream): void
-    {
-        $wasRecognized = (bool) $stream->getOriginal('is_recognize');
-        $isRecognizedNow = (bool) $stream->is_recognize;
-
-        if ($wasRecognized && !$isRecognizedNow) {
-            $this->deleteVasStream($stream);
-            return;
-        }
-
-        if (!$wasRecognized && $isRecognizedNow) {
-            $this->createVasStream($stream);
-            return;
-        }
-
-        if ($wasRecognized && $isRecognizedNow) {
-            if ($stream->isDirty(['name', 'location'])) {
-                $this->createVasStream($stream);
-            }
-        }
-    }
-
-    private function createVasStream(Stream $stream): void
-    {
-        $result = $this->vas->cameraCreate($stream->uid, $stream->name, $stream->location);
-        if (empty($result['ok'])) {
-            Log::error("Ошибка VAS cameraCreate", $result ?? []);
-            throw new Exception("Ошибка при добавлении потока в систему видео-аналитики");
-        }
-    }
-
-    private function deleteVasStream(Stream $camera): void
-    {
-        $result = $this->vas->cameraDelete($camera->uid);
-        if (empty($result['ok'])) {
-            Log::error("Ошибка VAS cameraDelete", $result ?? []);
-            throw new Exception('Не удалось отключить поток от системы видео-аналитики');
         }
     }
 }

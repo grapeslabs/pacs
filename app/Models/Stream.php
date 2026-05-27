@@ -19,7 +19,11 @@ class Stream extends Model
         'rtsp',
         'archive_time',
         'is_active',
-        'is_recognize'
+        'is_recognize',
+        'va_options',
+    ];
+    protected $casts = [
+        'va_options' => 'json',
     ];
 
     public function storage() {
