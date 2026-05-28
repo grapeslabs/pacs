@@ -115,8 +115,8 @@ class VideoStreamResource extends BaseModelResource
             'name' => ['required', 'string', 'max:255'],
             'location' => ['nullable','string', 'max:255'],
             'archive_time' => ['required', 'array'],
-            'archive_time.value' => ['required', 'integer', 'min:0', 'max:100'],
-            'archive_time.unit' => ['required', 'integer'],
+            'archive_time.value' => ['bail', 'required', 'integer', 'min:0', 'max:100'],
+            'archive_time.unit' => ['bail', 'required', 'integer'],
             'rtsp' => ['string', 'max:255'],
         ];
     }
