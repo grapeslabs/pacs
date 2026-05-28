@@ -64,6 +64,10 @@
     startX: 0,
     startY: 0,
     rect: null,
+    normalizedRect: null,
+    _nativeW: null,
+    _nativeH: null,
+    _content: null,
     isFrozen: false,
     videoEl: null,
     vueApp: null,
@@ -74,6 +78,7 @@
         this.ctx = this.$refs.canvas.getContext('2d');
         const resizeObserver = new ResizeObserver(() => this.matchSize());
         resizeObserver.observe(this.$refs.playerContainer);
+        window.addEventListener('resize', () => this.matchSize());
 
         let attempts = 0;
         const intervalId = setInterval(() => {
@@ -98,38 +103,51 @@
     },
 
     matchSize() {
-        if (!this.videoEl || this.videoEl.videoWidth === 0) return;
+        if (!this.videoEl) return;
 
-        const containerRatio = this.videoEl.clientWidth / this.videoEl.clientHeight;
-        const videoRatio = this.videoEl.videoWidth / this.videoEl.videoHeight;
+        if (this.videoEl.videoWidth > 0 && this.videoEl.videoHeight > 0) {
+            this._nativeW = this.videoEl.videoWidth;
+            this._nativeH = this.videoEl.videoHeight;
+        }
+        if (!this._nativeW || !this._nativeH) return;
 
-        let actualWidth, actualHeight, offsetX = 0, offsetY = 0;
+        const containerRect = this.$refs.playerContainer.getBoundingClientRect();
+        const videoRect = this.videoEl.getBoundingClientRect();
 
-        if (containerRatio > videoRatio) {
-            actualHeight = this.videoEl.clientHeight;
-            actualWidth = actualHeight * videoRatio;
-            offsetX = (this.videoEl.clientWidth - actualWidth) / 2;
-        } else {
-            actualWidth = this.videoEl.clientWidth;
-            actualHeight = actualWidth / videoRatio;
-            offsetY = (this.videoEl.clientHeight - actualHeight) / 2;
+        const cw = Math.round(containerRect.width);
+        const ch = Math.round(containerRect.height);
+        this.$refs.canvas.width = cw;
+        this.$refs.canvas.height = ch;
+
+        const videoOffsetX = videoRect.left - containerRect.left;
+        const videoOffsetY = videoRect.top - containerRect.top;
+        const videoW = videoRect.width;
+        const videoH = videoRect.height || 1;
+
+        // object-fit: scale-down — never upscales; uses native size when it fits, otherwise scales down
+        const fitScale = Math.min(videoW / this._nativeW, videoH / this._nativeH);
+        const contentW = fitScale >= 1 ? this._nativeW : this._nativeW * fitScale;
+        const contentH = fitScale >= 1 ? this._nativeH : this._nativeH * fitScale;
+        const contentX = videoOffsetX + (videoW - contentW) / 2;
+        const contentY = videoOffsetY + (videoH - contentH) / 2;
+
+        this._content = { x: contentX, y: contentY, w: contentW, h: contentH };
+
+        if (this.initialZone && !this.normalizedRect) {
+            const zone = typeof this.initialZone === 'string'
+                ? JSON.parse(this.initialZone)
+                : this.initialZone;
+            if (zone?.x1 !== undefined) {
+                this.normalizedRect = { x1: zone.x1, y1: zone.y1, x2: zone.x2, y2: zone.y2 };
+            }
         }
 
-        this.$refs.canvas.width = actualWidth;
-        this.$refs.canvas.height = actualHeight;
-        this.$refs.canvas.style.left = (this.videoEl.offsetLeft + offsetX) + 'px';
-        this.$refs.canvas.style.top = (this.videoEl.offsetTop + offsetY) + 'px';
-
-        if (this.initialZone && typeof this.initialZone === 'string') {
-            this.initialZone = JSON.parse(this.initialZone);
-        }
-
-        if (this.initialZone && !this.rect && this.initialZone.x1 !== undefined) {
+        if (this.normalizedRect) {
             this.rect = {
-                x: this.initialZone.x1 * actualWidth,
-                y: this.initialZone.y1 * actualHeight,
-                w: (this.initialZone.x2 - this.initialZone.x1) * actualWidth,
-                h: (this.initialZone.y2 - this.initialZone.y1) * actualHeight
+                x: contentX + this.normalizedRect.x1 * contentW,
+                y: contentY + this.normalizedRect.y1 * contentH,
+                w: (this.normalizedRect.x2 - this.normalizedRect.x1) * contentW,
+                h: (this.normalizedRect.y2 - this.normalizedRect.y1) * contentH,
             };
         }
 
@@ -154,7 +172,7 @@
 
     stopDrawing() {
         this.isDrawing = false;
-        if (this.rect) {
+        if (this.rect && this._content) {
             if (this.rect.w < 0) {
                 this.rect.x += this.rect.w;
                 this.rect.w = Math.abs(this.rect.w);
@@ -163,6 +181,13 @@
                 this.rect.y += this.rect.h;
                 this.rect.h = Math.abs(this.rect.h);
             }
+            const { x, y, w, h } = this._content;
+            this.normalizedRect = {
+                x1: (this.rect.x - x) / w,
+                y1: (this.rect.y - y) / h,
+                x2: (this.rect.x + this.rect.w - x) / w,
+                y2: (this.rect.y + this.rect.h - y) / h,
+            };
         }
     },
 
@@ -190,13 +215,14 @@
     },
 
     async save() {
-        if (!this.rect || !this.videoEl) return;
+        if (!this.rect || !this._content || !this.videoEl) return;
 
+        const { x, y, w, h } = this._content;
         const payload = {
-            x1: this.rect.x / this.$refs.canvas.width,
-            y1: this.rect.y / this.$refs.canvas.height,
-            x2: (this.rect.x + this.rect.w) / this.$refs.canvas.width,
-            y2: (this.rect.y + this.rect.h) / this.$refs.canvas.height
+            x1: (this.rect.x - x) / w,
+            y1: (this.rect.y - y) / h,
+            x2: (this.rect.x + this.rect.w - x) / w,
+            y2: (this.rect.y + this.rect.h - y) / h,
         };
 
         this.$refs.hiddenInput.value = JSON.stringify(payload);
@@ -234,7 +260,7 @@
             data-item="{{ json_encode($item) }}"
         ></div>
         <canvas x-ref="canvas"
-                style="position: absolute; z-index: 10; cursor: crosshair;"
+                style="position: absolute; left: 0; top: 0; z-index: 10; cursor: crosshair;"
                 @mousedown="startDrawing"
                 @mousemove="draw"
                 @mouseup="stopDrawing"

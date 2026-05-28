@@ -51,8 +51,54 @@
         player: null,
         isMounted: false,
         pollInterval: null,
+        videoEl: null,
+        nativeW: 0,
+        nativeH: 0,
+        content: null,
         get hasZone() {
             return this.coords.x2 > this.coords.x1 || this.coords.y2 > this.coords.y1;
+        },
+        calcContent() {
+            if (!this.videoEl) return;
+            const vw = this.videoEl.videoWidth;
+            const vh = this.videoEl.videoHeight;
+            if (vw > 0 && vh > 0) { this.nativeW = vw; this.nativeH = vh; }
+            if (!this.nativeW || !this.nativeH) return;
+
+            const wrapperRect = this.$refs.zoneWrapper.getBoundingClientRect();
+            const videoRect = this.videoEl.getBoundingClientRect();
+            const videoOffsetX = videoRect.left - wrapperRect.left;
+            const videoOffsetY = videoRect.top - wrapperRect.top;
+            const videoW = videoRect.width;
+            const videoH = videoRect.height || 1;
+
+            const fitScale = Math.min(videoW / this.nativeW, videoH / this.nativeH);
+            const contentW = fitScale >= 1 ? this.nativeW : this.nativeW * fitScale;
+            const contentH = fitScale >= 1 ? this.nativeH : this.nativeH * fitScale;
+
+            this.content = {
+                x: videoOffsetX + (videoW - contentW) / 2,
+                y: videoOffsetY + (videoH - contentH) / 2,
+                w: contentW,
+                h: contentH,
+            };
+        },
+        zoneStyle() {
+            if (!this.content) {
+                return {
+                    left:   (this.coords.x1 * 100) + '%',
+                    top:    (this.coords.y1 * 100) + '%',
+                    width:  ((this.coords.x2 - this.coords.x1) * 100) + '%',
+                    height: ((this.coords.y2 - this.coords.y1) * 100) + '%',
+                };
+            }
+            const { x, y, w, h } = this.content;
+            return {
+                left:   (x + this.coords.x1 * w) + 'px',
+                top:    (y + this.coords.y1 * h) + 'px',
+                width:  ((this.coords.x2 - this.coords.x1) * w) + 'px',
+                height: ((this.coords.y2 - this.coords.y1) * h) + 'px',
+            };
         },
         init() {
             if (typeof window.mountVideoPlayer !== 'function') {
@@ -72,6 +118,10 @@
                 });
             }
 
+            const resizeObserver = new ResizeObserver(() => this.calcContent());
+            resizeObserver.observe(this.$refs.zoneWrapper);
+            window.addEventListener('resize', () => this.calcContent());
+
             this.pollInterval = setInterval(() => {
                 const isVisible = this.$el.offsetParent !== null;
 
@@ -81,6 +131,13 @@
                         this.player = window.mountVideoPlayer(this.$refs.playerContainer);
                         this.isMounted = true;
                     }
+                    const video = this.$refs.playerContainer.querySelector('video');
+                    if (video && video !== this.videoEl) {
+                        this.videoEl = video;
+                        resizeObserver.observe(video);
+                        video.addEventListener('loadedmetadata', () => this.calcContent());
+                        this.calcContent();
+                    }
                 } else if (this.isMounted && !isVisible) {
                     if (this.player) {
                         this.player.unmount();
@@ -88,6 +145,8 @@
                     }
                     this.$refs.playerContainer.innerHTML = '';
                     this.isMounted = false;
+                    this.videoEl = null;
+                    this.content = null;
                 }
             }, 500);
         },
@@ -107,7 +166,7 @@
            name="{{ $element->getNameAttribute() }}"
            :value="JSON.stringify(coords)">
 
-    <div class="zone-preview-wrapper">
+    <div class="zone-preview-wrapper" x-ref="zoneWrapper">
         <div
             x-ref="playerContainer"
             class="zone-preview-player-container"
@@ -116,12 +175,7 @@
         <div
             x-show="hasZone"
             class="zone-preview-rect"
-            :style="{
-                left:   (coords.x1 * 100) + '%',
-                top:    (coords.y1 * 100) + '%',
-                width:  ((coords.x2 - coords.x1) * 100) + '%',
-                height: ((coords.y2 - coords.y1) * 100) + '%'
-            }"
+            :style="zoneStyle()"
         ></div>
     </div>
 

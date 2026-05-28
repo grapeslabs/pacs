@@ -110,7 +110,7 @@ class VideoStreamResource extends BaseModelResource
                                 ZonePreviewField::make('Превью зоны', 'va_options->face_detection_zone')
                                     ->setupUrl($this->getPageUrl(StreamZoneEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
                                     ->showWhen('va_options->has_face_detection_zone', '=', true),
-                                FeatureCheckbox::make('Рsаспознание персоны', 'va_options->is_face_recognition'),
+                                FeatureCheckbox::make('Распознание персоны', 'va_options->is_face_recognition'),
                                 FeatureSlider::make('Чувствительность', 'va_options->face_recognition_sensitivity')
                                     ->showWhen('va_options->is_face_recognition', '=', true)
                                     ->default(75)
