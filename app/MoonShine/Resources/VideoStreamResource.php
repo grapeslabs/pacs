@@ -115,7 +115,7 @@ class VideoStreamResource extends BaseModelResource
             'name' => ['required', 'string', 'max:255'],
             'location' => ['nullable','string', 'max:255'],
             'archive_time' => ['required', 'array'],
-            'archive_time.value' => ['required', 'integer', 'min:0'],
+            'archive_time.value' => ['required', 'integer', 'min:0', 'max:100'],
             'archive_time.unit' => ['required', 'integer'],
             'rtsp' => ['string', 'max:255'],
         ];
@@ -135,6 +135,7 @@ class VideoStreamResource extends BaseModelResource
             'archive_time.value.required' => 'Значение времени архивации обязательно.',
             'archive_time.value.integer'  => 'Значение времени архивации должно быть целым числом.',
             'archive_time.value.min'      => 'Значение времени архивации не может быть меньше 0.',
+            'archive_time.value.max' => 'Максимальное значение - 100. Для больших интервалов измените единицу времени.',
 
             'archive_time.unit.required' => 'Единица измерения времени архивации обязательна.',
             'archive_time.unit.integer'  => 'Единица измерения должна быть указана корректно.',
