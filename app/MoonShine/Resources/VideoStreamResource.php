@@ -121,6 +121,29 @@ class VideoStreamResource extends BaseModelResource
         ];
     }
 
+    public function validationMessages(): array
+    {
+        return [
+            'name.required' => 'Поле «Название» обязательно для заполнения.',
+            'name.string'   => 'Название должно быть строкой.',
+            'name.max'      => 'Название не может превышать 255 символов.',
+
+            'location.string' => 'Местоположение должно быть строкой.',
+            'location.max'    => 'Местоположение не может превышать 255 символов.',
+
+            'archive_time.required' => 'Параметры времени архивации обязательны.',
+            'archive_time.value.required' => 'Значение времени архивации обязательно.',
+            'archive_time.value.integer'  => 'Значение времени архивации должно быть целым числом.',
+            'archive_time.value.min'      => 'Значение времени архивации не может быть меньше 0.',
+
+            'archive_time.unit.required' => 'Единица измерения времени архивации обязательна.',
+            'archive_time.unit.integer'  => 'Единица измерения должна быть указана корректно.',
+
+            'rtsp.string' => 'RTSP-ссылка должна быть строкой.',
+            'rtsp.max'    => 'RTSP-ссылка не может превышать 255 символов.',
+        ];
+    }
+
     public function filters(): iterable
     {
         return [
