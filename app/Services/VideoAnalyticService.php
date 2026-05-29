@@ -2,129 +2,140 @@
 
 namespace App\Services;
 
-use App\Models\Stream;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class VideoAnalyticService
+class VideoAnalyticService extends BaseAnalyticService
 {
-    private string $url;
     private string $rtsp;
-    private int $timeout;
-
 
     public function __construct()
     {
         $this->url = config('services.va.url');
         $this->rtsp = config('services.ms.rtsp_url');
-        $this->timeout = (int) config('services.va.timeout', 10);
+        $this->timeout = (int)config('services.va.timeout', 10);
     }
 
-    private function request(string $uri, array $data = [], string $method = 'get'): array
+    public function cameraList(): array
     {
-        $method = strtolower($method);
-        $params = array_merge(['user_id' => '1'], $data);
+        return $this->request('/api/v1/camera/list');
+    }
+
+    public function cameraCreate(string $cameraUid, string $name = '', $description = '', array $vaOptions = []): array
+    {
+        $data = [
+            'stream_info' => [
+                'id' => $cameraUid,
+                'url' => "{$this->rtsp}/rtsp/{$cameraUid}",
+                'name' => $name,
+                'description' => $description,
+                'timedelay' => config('services.va.timedelay'),
+                'resize' => 1,
+            ],
+            'detection_face' => [
+                'is_detection' => (int)($vaOptions['is_face_detection'] ?? 0),
+                'min_area' => 1600,
+                'threshold' => $vaOptions['face_recognition_sensitivity'] ?? 75,
+                'face_width_max' => 45,
+                'zone' => $this->zoneToPixels($vaOptions),
+                'is_recognize' => (int)($vaOptions['is_face_recognition'] ?? 0),
+                'moving_duration_after' => 4,
+                'cache_face_time' => 30,
+                'cache_face_max' => 20,
+            ],
+            'detection_figure' => [
+                'is_active' => (int)($vaOptions['is_motion_detection'] ?? 0),
+                'direction' => $vaOptions['motion_detection_direction'] ?? 'A',
+                'zones' => $this->zonesToPixels($vaOptions),
+            ],
+        ];
+
+        return $this->request('/api/v1/camera/create', $data, 'post');
+    }
+
+    public function cameraDelete(string $cameraUid): array
+    {
+        return $this->request('/api/v1/camera/suspend', ['cam_id' => $cameraUid], 'post');
+    }
+
+    public function personList(): array
+    {
+        return $this->request('/api/v1/person/getinfo');
+    }
+
+    public function personInfo(string $personUid): array
+    {
+        return $this->request('/api/v1/person/add', ['person_id' => $personUid], 'post');
+    }
+
+    public function personCreate(string $name, array $photoPaths, string|int|null $personUid = null): array
+    {
+        if (empty($photoPaths)) {
+            return [];
+        }
 
         try {
-            $pendingRequest = Http::timeout($this->timeout);
-            $fullUrl = $this->url . $uri;
-
-            if (in_array($method, ['get', 'delete'])) {
-                $fullUrl .= '?' . http_build_query($params);
-                $response = $pendingRequest->{$method}($fullUrl);
-            } else {
-                $response = $pendingRequest->{$method}($fullUrl, $params);
+            $http = Http::timeout($this->timeout);
+            foreach ($photoPaths as $path) {
+                $http->attach('photos', fopen($path, 'r'), basename($path));
             }
 
-            if ($response->status() === 404) {
-                return ['ok' => true, 'note' => 'not_found_ignored'];
+            $data = ['user_id' => '1', 'desc' => $name];
+            if ($personUid !== null) {
+                $data['person_id'] = $personUid;
             }
-            return $response->throw()->json();
+
+            $response = $http->post($this->url . '/api/v1/person/add', $data);
+            $response->throw();
+
+            return $response->json();
 
         } catch (\Throwable $e) {
-            Log::error('VAS Exception', [
-                'method'  => $method,
-                'uri'     => $uri,
-                'error'   => $e->getMessage(),
-                'payload' => $params,
+            Log::error('VideoAnalyticService exception in personCreate', [
+                'error' => $e->getMessage(),
             ]);
 
             return [];
         }
     }
 
-    public function cameraList()
+    public function personDelete(string $personUid): array
     {
-        return $this->request('/api/c1/list');
+        return $this->request('/api/v1/person/del', ['person_id' => $personUid], 'delete');
     }
 
-    public function cameraInfo($camera_uid)
+    private function zoneToPixels(array $vaOptions): array
     {
-        return $this->request('/api/c1/list', ['cam_id' => $camera_uid]);
-    }
-
-    public function cameraCreate($camera_uid, $name='', $description='', $va_options=[])
-    {
-        $data = [
-            "stream_info" => [
-                'id' => $camera_uid,
-                'url' => "$this->rtsp/rtsp/$camera_uid",
-                'name' => $name,
-                'description' => $description,
-                'timedelay' => config('services.va.timedelay'),
-                "resize" => 1,
-            ],
-            'detection_face' => [
-                'is_detection' => $va_options['is_face_detection'],
-                'min_area' => 1600,
-                'threshold' => $va_options['face_recognition_sensitivity']??75,
-                'face_width_max' => 45,
-                "zone" => $this->zoneToPixels($va_options),
-                'is_recognize' => $va_options['is_face_recognition'],
-                'moving_duration_after' => 4,
-                'cache_face_time' => 30,
-                'cache_face_max' => 20,
-            ],
-            "detection_figure" => [
-                "is_active" => $va_options['is_motion_detection'],
-                "direction" => $va_options['motion_detection_direction']??'A',
-                "zones" => $this->zonesToPixels($va_options),
-            ],
-        ];
-        return $this->request('/api/c1/create', $data, "post");
-    }
-
-    private function zoneToPixels(array $va_options): array
-    {
-        if (empty($va_options['has_face_detection_zone']) || empty($va_options['face_detection_zone'])) {
+        if (empty($vaOptions['has_face_detection_zone']) || empty($vaOptions['face_detection_zone'])) {
             return [];
         }
 
-        $z = $va_options['face_detection_zone'];
+        $z = $vaOptions['face_detection_zone'];
         if (is_string($z)) {
             $z = json_decode($z, true);
         }
         if (!is_array($z)) {
             return [];
         }
-        $w = $va_options['video_width']  ?? 1920;
-        $h = $va_options['video_height'] ?? 1080;
+
+        $w = $vaOptions['video_width'] ?? 1920;
+        $h = $vaOptions['video_height'] ?? 1080;
 
         return [
-            'x1' => (int) round($z['x1'] * $w),
-            'y1' => (int) round($z['y1'] * $h),
-            'x2' => (int) round($z['x2'] * $w),
-            'y2' => (int) round($z['y2'] * $h),
+            'x1' => (int)round($z['x1'] * $w),
+            'y1' => (int)round($z['y1'] * $h),
+            'x2' => (int)round($z['x2'] * $w),
+            'y2' => (int)round($z['y2'] * $h),
         ];
     }
 
-    private function zonesToPixels(array $va_options): array
+    private function zonesToPixels(array $vaOptions): array
     {
-        if (empty($va_options['has_motion_detection_zone']) || empty($va_options['motion_detection_zones'])) {
+        if (empty($vaOptions['has_motion_detection_zone']) || empty($vaOptions['motion_detection_zones'])) {
             return [];
         }
 
-        $z = $va_options['motion_detection_zones'];
+        $z = $vaOptions['motion_detection_zones'];
         if (is_string($z)) {
             $z = json_decode($z, true);
         }
@@ -132,12 +143,12 @@ class VideoAnalyticService
             return [];
         }
 
-        $w = $va_options['video_width']  ?? 1920;
-        $h = $va_options['video_height'] ?? 1080;
+        $w = $vaOptions['video_width'] ?? 1920;
+        $h = $vaOptions['video_height'] ?? 1080;
         $result = [];
 
         foreach ($z as $group) {
-            $type  = $group['type']  ?? null;
+            $type = $group['type'] ?? null;
             $zones = $group['zones'] ?? [];
 
             if (!$type || !is_array($zones)) {
@@ -147,17 +158,17 @@ class VideoAnalyticService
             foreach ($zones as $zone) {
                 if ($type === 'rectangles' || $type === 'lines') {
                     $result[$type][] = [
-                        'x1' => (int) round($zone['x1'] * $w),
-                        'y1' => (int) round($zone['y1'] * $h),
-                        'x2' => (int) round($zone['x2'] * $w),
-                        'y2' => (int) round($zone['y2'] * $h),
+                        'x1' => (int)round($zone['x1'] * $w),
+                        'y1' => (int)round($zone['y1'] * $h),
+                        'x2' => (int)round($zone['x2'] * $w),
+                        'y2' => (int)round($zone['y2'] * $h),
                     ];
                 } elseif ($type === 'polygons' && is_array($zone)) {
                     $points = [];
                     foreach ($zone as $point) {
                         $points[] = [
-                            'x' => (int) round($point['x1'] * $w),
-                            'y' => (int) round($point['y1'] * $h),
+                            'x' => (int)round($point['x1'] * $w),
+                            'y' => (int)round($point['y1'] * $h),
                         ];
                     }
                     $result['polygons'][] = $points;
@@ -166,63 +177,5 @@ class VideoAnalyticService
         }
 
         return $result;
-    }
-
-
-    public function handleStreamUpdate(Stream $stream): void
-    {
-        $options = $stream->va_options ?? [];
-
-        if (empty($options['global_enable'])) {
-            $options['is_face_detection'] = 0;
-            $options['is_motion_detection'] = 0;
-            $stream->va_options = $options;
-        }
-
-        $this->cameraCreate($stream->uid, $stream->name, $stream->location, $stream->va_options ?? []);
-    }
-
-    public function cameraDelete($camera_uid)
-    {
-        return $this->request('/api/c1/suspend', ['cam_id' => $camera_uid], "post");
-    }
-
-    public function personList()
-    {
-        return $this->request('/api/v1/person/getinfo');
-    }
-
-    public function personInfo($person_Uid)
-    {
-        return $this->request('/api/v1/person/add', ['person_id' => $person_Uid], 'post');
-    }
-
-    public function personCreate(string $name, array $photoPaths, string|int|null $person_uid = null)
-    {
-        if (empty($photoPaths)) return [];
-
-        try {
-            $request = Http::timeout($this->timeout);
-            foreach ($photoPaths as $path) {
-                $request->attach('photos', fopen($path, 'r'), basename($path));
-            }
-
-            $data = ['user_id' => '1', 'desc' => $name];
-            if ($person_uid) $data['person_id'] = $person_uid;
-            $response = $request->post($this->url . '/api/v1/person/add', $data);
-            $response->throw();
-            return $response->json();
-
-        } catch (\Throwable $e) {
-            Log::error('VAS exception in personCreate', [
-                'error' => $e->getMessage(),
-            ]);
-            return [];
-        }
-    }
-
-    public function personDelete($person_Uid)
-    {
-        return $this->request('/api/v1/person/del', ['person_id' => $person_Uid], 'delete');
     }
 }

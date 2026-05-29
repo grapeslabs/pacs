@@ -16,6 +16,7 @@ class FeatureSlider extends Field
     protected int $max = 100;
     protected int $step = 1;
     protected int $default;
+    protected string $wrapperStyle = '';
 
     protected function prepareFill(array $raw = [], ?DataWrapperContract $casted = null): mixed
     {
@@ -78,5 +79,16 @@ class FeatureSlider extends Field
     public function getStep(): int
     {
         return $this->step;
+    }
+
+    public function wrapperStyle(string $style): static
+    {
+        $this->wrapperStyle = $style;
+        return $this;
+    }
+
+    public function getWrapperStyle(): string
+    {
+        return $this->wrapperStyle;
     }
 }

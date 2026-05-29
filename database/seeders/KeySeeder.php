@@ -21,8 +21,8 @@ class KeySeeder extends Seeder
             $people = [];
             for ($i = 1; $i <= 10; $i++) {
                 $people[] = Person::create([
-                    'name' => 'Тестовая персона ' . $i,
-                    'email' => 'person' . $i . '@example.com',
+                    'first_name' => 'Персона' . $i,
+                    'last_name' => 'Тестовая',
                     'created_at' => now()->subDays(rand(1, 365)),
                     'updated_at' => now()->subDays(rand(1, 365)),
                 ]);

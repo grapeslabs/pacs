@@ -9,6 +9,10 @@ class VideoAnalyticReport extends Model
     protected $connection = 'analytic-database';
     protected $table = 'analytics_events';
 
+    public $timestamps = false;
+
+    protected $guarded = [];
+
     protected $casts = [
         'datetime' => 'datetime:Y-m-d H:i:s',
         'data' => 'json',

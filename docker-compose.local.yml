@@ -16,6 +16,7 @@ services:
     volumes:
       - ./:/var/www/html:delegated
       - ./analytic/thumbnails:/var/www/html/public/analytic-storage/thumbnails
+      - ./grz/plates:/var/www/html/public/grz-storage
     environment:
       TZ: "Europe/Moscow"
       NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-20M}
@@ -315,6 +316,72 @@ services:
       - laravel
     logging: *default-logging
 
+  grz-database:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_USER: ${GRZ_DB_USERNAME}
+      POSTGRES_PASSWORD: ${GRZ_DB_PASSWORD}
+      POSTGRES_DB: ${GRZ_DB_DATABASE}
+    expose:
+      - 5432
+    volumes:
+      - grz_database:/var/lib/postgresql/data
+      - ./grz/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - laravel
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${GRZ_DB_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  grz-api:
+    image: ${GRZ_API_IMAGE:-grz-api:local}
+    restart: unless-stopped
+    environment:
+      - PG_HOST=${GRZ_DB_HOST}
+      - PG_PORT=${GRZ_DB_PORT}
+      - PG_USER=${GRZ_DB_USERNAME}
+      - PG_PASSWORD=${GRZ_DB_PASSWORD}
+      - PG_DATABASE=${GRZ_DB_DATABASE}
+      - TZ=Europe/Moscow
+      - MODE=pacs
+    expose:
+      - 5000
+    volumes:
+      - ./grz/logs:/app/logs
+    depends_on:
+      grz-database:
+        condition: service_healthy
+    networks:
+      - laravel
+    logging: *default-logging
+
+  grz-core:
+    image: ${GRZ_CORE_IMAGE:-grz-core:local}
+    restart: unless-stopped
+    environment:
+      - PG_HOST=${GRZ_DB_HOST}
+      - PG_PORT=${GRZ_DB_PORT}
+      - PG_USER=${GRZ_DB_USERNAME}
+      - PG_PASSWORD=${GRZ_DB_PASSWORD}
+      - PG_DATABASE=${GRZ_DB_DATABASE}
+      - PACS_API_URL=http://grz-api:5000
+      - TZ=Europe/Moscow
+      - MODE=pacs
+    volumes:
+      - ./grz/plates:/app/plates
+      - ./grz/logs:/app/logs
+      - ./grz/config:/app/config
+    depends_on:
+      grz-database:
+        condition: service_healthy
+        required: false
+    networks:
+      - laravel
+    logging: *default-logging
+
   events-processor:
     build:
       context: ./docker/php
@@ -353,4 +420,5 @@ networks:
 volumes:
   app_database:
   analytic_database:
+  grz_database:
   redis_data:

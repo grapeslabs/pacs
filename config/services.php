@@ -38,18 +38,25 @@ return [
         'timeout' => env('DADATA_TIMEOUT', 10),
     ],
     'ms' => [
-        'enabled' => env('MEDIA_SERVER_ENABLED', false) || env('ANALYTIC_ENABLED', false),
+        'enabled' => env('MEDIA_SERVER_ENABLED', false) || env('ANALYTIC_ENABLED', false) || env('GRZ_ENABLED', false),
         'url' => env('MEDIA_SERVER_API_URL'),
         'rtsp_url' => env('MEDIA_SERVER_RTSP'),
         'timeout' => env('MEDIA_SERVER_API_TIMEOUT', 5),
     ],
     'va' => [
-        'enabled'=> env('ANALYTIC_ENABLED', false),
+        'enabled' => env('ANALYTIC_ENABLED', false) || env('GRZ_ENABLED', false),
         'url' => env('ANALYTIC_HOST'),
         'timeout' => env('ANALYTIC_TIMEOUT', 5),
-        'timedelay' => env('ANALYTIC_TIMEDELAY', 200)
+        'timedelay' => env('ANALYTIC_TIMEDELAY', 200),
+    ],
+    'grz' => [
+        'enabled' => env('GRZ_ENABLED', false),
+        'url' => env('GRZ_HOST'),
+        'timeout' => env('GRZ_TIMEOUT', 5),
+        'timedelay' => env('GRZ_TIMEDELAY', 200),
     ],
     'yacaptcha' => [
+        'enabled' => env('YACAPTCHA_ENABLED'),
         'secret' => env('YACAPTCHA_SECRET'),
         'client' => env('YACAPTCHA_CLIENT'),
     ],

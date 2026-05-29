@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Models\User;
 use App\MoonShine\Pages\SettingsPage;
+use App\MoonShine\Resources\CarEventResource;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\PeopleReportResource;
 use App\MoonShine\Resources\StorageResource;
@@ -79,6 +80,7 @@ class MoonShineServiceProvider extends ServiceProvider
                     EventReportResource::class,
                     PeopleReportResource::class,
                     UnknownReportResource::class,
+                    CarEventResource::class,
                 ]:[],
             ])
             ->pages([

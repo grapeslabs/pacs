@@ -3,7 +3,6 @@
         display: flex;
         align-items: center;
         margin-bottom: 16px;
-        padding-left: 30px;
     }
     .feature-slider-wrapper:last-child {
         margin-bottom: 0;
@@ -74,7 +73,7 @@
     }
 </style>
 
-<div class="feature-slider-wrapper moonshine-field"
+<div class="feature-slider-wrapper moonshine-field" @if($element->getWrapperStyle()) style="{{ $element->getWrapperStyle() }}" @endif
      x-data="{
         value: {{ (int) ($element->getValue() ?? $element->getMin()) }},
         min: {{ $element->getMin() }},

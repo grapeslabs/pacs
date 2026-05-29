@@ -2,12 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use MoonShine\Permissions\Models\MoonshineUser;
-use MoonShine\Permissions\Models\MoonshineUserPermission;
 
 class ManageDemoUserCommand extends Command
 {
@@ -24,7 +23,7 @@ class ManageDemoUserCommand extends Command
         $email = config('demo.email');
         $password = Str::random(12);
 
-        $user = MoonshineUser::firstOrCreate(
+        $user = User::firstOrCreate(
             ['email' => $email],
             [
                 'name' => 'Пользователь',
@@ -45,11 +44,6 @@ class ManageDemoUserCommand extends Command
                 $permissions[$resource::class][$ability->value] = true;
             }
         }
-
-        MoonshineUserPermission::updateOrCreate(
-            ['moonshine_user_id' => $user->getKey()],
-            ['permissions' => $permissions]
-        );
 
         Cache::forever('demo_current_password', $password);
 

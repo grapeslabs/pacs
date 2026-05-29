@@ -8,6 +8,7 @@ use App\MoonShine\Components\CustomDeleteModal;
 use App\MoonShine\Components\SafeModal;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Pages\Dashboard;
+use App\MoonShine\Resources\CarEventResource;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\PeopleReportResource;
 use App\MoonShine\Resources\StorageResource;
@@ -181,8 +182,12 @@ final class MoonShineLayout extends AppLayout
             MenuGroup::make('Отчеты', [
                 MenuItem::make('Отчеты СКУД', SkudEventResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(SkudEventResource::class, Ability::VIEW_ANY)),
-                MenuItem::make('Отчеты шлагбаум', BarrierEventResource::class)
-                    ->canSee(fn () => auth()->user()->hasPermission(BarrierEventResource::class, Ability::VIEW_ANY)),
+                ...config('services.grz.enabled') ? [
+                    MenuItem::make('Отчеты автомобилей', CarEventResource::class)
+                        ->canSee(fn () => auth()->user()->hasPermission(BarrierEventResource::class, Ability::VIEW_ANY)),
+                ] : [],
+//                MenuItem::make('Отчеты шлагбаум', BarrierEventResource::class)
+//                    ->canSee(fn () => auth()->user()->hasPermission(BarrierEventResource::class, Ability::VIEW_ANY)),
                 ...config('services.va.enabled')?[
                     MenuItem::make('Отчеты по событиям', EventReportResource::class)
                         ->canSee(fn () => auth()->user()->hasPermission(EventReportResource::class, Ability::VIEW_ANY)),
@@ -196,8 +201,8 @@ final class MoonShineLayout extends AppLayout
             MenuGroup::make('Оборудование', [
                 MenuItem::make('Терминалы доступа', TerminalResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(TerminalResource::class, Ability::VIEW_ANY)),
-                MenuItem::make('Шлагбаумы', BarrierResource::class)
-                    ->canSee(fn () => auth()->user()->hasPermission(BarrierResource::class, Ability::VIEW_ANY)),
+//                MenuItem::make('Шлагбаумы', BarrierResource::class)
+//                    ->canSee(fn () => auth()->user()->hasPermission(BarrierResource::class, Ability::VIEW_ANY)),
                 MenuItem::make('Контроллеры СКУД', ControllerResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(ControllerResource::class, Ability::VIEW_ANY)),
             ])->icon(file_get_contents(public_path('icons/menu-equipments.svg')),true),

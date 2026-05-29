@@ -31,6 +31,11 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class, 'moonshine_user_role_id');
     }
 
+    public function moonshineUserRole()
+    {
+        return $this->belongsTo(Role::class, 'moonshine_user_role_id');
+    }
+
     public function hasPermission(string $resourceClass, string|\BackedEnum $action): bool
     {
         if ($this->id === 1 || $this->moonshine_user_role_id === 1) { return true; }
