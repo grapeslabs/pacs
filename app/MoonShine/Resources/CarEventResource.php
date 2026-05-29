@@ -4,6 +4,7 @@ namespace App\MoonShine\Resources;
 
 use App\Models\GrzReport;
 use App\Models\Stream;
+use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\SelectField;
 use Illuminate\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
@@ -55,9 +56,16 @@ class CarEventResource extends BaseModelResource
 
             Text::make('Номер', 'plate_text'),
 
-            Text::make('Статус', 'is_authorized', fn($item) =>
-                $item->is_authorized ? 'Авторизован' : 'Неизвестен'
-            ),
+            ColoredSelectField::make('Статус', 'is_authorized', function ($item) {
+                if (empty($item->plate_text)) {
+                    return 'not_recognized';
+                }
+                return $item->is_authorized ? 'in_db' : 'not_in_db';
+            })->options([
+                'in_db'          => ['label' => 'В базе',       'color' => 'green'],
+                'not_in_db'      => ['label' => 'Не в базе',    'color' => 'yellow'],
+                'not_recognized' => ['label' => 'Не распознан', 'color' => 'pink'],
+            ]),
 
             Preview::make('Фото авто', 'image')
                 ->changeFill(function ($item) {

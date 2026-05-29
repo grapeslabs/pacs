@@ -127,7 +127,8 @@ class VideoStreamResource extends BaseModelResource
                                     ->default(75)
                                     ->min(0)
                                     ->max(100)
-                                    ->step(1),
+                                    ->step(1)
+                                    ->wrapperStyle('padding-left: 30px'),
                             ]),
                         Divider::make(),
                         FeatureSpoiler::make('Детекция движения', 'va_options->is_motion_detection')
@@ -144,7 +145,7 @@ class VideoStreamResource extends BaseModelResource
                             Divider::make(),
                             FeatureSpoiler::make('Распознавание ГРЗ', 'va_options->is_plate_recognition')
                                 ->nested([
-                                    FeatureCheckbox::make('Задать зону распознвания ГРЗ', 'va_options->has_plate_recognition_zone'),
+                                    FeatureCheckbox::make('Задать зону распознавания ГРЗ', 'va_options->has_plate_recognition_zone'),
                                     SingleZonePreviewField::make('Превью зоны', 'va_options->plate_recognition_zone')
                                         ->setupUrl($this->getPageUrl(StreamGrzZoneEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
                                         ->showWhen('va_options->has_plate_recognition_zone', '=', true),
@@ -172,11 +173,14 @@ class VideoStreamResource extends BaseModelResource
             Checkbox::make('Включение видеопотока', 'is_active'),
             Text::make('Время хранения архива(Час)', 'archive_time'),
             ...config('services.va.enabled') ? [
-                Checkbox::make('Поиск лица', 'va_options->is_face_detection'),
-                Checkbox::make('Распознание личности', 'va_options->is_face_recognition'),
-                Checkbox::make('Детекция движения', 'va_options->is_motion_detection'),
-                Checkbox::make('Детекция человека', 'va_options->is_human_motion_detection')
+                Checkbox::make('Поиск лица', 'va_options.is_face_detection'),
+                Checkbox::make('Распознавание личности', 'va_options.is_face_recognition'),
+                Checkbox::make('Детекция движения', 'va_options.is_motion_detection'),
+                Checkbox::make('Детекция человека', 'va_options.is_human_motion_detection')
             ] : [],
+            ...config('services.grz.enabled') ? [
+                Checkbox::make('Распознавание ГРЗ', 'va_options.is_plate_recognition')
+            ]:[],
         ];
     }
 
