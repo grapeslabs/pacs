@@ -135,7 +135,7 @@ class EventReportResource extends BaseModelResource
                     $id = $item->person_photobank_id;
                     static $personCache = [];
                     if (!array_key_exists($id, $personCache)) {
-                        $person = Person::find($id);
+                        $person = Person::where('grapesva_uuid', $id)->first();
                         $personCache[$id] = $person ? "[$id] " . $person->getfullname() : "[$id] Данные удалены";
                     }
 

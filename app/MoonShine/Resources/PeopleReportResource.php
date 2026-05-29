@@ -112,7 +112,7 @@ class PeopleReportResource extends BaseModelResource
     {
         if (empty($id)) return null;
         if (!array_key_exists($id, $this->personCache)) {
-            $this->personCache[$id] = Person::find($id);
+            $this->personCache[$id] = Person::where('grapesva_uuid', $id)->first();
         }
         return $this->personCache[$id];
     }
