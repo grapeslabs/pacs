@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use MoonShine\UI\Fields\Textarea;
 
 class CarResource extends BaseModelResource
 {
@@ -302,13 +303,13 @@ class CarResource extends BaseModelResource
         return [
             ID::make(),
             Text::make('ГРЗ', 'license_plate'),
-            SelectField::make('Марка', 'brand_id')
+            Select::make('Марка', 'brand_id')
                 ->options(CarBrand::query()->pluck('name', 'id')->toArray()),
-            SelectField::make('Цвет', 'color_id')
+            Select::make('Цвет', 'color_id')
                 ->options(CarColor::query()->pluck('name', 'id')->toArray()),
-            SelectField::make('Организация', 'organization_id')
+            Select::make('Организация', 'organization_id')
                 ->options(Organization::query()->pluck('short_name', 'id')->toArray()),
-            CustomTextarea::make('Комментарий', 'comment'),
+            Textarea::make('Комментарий', 'comment'),
         ];
     }
 
