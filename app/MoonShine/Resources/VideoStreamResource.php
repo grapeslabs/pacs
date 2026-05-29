@@ -5,6 +5,7 @@ namespace App\MoonShine\Resources;
 use App\Models\Setting;
 use App\Models\Stream;
 use App\MoonShine\Decorations\FeatureBox;
+use App\MoonShine\Fields\ArchiveDuration;
 use App\MoonShine\Fields\CustomNumber;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\FeatureCheckbox;
@@ -34,6 +35,8 @@ use MoonShine\UI\Fields\Number;
 use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Checkbox;
+use Log;
+use Exception;
 
 class VideoStreamResource extends BaseModelResource
 {
@@ -97,12 +100,7 @@ class VideoStreamResource extends BaseModelResource
                 ->pattern('^rtsp:\/\/(([^\s\/:@]+)(:([^\s\/@]+))?@)?([^\s\/:]+)(?::([0-9]+))?(\/.*)?$'),
 //            BelongsTo::make('Хранилище', 'storage', 'name', StorageResource::class),
             Checkbox::make('Включение видеопотока', 'is_active'),
-            CustomNumber::make('Время хранения архива(Час)', 'archive_time')
-                ->default(24)
-                ->integer("Время хранения архива должно быть числом")
-                ->minValue(1, 'Время хранения архива не может быть меньше часа')
-                ->maxValue(87600, 'Время хранения архива не может быть больше года')
-                ->required(),
+            ArchiveDuration::make('Архив', 'archive_time'),
             ...config('services.va.enabled')?[
                 FeatureField::make('AI аналитика', 'va_options->global_enable')
                     ->offValue(0)
@@ -168,8 +166,34 @@ class VideoStreamResource extends BaseModelResource
         return [
             'name' => ['required', 'string', 'max:255'],
             'location' => ['nullable','string', 'max:255'],
-            'archive_time' => ['required','integer', 'min:0'],
+            'archive_time' => ['required', 'array'],
+            'archive_time.value' => ['bail', 'required', 'integer', 'min:0', 'max:100'],
+            'archive_time.unit' => ['bail', 'required', 'integer'],
             'rtsp' => ['string', 'max:255'],
+        ];
+    }
+
+    public function validationMessages(): array
+    {
+        return [
+            'name.required' => 'Поле «Название» обязательно для заполнения.',
+            'name.string'   => 'Название должно быть строкой.',
+            'name.max'      => 'Название не может превышать 255 символов.',
+
+            'location.string' => 'Местоположение должно быть строкой.',
+            'location.max'    => 'Местоположение не может превышать 255 символов.',
+
+            'archive_time.required' => 'Параметры времени архивации обязательны.',
+            'archive_time.value.required' => 'Значение времени архивации обязательно.',
+            'archive_time.value.integer'  => 'Значение времени архивации должно быть целым числом.',
+            'archive_time.value.min'      => 'Значение времени архивации не может быть меньше 0.',
+            'archive_time.value.max' => 'Максимальное значение - 100. Для больших интервалов измените единицу времени.',
+
+            'archive_time.unit.required' => 'Единица измерения времени архивации обязательна.',
+            'archive_time.unit.integer'  => 'Единица измерения должна быть указана корректно.',
+
+            'rtsp.string' => 'RTSP-ссылка должна быть строкой.',
+            'rtsp.max'    => 'RTSP-ссылка не может превышать 255 символов.',
         ];
     }
 
