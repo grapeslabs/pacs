@@ -7,7 +7,8 @@ const props = defineProps({
     autoplay: { type: Boolean, default: true },
     muted: { type: Boolean, default: true },
     volume: { type: Number, default: 1 },
-    playbackRate: { type: Number, default: 1 }
+    playbackRate: { type: Number, default: 1 },
+    live: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['error', 'ready', 'timeupdate', 'play', 'pause', 'durationchange']);
@@ -54,11 +55,16 @@ const initHls = async () => {
             const level = data.levels[0];
             if (level && level.details && level.details.fragments) {
                 const fragments = level.details.fragments;
-                const firstValid = fragments.find(f => !f.gap);
-
-                if (firstValid && firstValid.start > 0) {
-                    startPosition = firstValid.start + 0.1;
-                    console.log(`[HLS] Обнаружен стартовый GAP. Перенос старта на ${startPosition} сек.`);
+                if(props.live) {
+                    const lastFragment = fragments[fragments.length - 1];
+                    startPosition = lastFragment.start;
+                    console.log(`[HLS] LIVE detected. Jumping to end: ${startPosition}s`);
+                } else {
+                    const firstValid = fragments.find(f => !f.gap);
+                    if (firstValid && firstValid.start > 0) {
+                        startPosition = firstValid.start + 0.1;
+                        console.log(`[HLS] Обнаружен стартовый GAP. Перенос старта на ${startPosition} сек.`);
+                    }
                 }
             }
 
