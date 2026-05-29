@@ -52,6 +52,14 @@ return [
             'throw' => false,
         ],
 
+        'grz' => [
+            'driver' => 'local',
+            'root' => base_path('grz/plates'),
+            'url' => config('app.url').'/grz-storage',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -80,6 +88,7 @@ return [
     'links' => [
         public_path('storage') => storage_path('app/public'),
         public_path('analytic-storage') => base_path('analytic'),
+        public_path('grz-storage') => base_path('grz/plates'),
     ],
 
 ];

@@ -12,7 +12,7 @@ class CheckCaptcha
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->is('authenticate') && $request->isMethod('post') && config('demo.enabled')) {
+        if ($request->is('authenticate') && $request->isMethod('post') && config('services.yacaptcha.enabled')) {
 
             $data = $request->validate([
                 'smart-token' => 'required|string',

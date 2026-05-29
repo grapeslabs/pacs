@@ -46,7 +46,7 @@ class LoginPage extends Page
                     ->withoutWrapper()
                     ->required(),
                 Switcher::make('Запомнить', 'remember'),
-                config('demo.enabled')?YaCaptchaField::make():''
+                config('services.yacaptcha.enabled')?YaCaptchaField::make():''
             ])->submit('Войти', [
                 'style'=>'width: 100% !important; border-radius: 9999px !important; background-color: #828df8 !important; color: #ffffff !important; padding: 0.75rem 1rem !important; font-size: 1rem !important; font-weight: 500 !important; border: none !important; transition: background-color 0.2s ease-in-out !important; cursor: pointer; margin-top: 1.5rem;'
             ])

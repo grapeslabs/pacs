@@ -3,12 +3,12 @@
 namespace App\Console\Commands;
 use App\Models\Setting;
 use App\Models\Stream;
+use App\Models\User;
 use App\Notifications\SystemNotification;
 use App\Services\MediaServerService;
 use App\Services\VideoAnalyticService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
-use MoonShine\Permissions\Models\MoonshineUser;
 
 class DriveCheck extends Command
 {
@@ -40,7 +40,7 @@ class DriveCheck extends Command
                 'warning',
                 'Заканчивается место на диске, видеопотоки могут быть отключены. Освободите место для стабильной работы.'
             );
-            foreach (MoonshineUser::all() as $user) {
+            foreach (User::all() as $user) {
                 $user->notify($notification);
             }
         } else {
@@ -60,7 +60,7 @@ class DriveCheck extends Command
                 'error',
                 'Видеопотоки отключены — недостаточно места на диске. Освободите место, чтобы восстановить работу.'
             );
-            foreach (MoonshineUser::all() as $user) {
+            foreach (User::all() as $user) {
                 $user->notify($notification);
             }
         } else {
@@ -78,7 +78,7 @@ class DriveCheck extends Command
                     'info',
                     'Видеопотоки включены — место на диске освобождено.'
                 );
-                foreach (MoonshineUser::all() as $user) {
+                foreach (User::all() as $user) {
                     $user->notify($notification);
                 }
                 Cache::forever('drive_limit_stoped', false);
