@@ -1391,60 +1391,6 @@ textarea {
     background-color: var(--gray-blue-400);
 }
 
-/* Контейнер таблицы */
-.table-responsive {
-    border: 1px solid var(--gray-blue-200) !important;
-    border-radius: var(--radius-x4) !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow-x: auto !important;
-}
-
-.table-sticky {
-    height: auto !important;
-    max-height: none !important;
-    overflow-y: visible !important;
-}
-
-
-.table-list {
-    border-collapse: collapse !important;
-    border-spacing: 0 !important;
-    margin: 0 !important;
-    height: auto !important;
-    max-height: none !important;
-    font-size: 14px !important;
-}
-
-.table-list thead tr {
-    background: transparent !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-}
-
-.table-list thead th {
-    border: none !important;
-    border-bottom: 2px solid var(--gray-blue-200) !important;
-    background: #E3E7F5 !important;
-}
-
-.table-list tbody tr {
-    &.frozen {
-        background: var(--gray-400) !important;
-    }
-    background: var(--white-main) !important;
-    transition: all 0.2s ease !important;
-}
-
-.table-list tbody td {
-    border: none !important;
-    border-top: 1px solid var(--gray-blue-200) !important;
-    border-bottom: 1px solid var(--gray-blue-200) !important;
-}
-
-.table-list tbody tr:hover {
-    background-color: var(--gray-100) !important;
-}
 
 .text-2xl,
 .text-3xl,
@@ -1675,6 +1621,9 @@ textarea {
             }
             .layout-content {
                 padding-top: 1.2rem !important;
+                padding-bottom: 1.5rem !important;
+                padding-left: 1.5rem !important;
+                padding-right: 1.5rem !important;
             }
         }
     }
@@ -1688,6 +1637,11 @@ textarea {
 ::selection {
     color: white !important;
     background-color: #4f69ca !important;
+}
+
+.layout-footer {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
 }
 
 .pagination {

@@ -342,9 +342,4 @@ class BotResource extends BaseModelResource
 
         return $error;
     }
-
-    // Количество элементов на странице
-    protected int $itemsPerPage = 20;
-    protected bool $simplePaginate = false;
-    protected bool $isAsync = true;
 }

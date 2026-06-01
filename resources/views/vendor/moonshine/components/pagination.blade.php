@@ -16,9 +16,9 @@
     'translates' => [],
 ])
 
-@if ($has_pages)
-    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; width:100%; padding:8px 16px; background:#f0f2f8; border-radius:12px; font-size:13px; font-weight:500; color:#9da5b6;">
-
+@if ($has_pages || $total > 0)
+    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; width:100%; padding:0; background:transparent; border-radius:0; font-size:13px; font-weight:500; color:#9da5b6;">
+        @if ($has_pages)
         <div style="display:flex; align-items:center; gap:24px;">
             <div style="display:flex; align-items:center; gap:8px;">
                 @if ($current_page > 1)
@@ -129,6 +129,9 @@
             </div>
 
         </div>
+        @else
+            <div></div>
+        @endif
         <div style="display:flex; align-items:center; gap:10px; margin-top:0;">
             <span>Строк на странице:</span>
 

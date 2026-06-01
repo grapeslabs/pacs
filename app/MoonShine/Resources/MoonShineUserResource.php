@@ -57,6 +57,11 @@ class MoonShineUserResource extends BaseModelResource
     protected bool $createInModal=false;
     protected bool $editInModal=false;
 
+    protected function activeActions(): ListOf
+    {
+        return parent::activeActions()->only(Action::CREATE, Action::DELETE, Action::UPDATE);
+    }
+
     protected function indexFields(): iterable
     {
         return [

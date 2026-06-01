@@ -35,12 +35,8 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
     protected bool $detailInModal=true;
     protected bool $softDelete=true;
     protected bool $stickyTable=true;
+    protected bool $usePagination=true;
     protected string $safeModalName = 'universal-safe-modal';
-
-    protected function activeActions(): ListOf
-    {
-        return parent::activeActions()->except(Action::MASS_DELETE);
-    }
 
     protected function indexButtons(): ListOf
     {
@@ -90,6 +86,9 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
 
     public function modifyListComponent(ComponentContract $component): ComponentContract
     {
+        if ($component instanceof TableBuilder) {
+            $component->customView('components.table.builder');
+        }
         return $component;
     }
     public function getQueryParamsKeys(): array
@@ -168,14 +167,42 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             ->showInLine();
     }
 
-    protected function modifyMassDeleteButton(ActionButtonContract $button): ActionButtonContract
-    {
-        return $button->withConfirm(
-            title: 'Подтверждение',
-            content: 'Вы уверены, что хотите удалить данные элементы?',
-            button: 'Подтвердить',
-            method: HttpMethod::DELETE,
-        );
+    /**
+     * Modal-less кнопка массового удаления.
+     * Подтверждение делает кастомная модалка в шаблоне таблицы,
+     * поэтому вендорный withConfirm (со своей модалкой) здесь убран —
+     * это исключает мелькание стандартного окна подтверждения.
+     * ids собираются вендорным actions() в href через ->bulk().
+     */
+    public function getMassDeleteButton(
+        ?string $componentName = null,
+        ?string $redirectAfterDelete = null,
+        bool $isAsync = true,
+        string $modalName = 'resource-mass-delete-modal',
+    ): ActionButtonContract {
+        $componentName ??= $this->getListComponentName();
+
+        return ActionButton::make(
+            '',
+            url: fn(): string => $this->getRoute('crud.massDelete')
+        )
+            ->name('mass-delete-button')
+            ->bulk($componentName)
+            ->async(
+                method: HttpMethod::DELETE,
+                events: [
+                    $this->getListEventName($componentName, array_filter([
+                        'page' => request()->getScalar('page'),
+                        'sort' => request()->getScalar('sort'),
+                    ])),
+                ],
+            )
+            ->canSee(
+                fn(): bool => $this->hasAction(Action::MASS_DELETE) && $this->can(Ability::MASS_DELETE)
+            )
+            ->error()
+            ->icon('trash')
+            ->showInLine();
     }
 
     protected function export()
