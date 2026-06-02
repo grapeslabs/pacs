@@ -29,6 +29,10 @@ use App\MoonShine\Resources\GuestResource;
 use App\MoonShine\Resources\TerminalResource;
 use App\MoonShine\Resources\BarrierResource;
 use App\MoonShine\Resources\ControllerResource;
+use App\MoonShine\Resources\CarPassageRuleResource;
+use App\MoonShine\Resources\CarTagResource;
+use App\MoonShine\Resources\PassageResource;
+use App\MoonShine\Resources\PassageEventResource;
 use App\MoonShine\Resources\ReferenceResource;
 use App\MoonShine\Resources\SettingResource;
 use App\MoonShine\Resources\CarBrandResource;
@@ -61,6 +65,10 @@ class MoonShineServiceProvider extends ServiceProvider
                 TerminalResource::class,
                 BarrierResource::class,
                 ControllerResource::class,
+                PassageResource::class,
+                CarPassageRuleResource::class,
+                PassageEventResource::class,
+                CarTagResource::class,
                 ReferenceResource::class,
                 SettingResource::class,
                 CarBrandResource::class,

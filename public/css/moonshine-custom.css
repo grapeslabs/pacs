@@ -1432,6 +1432,9 @@ textarea {
     &.frozen {
         background: var(--gray-400) !important;
     }
+    &.passage-misconfigured {
+        background: #fef3c7 !important;
+    }
     background: var(--white-main) !important;
     transition: all 0.2s ease !important;
 }

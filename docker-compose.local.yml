@@ -16,7 +16,7 @@ services:
     volumes:
       - ./:/var/www/html:delegated
       - ./analytic/thumbnails:/var/www/html/public/analytic-storage/thumbnails
-      - ./grz/plates:/var/www/html/public/grz-storage
+      - ./grz/events:/var/www/html/public/grz-events
     environment:
       TZ: "Europe/Moscow"
       NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-20M}
@@ -371,9 +371,8 @@ services:
       - TZ=Europe/Moscow
       - MODE=pacs
     volumes:
-      - ./grz/plates:/app/plates
+      - ./grz/events:/app/events
       - ./grz/logs:/app/logs
-      - ./grz/config:/app/config
     depends_on:
       grz-database:
         condition: service_healthy
@@ -401,6 +400,26 @@ services:
     networks:
       - laravel
     entrypoint: [ "php", "/var/www/html/artisan", "events:process-new" ]
+    logging: *default-logging
+  grz-rules-processor:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+      target: app
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html:delegated
+    depends_on:
+      - app-database
+      - redis
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    entrypoint: [ "php", "/var/www/html/artisan", "grz:process-rules" ]
     logging: *default-logging
 
   ofelia:

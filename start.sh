@@ -55,5 +55,5 @@ fi
 
 if is_enabled "GRZ_ENABLED"; then
     log "Starting GRZ services..."
-    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server grz-database grz-api grz-core media-server media-server || warn "FAILED"
+    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server grz-database grz-api grz-core media-server grz-rules-processor media-server || warn "FAILED"
 fi

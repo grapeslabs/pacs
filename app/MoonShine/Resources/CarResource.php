@@ -7,12 +7,15 @@ use App\Models\CarBrand;
 use App\Models\CarColor;
 use App\Models\Organization;
 use App\Models\Person;
+use App\Models\CarTag;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Resources\CarBrandResource;
 use App\MoonShine\Resources\CarColorResource;
 use App\MoonShine\Resources\OrganizationResource;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
+use MoonShine\Laravel\Fields\Relationships\BelongsToMany;
+use MoonShine\UI\Components\Badge;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
@@ -239,6 +242,8 @@ class CarResource extends BaseModelResource
                     $direction,
                 );
             }),
+            BelongsToMany::make('Теги', 'tags', 'name', resource: CarTagResource::class)
+                ->inLine(' ', fn($model, $value) => Badge::make((string) $value, 'primary')),
             BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
                 ->nullable()
                 ->sortable(),
@@ -291,6 +296,10 @@ class CarResource extends BaseModelResource
                 ->options(Person::query()->pluck('last_name', 'id')->toArray())
                 ->multiple()
                 ->default($personIds),
+            SelectField::make('Теги авто', 'tags')
+                ->options(CarTag::select('id', 'name')->get())
+                ->multiple(true)
+                ->creatable(true, route('car-tags.store')),
             SelectField::make('Организация', 'organization_id')
                 ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
                 ->nullable(),
@@ -328,7 +337,7 @@ class CarResource extends BaseModelResource
 
     public function search(): array
     {
-        return ['license_plate', 'organization.short_name', 'brand.name', 'color.name', 'people.last_name','comment'];
+        return ['license_plate', 'organization.short_name', 'brand.name', 'color.name', 'people.last_name', 'tags.name', 'comment'];
     }
 
     public function filters(): array
@@ -379,12 +388,25 @@ class CarResource extends BaseModelResource
                         $q->whereIn('person.id', (array)$value);
                     });
                 }),
+            SelectField::make('Теги авто', 'tags_filter')
+                ->options(CarTag::query()->pluck('name', 'id')->toArray())
+                ->multiple()
+                ->nullable()
+                ->onApply(function (Builder $query, $value) {
+                    if (empty($value)) {
+                        return $query;
+                    }
+
+                    return $query->whereHas('tags', function ($q) use ($value) {
+                        $q->whereIn('tags.id', (array)$value);
+                    });
+                }),
             Text::make('Комментарий', 'comment'),
         ];
     }
 
     public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
     {
-        return parent::indexQuery()->with(['brand', 'color', 'organization', 'people']);
+        return parent::indexQuery()->with(['brand', 'color', 'organization', 'people', 'tags']);
     }
 }

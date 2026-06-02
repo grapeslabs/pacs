@@ -2,13 +2,12 @@
 
 namespace App\MoonShine\Resources;
 
-use App\Models\GrzReport;
+use App\Models\CarPassageEvent;
 use App\Models\Stream;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\SelectField;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
-use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Support\Enums\SortDirection;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Fields\Date;
@@ -19,7 +18,7 @@ use MoonShine\UI\Fields\Text;
 
 class CarEventResource extends BaseModelResource
 {
-    protected string $model = GrzReport::class;
+    protected string $model = CarPassageEvent::class;
     protected string $title = 'Отчеты автомобилей';
     protected string $column = 'id';
     protected string $sortColumn = 'id';
@@ -36,9 +35,9 @@ class CarEventResource extends BaseModelResource
         );
     }
 
-    public function query(): Builder
+    protected function modifyQueryBuilder(Builder $builder): Builder
     {
-        return parent::query()->with(['stream', 'car']);
+        return $builder->with(['car']);
     }
 
     public function indexFields(): iterable
@@ -47,42 +46,35 @@ class CarEventResource extends BaseModelResource
             ID::make()
                 ->sortable(),
 
-            Date::make('Дата и время', 'created_at')
+            Date::make('Дата и время', 'recognized_at')
                 ->withTime()
                 ->sortable(),
 
-            BelongsTo::make('Камера', 'stream', fn($item) => $item->name ?? 'Камера удалена', VideoStreamResource::class)
-                ->sortable(),
+            Text::make('Камера', 'camera_id')
+                ->changeFill(fn($item) => $this->streamNameByUid($item->camera_id)),
 
             Text::make('Номер', 'plate_text'),
 
-            ColoredSelectField::make('Статус', 'is_authorized', function ($item) {
-                if (empty($item->plate_text)) {
-                    return 'not_recognized';
-                }
-                return $item->is_authorized ? 'in_db' : 'not_in_db';
+            ColoredSelectField::make('Статус', 'car_id', fn($item) => match (true) {
+                empty($item->plate_text) => 'not_recognized',
+                $item->car_id !== null   => 'in_db',
+                default                  => 'not_in_db',
             })->options([
                 'in_db'          => ['label' => 'В базе',       'color' => 'green'],
                 'not_in_db'      => ['label' => 'Не в базе',    'color' => 'yellow'],
                 'not_recognized' => ['label' => 'Не распознан', 'color' => 'pink'],
             ]),
 
-            Preview::make('Фото авто', 'image')
+            Preview::make('Фото авто', 'image_path')
                 ->changeFill(function ($item) {
-                    if (empty($item->image)) return '—';
-                    $src = str_contains($item->image, 'base64,')
-                        ? $item->image
-                        : 'data:image/jpeg;base64,' . $item->image;
-                    return $this->renderImageWithModal($src, 'img-' . $item->id);
+                    $url = $item->imageUrl();
+                    return $url ? $this->renderImageWithModal($url, 'img-' . $item->id) : '—';
                 }),
 
-            Preview::make('Фото номера', 'plate')
+            Preview::make('Фото номера', 'plate_image_path')
                 ->changeFill(function ($item) {
-                    if (empty($item->plate)) return '—';
-                    $src = str_contains($item->plate, 'base64,')
-                        ? $item->plate
-                        : 'data:image/jpeg;base64,' . $item->plate;
-                    return $this->renderImageWithModal($src, 'plate-' . $item->id);
+                    $url = $item->plateImageUrl();
+                    return $url ? $this->renderImageWithModal($url, 'plate-' . $item->id) : '—';
                 }),
         ];
     }
@@ -95,7 +87,7 @@ class CarEventResource extends BaseModelResource
     public function filters(): array
     {
         return [
-            DateRange::make('Период отчётности', 'created_at')
+            DateRange::make('Период отчётности', 'recognized_at')
                 ->withTime(),
 
             SelectField::make('Видеопоток', 'camera_id')
@@ -103,15 +95,21 @@ class CarEventResource extends BaseModelResource
                 ->options(Stream::query()->pluck('name', 'uid')->toArray())
                 ->nullable(),
 
-            SelectField::make('Статус', 'is_authorized')
+            SelectField::make('Статус', 'db_status_filter')
                 ->options([
-                    'true'  => 'Авторизован',
-                    'false' => 'Неизвестен',
+                    'in_db'          => 'В базе',
+                    'not_in_db'      => 'Не в базе',
+                    'not_recognized' => 'Не распознан',
                 ])
                 ->placeholder('Статус')
                 ->nullable()
-                ->onApply(function (Builder $query, $value) {
-                    return $query->where('is_authorized', $value === 'true');
+                ->onApply(function (\Illuminate\Database\Eloquent\Builder $query, $value) {
+                    return match ($value) {
+                        'in_db'          => $query->whereNotNull('car_id'),
+                        'not_in_db'      => $query->whereNull('car_id')->whereNotNull('plate_text')->where('plate_text', '!=', ''),
+                        'not_recognized' => $query->where(fn($q) => $q->whereNull('plate_text')->orWhere('plate_text', '')),
+                        default          => $query,
+                    };
                 }),
         ];
     }
@@ -121,29 +119,37 @@ class CarEventResource extends BaseModelResource
         return [
             ID::make(),
 
-            Date::make('Дата и время', 'created_at')
+            Date::make('Дата и время', 'recognized_at')
                 ->format('d.m.Y H:i:s'),
 
             Text::make('Камера', 'camera_id')
-                ->changeFill(function ($item) {
-                    if (empty($item->camera_id)) return 'Неизвестная камера';
-                    static $cache = [];
-                    if (!array_key_exists($item->camera_id, $cache)) {
-                        $cache[$item->camera_id] = Stream::where('uid', $item->camera_id)->first()?->name;
-                    }
-                    return $cache[$item->camera_id] ?? 'Неизвестная камера';
-                }),
+                ->changeFill(fn($item) => $this->streamNameByUid($item->camera_id)),
 
             Text::make('Номер', 'plate_text'),
 
-            Text::make('Статус', 'is_authorized')
-                ->changeFill(fn($item) => $item->is_authorized ? 'Авторизован' : 'Неизвестен'),
-
-            Text::make('Описание', 'car_description')
-                ->changeFill(function ($item) {
-                    return $item->car?->comment ?? '';
+            Text::make('Статус', 'car_id')
+                ->changeFill(fn($item) => match (true) {
+                    empty($item->plate_text) => 'Не распознан',
+                    $item->car_id !== null   => 'В базе',
+                    default                  => 'Не в базе',
                 }),
+
         ];
+    }
+
+    private array $streamCache = [];
+
+    private function streamNameByUid(?string $uid): string
+    {
+        if (empty($uid)) {
+            return '—';
+        }
+
+        if (! array_key_exists($uid, $this->streamCache)) {
+            $this->streamCache[$uid] = Stream::withTrashed()->where('uid', $uid)->value('name');
+        }
+
+        return $this->streamCache[$uid] ?? $uid;
     }
 
     private function renderImageWithModal(string $src, string $id): string
