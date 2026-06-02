@@ -7,12 +7,14 @@ use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
 use App\Models\User;
 use App\MoonShine\Fields\PermissionMatrixField;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use Carbon\Carbon;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
+use MoonShine\Laravel\Models\MoonshineUserRole;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
@@ -119,13 +121,8 @@ class MoonShineUserResource extends BaseModelResource
                 ]),
                 Grid::make([
                     Column::make([
-                        BelongsTo::make(
-                            'Роль',
-                            'moonshineUserRole',
-                            formatted: static fn ($model) => $model->name,
-                            resource: MoonShineUserRoleResource::class,
-                        )
-                            ->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
+                        SelectField::make('Роль','moonshine_user_role_id')
+                            ->options(MoonshineUserRole::all()->pluck('name', 'id')),
                     ])->columnSpan(3),
                     Column::make([
                         CustomDate::make('Дата создания', 'created_at')

@@ -323,7 +323,7 @@ class PersonResource extends BaseModelResource
                         ->default('Mifare'),
                 ]
             )
-            ->submit('Сохранить', ['class' => 'btn-primary']);
+            ->submit('Сохранить', ['class' => 'btn-primary', 'style' => 'margin-left: 1.5rem']);
     }
 
     public function saveKey(MoonShineRequest $request)

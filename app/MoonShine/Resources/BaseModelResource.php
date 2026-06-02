@@ -117,6 +117,9 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
 
     protected function hasDetailView(): bool
     {
+        if (! $this->hasAction(Action::VIEW)) {
+            return false;
+        }
         $method = new \ReflectionMethod(static::class, 'detailFields');
         return $method->getDeclaringClass()->getName() === static::class;
     }

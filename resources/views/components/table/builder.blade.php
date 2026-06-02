@@ -99,6 +99,10 @@
                 pluralize(n) {
                     return n === 1 ? 'запись' : (n >= 2 && n <= 4 ? 'записи' : 'записей');
                 },
+                hasBulkDelete() {
+                    const t = this.tableEl();
+                    return !!(t && t.querySelector(`tfoot [data-button-type='bulk-button']`));
+                },
             }"
             x-init="
                 const t = tableEl();
@@ -108,7 +112,7 @@
             "
         >
             <div
-                x-show="actionsOpen"
+                x-show="actionsOpen && hasBulkDelete()"
                 x-cloak
                 x-transition:enter="transition ease-out duration-150"
                 x-transition:enter-start="opacity-0 -translate-y-1"
@@ -301,15 +305,16 @@
 .custom-table-card {
     border: 1px solid #D7D0EF; border-radius: 16px; overflow: hidden; background: #fff;
     display: flex; flex-direction: column;
-    min-height: calc(100vh - 280px);
+    height: calc(100vh - 265px);
 }
 .custom-table-card .table-responsive {
     flex: 1 1 auto;
+    min-height: 0;
     border: none !important; border-radius: 0 !important;
-    height: auto !important; overflow-x: auto !important; overflow-y: visible !important; max-height: none !important;
+    height: auto !important; overflow-x: auto !important; overflow-y: auto !important; max-height: none !important;
 }
 .custom-table-card .table-responsive.table-sticky {
-    overflow: auto !important; max-height: calc(100vh - 280px) !important;
+    overflow: auto !important; max-height: none !important;
     border-bottom: 1px solid #D7D0EF !important;
 }
 .custom-table-card .table-responsive.table-sticky .table-list thead th {

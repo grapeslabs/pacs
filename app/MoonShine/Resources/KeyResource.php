@@ -66,11 +66,11 @@ class KeyResource extends BaseModelResource
     {
         return [
             Text::make('Ключ', 'key'),
-            SelectField::make('Тип ключа', 'type')
+            Select::make('Тип ключа', 'type')
                 ->options([
                     'Mifare' => 'Mifare',
                 ]),
-            SelectField::make('Персона', 'person_id')
+            Select::make('Персона', 'person_id')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray()),
         ];
     }
