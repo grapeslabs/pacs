@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Car extends Model
 {
     use HasFactory, SoftDeletes;
+    protected $connection = 'pgsql';
     protected $table = 'cars';
 
     protected $fillable = [

@@ -5,6 +5,7 @@ namespace App\MoonShine\Resources;
 use App\Models\Setting;
 use App\Models\Stream;
 use App\MoonShine\Decorations\FeatureBox;
+use App\MoonShine\Fields\ArchiveDuration;
 use App\MoonShine\Fields\CustomNumber;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\FeatureCheckbox;
@@ -14,6 +15,7 @@ use App\MoonShine\Fields\FeatureSpoiler;
 use App\MoonShine\Fields\SingleZonePreviewField;
 use App\MoonShine\Fields\MultiZonePreviewField;
 use App\MoonShine\Pages\SettingsPage;
+use App\MoonShine\Pages\StreamGrzZoneEditorPage;
 use App\MoonShine\Pages\StreamPlayer;
 use App\MoonShine\Pages\Streams;
 use App\Services\VideoAnalyticService;
@@ -34,13 +36,15 @@ use MoonShine\UI\Fields\Number;
 use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Checkbox;
+use Log;
+use Exception;
 
 class VideoStreamResource extends BaseModelResource
 {
     protected string $model = Stream::class;
     protected string $title = 'Видеопотоки';
     protected string $column = 'name';
-    protected bool $softDelete=false;
+    protected bool $softDelete = false;
 
     public function getRedirectAfterDelete(): string
     {
@@ -55,7 +59,7 @@ class VideoStreamResource extends BaseModelResource
     protected function indexButtons(): ListOf
     {
         return parent::indexButtons()->prepend(
-            ActionButton::make('', fn($item) => route('moonshine.resource.page',['video-stream-resource','stream-player', $item->id]))
+            ActionButton::make('', fn($item) => route('moonshine.resource.page', ['video-stream-resource', 'stream-player', $item->id]))
                 ->icon(file_get_contents(public_path('icons/btn-fullscreen.svg')), true)
                 ->class('btn js-player-button')
         );
@@ -68,6 +72,7 @@ class VideoStreamResource extends BaseModelResource
         $pages[] = StreamPlayer::class;
         $pages[] = StreamFaceZoneEditorPage::class;
         $pages[] = StreamMotionZonesEditorPage::class;
+        $pages[] = StreamGrzZoneEditorPage::class;
         return $pages;
     }
 
@@ -97,19 +102,14 @@ class VideoStreamResource extends BaseModelResource
                 ->pattern('^rtsp:\/\/(([^\s\/:@]+)(:([^\s\/@]+))?@)?([^\s\/:]+)(?::([0-9]+))?(\/.*)?$'),
 //            BelongsTo::make('Хранилище', 'storage', 'name', StorageResource::class),
             Checkbox::make('Включение видеопотока', 'is_active'),
-            CustomNumber::make('Время хранения архива(Час)', 'archive_time')
-                ->default(24)
-                ->integer("Время хранения архива должно быть числом")
-                ->minValue(1, 'Время хранения архива не может быть меньше часа')
-                ->maxValue(87600, 'Время хранения архива не может быть больше года')
-                ->required(),
+            ArchiveDuration::make('Архив', 'archive_time'),
             ...config('services.va.enabled')?[
                 FeatureField::make('AI аналитика', 'va_options->global_enable')
                     ->offValue(0)
                     ->onValue(1)
                     ->locked(!(boolean)Setting::where('key', 'face_recognition')->value('value'))
                     ->unlockUrl(app(SettingsPage::class)->getUrl()),
-                FeatureBox::make('AI аналитика')
+                FeatureBox::make('Настройка AI аналитики')
                     ->icon(file_get_contents(public_path('icons/icon-feature.svg')))
                     ->showWhen('va_options->global_enable', '=', true)
                     ->fields([
@@ -119,13 +119,14 @@ class VideoStreamResource extends BaseModelResource
                                 SingleZonePreviewField::make('Превью зоны', 'va_options->face_detection_zone')
                                     ->setupUrl($this->getPageUrl(StreamFaceZoneEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
                                     ->showWhen('va_options->has_face_detection_zone', '=', true),
-                                FeatureCheckbox::make('Распознание персоны', 'va_options->is_face_recognition'),
+                                FeatureCheckbox::make('Распознавание персоны', 'va_options->is_face_recognition'),
                                 FeatureSlider::make('Чувствительность', 'va_options->face_recognition_sensitivity')
                                     ->showWhen('va_options->is_face_recognition', '=', true)
                                     ->default(75)
                                     ->min(0)
                                     ->max(100)
-                                    ->step(1),
+                                    ->step(1)
+                                    ->wrapperStyle('padding-left: 30px'),
                             ]),
                         Divider::make(),
                         FeatureSpoiler::make('Детекция движения', 'va_options->is_motion_detection')
@@ -138,8 +139,23 @@ class VideoStreamResource extends BaseModelResource
                                     ->setupUrl($this->getPageUrl(StreamMotionZonesEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
                                     ->showWhen('va_options->has_motion_detection_zone', '=', true),
                             ]),
+                        ...config('services.grz.enabled')?[
+                            Divider::make(),
+                            FeatureSpoiler::make('Распознавание ГРЗ', 'va_options->is_plate_recognition')
+                                ->nested([
+                                    FeatureCheckbox::make('Задать зону распознавания ГРЗ', 'va_options->has_plate_recognition_zone'),
+                                    SingleZonePreviewField::make('Превью зоны', 'va_options->plate_recognition_zone')
+                                        ->setupUrl($this->getPageUrl(StreamGrzZoneEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
+                                        ->showWhen('va_options->has_plate_recognition_zone', '=', true),
+                                    FeatureSlider::make('Чувствительность', 'va_options->plate_recognition_sensitivity')
+                                        ->default(75)
+                                        ->min(0)
+                                        ->max(100)
+                                        ->step(1),
+                                ]),
+                            ]:[]
                     ]),
-            ]:[],
+            ] : [],
         ];
     }
 
@@ -154,11 +170,14 @@ class VideoStreamResource extends BaseModelResource
             Text::make('Адрес потока(RTSP)', 'rtsp'),
             Checkbox::make('Включение видеопотока', 'is_active'),
             Text::make('Время хранения архива(Час)', 'archive_time'),
-            ...config('services.va.enabled')?[
-                Checkbox::make('Поиск лица', 'va_options->is_face_detection'),
-                Checkbox::make('Распознание личности', 'va_options->is_face_recognition'),
-                Checkbox::make('Детекция движения', 'va_options->is_motion_detection'),
-                Checkbox::make('Детекция человека', 'va_options->is_human_motion_detection')
+            ...config('services.va.enabled') ? [
+                Checkbox::make('Поиск лица', 'va_options.is_face_detection'),
+                Checkbox::make('Распознавание личности', 'va_options.is_face_recognition'),
+                Checkbox::make('Детекция движения', 'va_options.is_motion_detection'),
+                Checkbox::make('Детекция человека', 'va_options.is_human_motion_detection')
+            ] : [],
+            ...config('services.grz.enabled') ? [
+                Checkbox::make('Распознавание ГРЗ', 'va_options.is_plate_recognition')
             ]:[],
         ];
     }
@@ -168,8 +187,34 @@ class VideoStreamResource extends BaseModelResource
         return [
             'name' => ['required', 'string', 'max:255'],
             'location' => ['nullable','string', 'max:255'],
-            'archive_time' => ['required','integer', 'min:0'],
+            'archive_time' => ['required', 'array'],
+            'archive_time.value' => ['bail', 'required', 'integer', 'min:0', 'max:100'],
+            'archive_time.unit' => ['bail', 'required', 'integer'],
             'rtsp' => ['string', 'max:255'],
+        ];
+    }
+
+    public function validationMessages(): array
+    {
+        return [
+            'name.required' => 'Поле «Название» обязательно для заполнения.',
+            'name.string'   => 'Название должно быть строкой.',
+            'name.max'      => 'Название не может превышать 255 символов.',
+
+            'location.string' => 'Местоположение должно быть строкой.',
+            'location.max'    => 'Местоположение не может превышать 255 символов.',
+
+            'archive_time.required' => 'Параметры времени архивации обязательны.',
+            'archive_time.value.required' => 'Значение времени архивации обязательно.',
+            'archive_time.value.integer'  => 'Значение времени архивации должно быть целым числом.',
+            'archive_time.value.min'      => 'Значение времени архивации не может быть меньше 0.',
+            'archive_time.value.max' => 'Максимальное значение - 100. Для больших интервалов измените единицу времени.',
+
+            'archive_time.unit.required' => 'Единица измерения времени архивации обязательна.',
+            'archive_time.unit.integer'  => 'Единица измерения должна быть указана корректно.',
+
+            'rtsp.string' => 'RTSP-ссылка должна быть строкой.',
+            'rtsp.max'    => 'RTSP-ссылка не может превышать 255 символов.',
         ];
     }
 
@@ -179,15 +224,15 @@ class VideoStreamResource extends BaseModelResource
             Checkbox::make('Включено', 'is_active'),
             Text::make('Название', 'name'),
             Text::make('Локация', 'location'),
-            ...config('services.va.enabled')?[
+            ...config('services.va.enabled') ? [
                 Checkbox::make('Распознание личности', 'is_recognize'),
-            ]:[],
+            ] : [],
         ];
     }
 
-    public function search():array
+    public function search(): array
     {
-        return ['name','location', 'uid', 'rtsp', 'storage_id'];
+        return ['name', 'location', 'uid', 'rtsp', 'storage_id'];
     }
 
     public function saveFaceDetectionZone(MoonShineRequest $request): MoonShineJsonResponse
@@ -201,12 +246,15 @@ class VideoStreamResource extends BaseModelResource
         }
 
         $options = $item->va_options ?? [];
+        $options['global_enable'] = true;
+        $options['is_face_detection'] = true;
+        $options['has_face_detection_zone'] = true;
         $options['face_detection_zone'] = $zoneData;
 
-        $videoWidth  = (int) $request->input('video_width', 0);
-        $videoHeight = (int) $request->input('video_height', 0);
+        $videoWidth = (int)$request->input('video_width', 0);
+        $videoHeight = (int)$request->input('video_height', 0);
         if ($videoWidth > 0 && $videoHeight > 0) {
-            $options['video_width']  = $videoWidth;
+            $options['video_width'] = $videoWidth;
             $options['video_height'] = $videoHeight;
         }
 
@@ -226,12 +274,15 @@ class VideoStreamResource extends BaseModelResource
             $zoneData = json_decode($zoneData, true);
         }
         $options = $item->va_options ?? [];
+        $options['global_enable'] = true;
+        $options['is_motion_detection'] = true;
+        $options['has_motion_detection_zones'] = true;
         $options['motion_detection_zones'] = $zoneData;
 
-        $videoWidth  = (int) $request->input('video_width', 0);
-        $videoHeight = (int) $request->input('video_height', 0);
+        $videoWidth = (int)$request->input('video_width', 0);
+        $videoHeight = (int)$request->input('video_height', 0);
         if ($videoWidth > 0 && $videoHeight > 0) {
-            $options['video_width']  = $videoWidth;
+            $options['video_width'] = $videoWidth;
             $options['video_height'] = $videoHeight;
         }
 
@@ -240,6 +291,36 @@ class VideoStreamResource extends BaseModelResource
 
         return MoonShineJsonResponse::make()
             ->toast('Зоны детекции движения сохранены!', ToastType::SUCCESS)
+            ->redirect($this->getIndexPageUrl());
+    }
+
+    public function savePlateDetectionZone(MoonShineRequest $request): MoonShineJsonResponse
+    {
+        $item = $this->getItem();
+
+        $zoneData = $request->input('va_options->plate_recognition_zone');
+        if (is_string($zoneData)) {
+            $zoneData = json_decode($zoneData, true);
+        }
+
+        $options = $item->va_options ?? [];
+        $options['global_enable'] = true;
+        $options['is_plate_recognition'] = true;
+        $options['has_plate_recognition_zone'] = true;
+        $options['plate_recognition_zone'] = $zoneData;
+
+        $videoWidth = (int)$request->input('video_width', 0);
+        $videoHeight = (int)$request->input('video_height', 0);
+        if ($videoWidth > 0 && $videoHeight > 0) {
+            $options['video_width'] = $videoWidth;
+            $options['video_height'] = $videoHeight;
+        }
+
+        $item->va_options = $options;
+        $item->save();
+
+        return MoonShineJsonResponse::make()
+            ->toast('Зона распознавания ГРЗ сохранена!', ToastType::SUCCESS)
             ->redirect($this->getIndexPageUrl());
     }
 }

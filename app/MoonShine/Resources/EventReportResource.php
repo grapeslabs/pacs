@@ -5,6 +5,7 @@ namespace App\MoonShine\Resources;
 use App\Models\Person;
 use App\Models\Stream;
 use App\Models\VideoAnalyticReport;
+use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\SelectField;
 use Illuminate\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
@@ -61,9 +62,12 @@ class EventReportResource extends BaseModelResource
                 $item->person?->getFullName() ?? $item->person_photobank_id
             ),
 
-            Text::make('Тип распознавания', 'is_unknown', fn ($item) =>
-            $item->is_unknown ? 'Неизвестное лицо' : 'Известное лицо'
-            ),
+            ColoredSelectField::make('Тип распознавания', 'is_unknown', fn ($item) =>
+                $item->is_unknown ? 'unknown' : 'known'
+            )->options([
+                'known'   => ['label' => 'Известное лицо',    'color' => 'green'],
+                'unknown' => ['label' => 'Неизвестное лицо',  'color' => 'yellow'],
+            ]),
 
             Image::make('Фото', '', fn ($item) => basename($item->data['snapshot_path'] ?? ''))
                 ->disk('analytic')
@@ -131,7 +135,7 @@ class EventReportResource extends BaseModelResource
                     $id = $item->person_photobank_id;
                     static $personCache = [];
                     if (!array_key_exists($id, $personCache)) {
-                        $person = Person::find($id);
+                        $person = Person::where('grapesva_uuid', $id)->first();
                         $personCache[$id] = $person ? "[$id] " . $person->getfullname() : "[$id] Данные удалены";
                     }
 

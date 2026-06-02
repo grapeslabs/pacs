@@ -4,6 +4,7 @@ namespace App\MoonShine\Resources;
 
 use App\Models\Person;
 use App\Models\GrapeslabsSkudEvent;
+use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\SelectField;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use MoonShine\Laravel\Handlers\Handler;
@@ -120,17 +121,72 @@ class SkudEventResource extends BaseModelResource
                     );
                 }),
 
-            Text::make('Тип события', 'type')
-                ->sortable('type')
-                ->changeFill(function ($data) {
-                    $info = [];
-                    $eventData = json_decode($data->event ?? [], true);
-
-                    if (isset($eventData['event'])) {
-                        $info[] = $eventData['event'];
-                    }
-                    return implode(', ', $info);
-                }),
+            ColoredSelectField::make('Тип события', 'type', function ($item) {
+                $type = (int) $item->type;
+                $typeMap = [
+                    0 => '0_1',   1 => '0_1',
+                    2 => '2_3',   3 => '2_3',
+                    4 => '4_5',   5 => '4_5',
+                    6 => '6_7',   7 => '6_7',
+                    8 => '8_9',   9 => '8_9',
+                    10 => '10_11', 11 => '10_11',
+                    12 => '12_13', 13 => '12_13',
+                    14 => '14_15', 15 => '14_15',
+                    16 => '16_17', 17 => '16_17',
+                    18 => '18',   19 => '19',
+                    20 => '20',   21 => '21',
+                    22 => '22_23', 23 => '22_23',
+                    26 => '26_27', 27 => '26_27',
+                    28 => '28_29', 29 => '28_29',
+                    30 => '30_31', 31 => '30_31',
+                    32 => '32_33', 33 => '32_33',
+                    34 => '34_35', 35 => '34_35',
+                    36 => '36',   37 => '37',
+                    38 => '38',   39 => '39',
+                    40 => '40_41', 41 => '40_41',
+                    48 => '48_49', 49 => '48_49',
+                    50 => '50_51', 51 => '50_51',
+                    52 => '52_53', 53 => '52_53',
+                    54 => '54_55', 55 => '54_55',
+                    64 => '64',   65 => '65',
+                    85 => '85',   86 => '86',
+                ];
+                return $typeMap[$type] ?? 'unknown';
+            })->options([
+                '0_1'     => ['label' => 'Открытие кнопкой изнутри',         'color' => 'blue'],
+                '2_3'     => ['label' => 'Ключ не найден в банке ключей',     'color' => 'red'],
+                '4_5'     => ['label' => 'Ключ найден, дверь открыта',        'color' => 'green'],
+                '6_7'     => ['label' => 'Ключ найден, доступ не разрешён',   'color' => 'red'],
+                '8_9'     => ['label' => 'Открыто оператором по сети',        'color' => 'blue'],
+                '10_11'   => ['label' => 'Дверь заблокирована',               'color' => 'gray'],
+                '12_13'   => ['label' => 'Взлом двери',                       'color' => 'pink'],
+                '14_15'   => ['label' => 'Дверь оставлена открытой',          'color' => 'orange'],
+                '16_17'   => ['label' => 'Проход состоялся',                  'color' => 'green'],
+                '18'      => ['label' => 'Срабатывание датчика 1',            'color' => 'orange'],
+                '19'      => ['label' => 'Срабатывание датчика 2',            'color' => 'orange'],
+                '20'      => ['label' => 'Перезагрузка контроллера',          'color' => 'purple'],
+                '21'      => ['label' => 'Событие питания',                   'color' => 'purple'],
+                '22_23'   => ['label' => 'Заблокирована кнопка открывания',   'color' => 'gray'],
+                '26_27'   => ['label' => 'Нарушение антипассбэка',            'color' => 'red'],
+                '28_29'   => ['label' => 'Замок включён (режим Триггер)',     'color' => 'gray'],
+                '30_31'   => ['label' => 'Замок выключен (режим Триггер)',    'color' => 'gray'],
+                '32_33'   => ['label' => 'Дверь открыта',                     'color' => 'blue'],
+                '34_35'   => ['label' => 'Дверь закрыта',                     'color' => 'blue'],
+                '36'      => ['label' => 'Управление питанием',               'color' => 'purple'],
+                '37'      => ['label' => 'Смена режима работы',               'color' => 'purple'],
+                '38'      => ['label' => 'Пожарная тревога',                  'color' => 'pink'],
+                '39'      => ['label' => 'Охранная тревога',                  'color' => 'pink'],
+                '40_41'   => ['label' => 'Таймаут прохода',                   'color' => 'orange'],
+                '48_49'   => ['label' => 'Совершён вход в шлюз',              'color' => 'blue'],
+                '50_51'   => ['label' => 'Заблокирован вход в шлюз (занят)',  'color' => 'orange'],
+                '52_53'   => ['label' => 'Разрешён вход в шлюз',             'color' => 'green'],
+                '54_55'   => ['label' => 'Заблокирован проход (Антипассбек)', 'color' => 'red'],
+                '64'      => ['label' => 'Hotel: изменение режима работы',    'color' => 'purple'],
+                '65'      => ['label' => 'Hotel: отработка карт',             'color' => 'purple'],
+                '85'      => ['label' => 'Идентификация ключа',               'color' => 'blue'],
+                '86'      => ['label' => 'Идентификация 7-байтного ключа',    'color' => 'blue'],
+                'unknown' => ['label' => 'Неизвестное событие',               'color' => 'gray'],
+            ])->sortable('type'),
 
             Text::make('ФИО/Имя', 'subject_name')
                 ->sortable(function (Builder $query, string $column, string $direction) {

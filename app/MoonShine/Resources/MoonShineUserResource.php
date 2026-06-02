@@ -16,8 +16,6 @@ use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
-use MoonShine\Permissions\Models\MoonshineUser;
-use MoonShine\Laravel\Models\MoonshineUserRole;
 use MoonShine\MenuManager\Attributes\Group;
 use MoonShine\MenuManager\Attributes\Order;
 use MoonShine\Support\Attributes\Icon;
@@ -48,11 +46,11 @@ use Stringable;
 #[Group('moonshine::ui.resource.system', 'users', translatable: true)]
 #[Order(1)]
 /**
- * @extends BaseModelResource<MoonshineUser>
+ * @extends BaseModelResource<User>
  */
 class MoonShineUserResource extends BaseModelResource
 {
-    protected string $model = MoonshineUser::class;
+    protected string $model = User::class;
     protected string $column = 'name';
     protected string $title = 'Пользователи';
     protected array $with = ['moonshineUserRole'];
@@ -65,7 +63,7 @@ class MoonShineUserResource extends BaseModelResource
             ID::make()->sortable(),
             BelongsTo::make('Роль',
                 'moonshineUserRole',
-                formatted: static fn (MoonshineUserRole $model) => $model->name,
+                formatted: static fn ($model) => $model->name,
                 resource: MoonShineUserRoleResource::class,
             )->badge(Color::PURPLE),
 
@@ -119,7 +117,7 @@ class MoonShineUserResource extends BaseModelResource
                         BelongsTo::make(
                             'Роль',
                             'moonshineUserRole',
-                            formatted: static fn (MoonshineUserRole $model) => $model->name,
+                            formatted: static fn ($model) => $model->name,
                             resource: MoonShineUserRoleResource::class,
                         )
                             ->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
@@ -200,7 +198,7 @@ class MoonShineUserResource extends BaseModelResource
         return [
             BelongsTo::make('Роль',
                 'moonshineUserRole',
-                formatted: static fn (MoonshineUserRole $model) => $model->name,
+                formatted: static fn ($model) => $model->name,
                 resource: MoonShineUserRoleResource::class,
             )->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
 

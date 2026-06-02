@@ -11,6 +11,7 @@
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.2",
         "laravel/tinker": "^2.8",
+        "moonshine/moonshine": "^3.16",
         "moonshine/import-export": "1.0.5",
         "moonshine/ru": "^1.0",
         "telegram-bot/api": "^2.5"
