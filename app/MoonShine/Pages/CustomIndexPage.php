@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Pages;
 
+use App\MoonShine\Resources\PersonResource;
 use App\MoonShine\Resources\VideoStreamResource;
 use MoonShine\Contracts\UI\ActionButtonContract;
 use MoonShine\Laravel\Buttons\FiltersButton;
@@ -16,6 +17,9 @@ use MoonShine\UI\Components\ActionGroup;
 use MoonShine\UI\Components\Heading;
 use MoonShine\UI\Components\Layout\Flex;
 use MoonShine\UI\Components\Modal;
+use MoonShine\UI\Fields\File;
+use MoonShine\UI\Components\FormBuilder;
+use MoonShine\Support\Enums\FormMethod;
 
 class CustomIndexPage extends IndexPage
 {
@@ -24,6 +28,9 @@ class CustomIndexPage extends IndexPage
     public function getPageButtons(): array
     {
         $resource = $this->getResource();
+        $importButton = $this->getImportButtonIfNeeded($resource);
+        $exportButton = $this->getExportButtonIfNeeded($resource);
+
         return [
             Flex::make([
                 Flex::make([
@@ -42,9 +49,7 @@ class CustomIndexPage extends IndexPage
                 ]),
 
                 Flex::make([
-
                     Search::make(placeholder: $this->buildSearchPlaceholder())->render(),
-
                     ActionGroup::make()
                         ->when(
                             $resource->hasFilters(),
@@ -60,6 +65,8 @@ class CustomIndexPage extends IndexPage
                             )
                         )
                         ->class('gap-4'),
+                    $importButton,
+                    $exportButton,
                     $this->getCustomCreateButton(),
                 ])
             ])
@@ -68,6 +75,7 @@ class CustomIndexPage extends IndexPage
                 ->class('mb-6'),
         ];
     }
+
     private function buildSearchPlaceholder(): string
     {
         $resource = $this->getResource();
@@ -122,5 +130,47 @@ class CustomIndexPage extends IndexPage
             ->canSee(static fn (): bool => $resource->hasAction(Action::CREATE) && $resource->can(Ability::CREATE))
             ->primary()
             ->icon('plus');
+
+    /**
+     * Возвращает кнопку импорта, если текущий ресурс — PersonResource.
+     */
+    protected function getImportButtonIfNeeded($resource): ?ActionButton
+    {
+        if (!$resource instanceof PersonResource) {
+            return null;
+        }
+
+        return ActionButton::make('Импорт')
+            ->primary()
+            ->inModal(
+                title: 'Загрузка архива с фотографиями',
+                content: function () {
+                    return (string) FormBuilder::make(
+                        route('person-photos.import'),
+                        FormMethod::POST,
+                    )
+                        ->fields([
+                            File::make('ZIP-архив', 'archive')
+                                ->required()
+                                ->allowedExtensions(['zip']),
+                        ])
+                        ->submit('Загрузить', ['class' => 'btn-primary']);
+                },
+                name: 'import-person-photos',
+            );
+    }
+
+    /**
+     * Возвращает кнопку экспорта, если текущий ресурс — PersonResource.
+     */
+    protected function getExportButtonIfNeeded($resource): ?ActionButton
+    {
+        if (!$resource instanceof PersonResource) {
+            return null;
+        }
+
+        return ActionButton::make('Экспорт', route('person-photos.export-all'))
+            ->primary()
+            ->blank();
     }
 }
