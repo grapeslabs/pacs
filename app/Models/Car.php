@@ -27,6 +27,16 @@ class Car extends Model
         return $this->belongsToMany(Person::class, 'car_person');
     }
 
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(CarTag::class, 'car_car_tag', 'car_id', 'car_tag_id');
+    }
+
+    public function getTagsListAttribute(): string
+    {
+        return $this->tags->pluck('name')->implode(', ');
+    }
+
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);

@@ -52,10 +52,10 @@ return [
             'throw' => false,
         ],
 
-        'grz' => [
+        'grz-events' => [
             'driver' => 'local',
-            'root' => base_path('grz/plates'),
-            'url' => config('app.url').'/grz-storage',
+            'root' => base_path('grz/events'),
+            'url' => config('app.url').'/grz-events',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -88,7 +88,7 @@ return [
     'links' => [
         public_path('storage') => storage_path('app/public'),
         public_path('analytic-storage') => base_path('analytic'),
-        public_path('grz-storage') => base_path('grz/plates'),
+        public_path('grz-events') => base_path('grz/events'),
     ],
 
 ];

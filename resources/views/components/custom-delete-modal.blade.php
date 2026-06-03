@@ -240,6 +240,53 @@
             if (!this.isLoading) {
                 this.isOpen = false;
             }
+        },
+        async submit() {
+            if (this.isLoading) {
+                return;
+            }
+
+            if (!this.formAction) {
+                window.MoonShine?.ui?.toast?.('Не удалось определить адрес удаления', 'error');
+                return;
+            }
+
+            this.isLoading = true;
+
+            const token = this.$root.querySelector('input[name=\'_token\']')?.value || '';
+            const body = new URLSearchParams();
+            body.append('_method', 'DELETE');
+            body.append('_token', token);
+
+            try {
+                const response = await fetch(this.formAction, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': token,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body,
+                });
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+
+                const data = await response.json().catch(() => ({}));
+
+                this.isOpen = false;
+
+                if (data.redirect) {
+                    window.location.assign(data.redirect);
+                } else {
+                    window.location.reload();
+                }
+            } catch (e) {
+                this.isLoading = false;
+                window.MoonShine?.ui?.toast?.('Не удалось удалить запись', 'error');
+            }
         }
     }"
      @open-custom-delete-modal.window="open($event)"
@@ -287,9 +334,8 @@
                         </div>
                     </div>
 
-                    <form :action="formAction" method="POST" @submit="isLoading = true">
+                    <div>
                         @csrf
-                        @method('DELETE')
                         <div class="ccm_actions">
                             <button type="button"
                                     @click="close()"
@@ -297,7 +343,8 @@
                                     class="ccm_btn ccm_btn-cancel">
                                 Отмена
                             </button>
-                            <button type="submit"
+                            <button type="button"
+                                    @click="submit()"
                                     :disabled="isLoading"
                                     class="ccm_btn ccm_btn-delete">
                                 <svg x-show="isLoading" class="ccm_spinner" xmlns="http://www.w3.org/2000/svg"
@@ -310,7 +357,7 @@
                                 <span x-text="isLoading ? 'Удаление...' : 'Удалить'"></span>
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>

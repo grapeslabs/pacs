@@ -9,6 +9,7 @@ use App\MoonShine\Resources\BarrierEventResource;
 use App\MoonShine\Resources\BarrierResource;
 use App\MoonShine\Resources\BotResource;
 use App\MoonShine\Resources\CarBrandResource;
+use App\MoonShine\Resources\CarPassageRuleResource;
 use App\MoonShine\Resources\CarResource;
 use App\MoonShine\Resources\ControllerResource;
 use App\MoonShine\Resources\EventReportResource;
@@ -17,6 +18,8 @@ use App\MoonShine\Resources\KeyResource;
 use App\MoonShine\Resources\MoonShineUserResource;
 use App\MoonShine\Resources\MoonShineUserRoleResource;
 use App\MoonShine\Resources\OrganizationResource;
+use App\MoonShine\Resources\PassageEventResource;
+use App\MoonShine\Resources\PassageResource;
 use App\MoonShine\Resources\PeopleReportResource;
 use App\MoonShine\Resources\PersonResource;
 use App\MoonShine\Resources\SkudEventResource;
@@ -67,7 +70,7 @@ class PermissionService
             ],
             'Автомобили'  => [
                 'icon' => file_get_contents(public_path('icons/Permissions/cars.svg')),
-                'classes' => [CarResource::class, CarBrandResource::class, CarColor::class, BarrierEventResource::class]
+                'classes' => [CarResource::class, CarPassageRuleResource::class, PassageResource::class, PassageEventResource::class, CarBrandResource::class, CarColor::class, BarrierEventResource::class]
             ],
             'Доступ гостей'  => [
                 'icon' => file_get_contents(public_path('icons/Permissions/guests.svg')),

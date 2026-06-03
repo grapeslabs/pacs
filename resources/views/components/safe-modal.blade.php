@@ -60,7 +60,7 @@
             toggleModal();
         }
     "
-    @toast.window="if(open && event.detail.type === 'success') { forceClose(); }"
+    @toast.window="if(open && (event.detail.type === 'success' || event.detail.type === 'warning')) { forceClose(); }"
 >
     <template x-teleport="body">
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CarTagController;
 use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DadataController;
@@ -14,10 +15,16 @@ Route::get("/", function () {
     return view("welcome");
 });
 
-Route::prefix("tags")->group(function () {
-    Route::get("list", [TagController::class, "index"])->name("tags.index");
-    Route::post("store", [TagController::class, "store"])->name("tags.store");
-    Route::delete("{tag}", [TagController::class, "store"])->name("tags.destroy");
+Route::prefix('tags')->group(function() {
+    Route::get('list', [TagController::class, 'index'])->name('tags.index');
+    Route::post('store', [TagController::class, 'store'])->name('tags.store');
+    Route::delete('{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
+});
+
+Route::prefix('car-tags')->group(function() {
+    Route::get('list', [CarTagController::class, 'index'])->name('car-tags.index');
+    Route::post('store', [CarTagController::class, 'store'])->name('car-tags.store');
+    Route::delete('{carTag}', [CarTagController::class, 'destroy'])->name('car-tags.destroy');
 });
 
 Route::post("/field-validation", [CustomFieldController::class, "validate"])->name("field.validation");

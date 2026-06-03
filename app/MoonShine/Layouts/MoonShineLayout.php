@@ -57,6 +57,10 @@ use App\MoonShine\Resources\GuestResource;
 use App\MoonShine\Resources\TerminalResource;
 use App\MoonShine\Resources\BarrierResource;
 use App\MoonShine\Resources\ControllerResource;
+use App\MoonShine\Resources\CarPassageRuleResource;
+use App\MoonShine\Resources\CarTagResource;
+use App\MoonShine\Resources\PassageResource;
+use App\MoonShine\Resources\PassageEventResource;
 use App\MoonShine\Resources\ReferenceResource;
 use App\MoonShine\Resources\SettingResource;
 use App\MoonShine\Resources\CarBrandResource;
@@ -166,6 +170,10 @@ final class MoonShineLayout extends AppLayout
                     ->canSee(fn () => auth()->user()->hasPermission(KeyResource::class, Ability::VIEW_ANY)),
                 MenuItem::make('Автомобили', CarResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(CarResource::class, Ability::VIEW_ANY)),
+                MenuItem::make('Проезды', PassageResource::class)
+                    ->canSee(fn () => auth()->user()->hasPermission(PassageResource::class, Ability::VIEW_ANY)),
+                MenuItem::make('Правила проезда', CarPassageRuleResource::class)
+                    ->canSee(fn () => auth()->user()->hasPermission(CarPassageRuleResource::class, Ability::VIEW_ANY)),
                 MenuItem::make('Гости', GuestResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(GuestResource::class, Ability::VIEW)),
             ])->icon(file_get_contents(public_path('icons/menu-skud.svg')),true),
@@ -183,8 +191,10 @@ final class MoonShineLayout extends AppLayout
                 MenuItem::make('Отчеты СКУД', SkudEventResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(SkudEventResource::class, Ability::VIEW_ANY)),
                 ...config('services.grz.enabled') ? [
-                    MenuItem::make('Отчеты автомобилей', CarEventResource::class)
-                        ->canSee(fn () => auth()->user()->hasPermission(BarrierEventResource::class, Ability::VIEW_ANY)),
+                    MenuItem::make('Отчёты автомобилей', CarEventResource::class)
+                        ->canSee(fn () => auth()->user()->hasPermission(CarEventResource::class, Ability::VIEW_ANY)),
+                    MenuItem::make('Отчёты проезда', PassageEventResource::class)
+                        ->canSee(fn () => auth()->user()->hasPermission(PassageEventResource::class, Ability::VIEW_ANY)),
                 ] : [],
 //                MenuItem::make('Отчеты шлагбаум', BarrierEventResource::class)
 //                    ->canSee(fn () => auth()->user()->hasPermission(BarrierEventResource::class, Ability::VIEW_ANY)),
