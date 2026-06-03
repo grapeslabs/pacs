@@ -142,20 +142,20 @@ final class MoonShineLayout extends AppLayout
                     ->canSee(fn () => auth()->user()->hasPermission(MoonShineUserResource::class, Ability::VIEW_ANY) or auth() -> user()->id==1),
                 MenuItem::make('Роли', MoonShineUserRoleResource::class)
                     ->icon('rectangle-group')
-                    ->canSee(fn () => auth()->user()->hasPermission(MoonShineUserResource::class, Ability::VIEW_ANY)),
-//                MenuItem::make('Ключи API', ApiKeyResource::class)
-//                    ->icon(file_get_contents(public_path('icons/menu-apikeys.svg')), true)
-//                    ->canSee(fn () => auth()->user()->isHavePermission(ApiKeyResource::class, Ability::VIEW)),
+                    ->canSee(fn () => auth()->user()->hasPermission(MoonShineUserRoleResource::class, Ability::VIEW_ANY)),
+                MenuItem::make('Ключи API', ApiKeyResource::class)
+                    ->icon(file_get_contents(public_path('icons/menu-apikeys.svg')), true)
+                    ->canSee(fn () => auth()->user()->hasPermission(ApiKeyResource::class, Ability::VIEW_ANY)),
                 ...config('services.ms.enabled')?[
                     MenuItem::make('Настройки', SettingsPage::class)
                         ->icon('cog-8-tooth')
-                        ->canSee(fn () => auth()->user()->hasPermission(MoonShineUserResource::class, Ability::VIEW)),
+                        ->canSee(fn () => auth()->user()->hasPermission(SettingsPage::class, Ability::VIEW)),
                 ]:[],
             ])->icon(file_get_contents(public_path('icons/menu-settings.svg')),true),
             ...config('services.ms.enabled')?[
                 MenuItem::make('Видеопотоки', VideoStreamResource::class)
                     ->icon(file_get_contents(public_path('icons/menu-video.svg')),true)
-                    ->canSee(fn () => auth()->user()->hasPermission(MoonShineUserResource::class, Ability::VIEW_ANY)),
+                    ->canSee(fn () => auth()->user()->hasPermission(VideoStreamResource::class, Ability::VIEW_ANY)),
 //                MenuItem::make('Хранилища', StorageResource::class)
 //                    ->icon(file_get_contents(public_path('icons/menu-video.svg')),true)
 //                    ->canSee(fn () => auth()->user()->hasPermission(StorageResource::class, Ability::VIEW_ANY)),

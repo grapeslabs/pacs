@@ -1496,12 +1496,11 @@ textarea {
 }
 
 #universal-safe-modal_content .form > .grid:last-child {
-    position: sticky;
-    bottom: 0;
+    position: static;
     background-color: #ffffff;
-    padding: 12px 0;
-    margin: 0 -1.5rem -1.5rem;
-    z-index: 10;
+    padding: 12px 0 0;
+    margin: 0;
+    z-index: auto;
 }
 
 .js-filter-button {
@@ -1552,8 +1551,8 @@ textarea {
     div:last-child {
         content: url('/icons/btn-fullscreen.svg') !important;
         filter: invert(89%) sepia(10%) saturate(464%) hue-rotate(216deg) brightness(92%) contrast(88%);
-        width: 30px !important;
-        height: 30px !important;
+        width: 20px !important;
+        height: 20px !important;
     }
     font-weight: 700;
     width:  54px !important;
@@ -1562,6 +1561,18 @@ textarea {
     background-color: transparent !important;
 }
 
+.js-copy-button {
+    div:last-child {
+        filter: invert(89%) sepia(10%) saturate(464%) hue-rotate(216deg) brightness(92%) contrast(88%);
+        width: 20px !important;
+        height: 20px !important;
+    }
+    font-weight: 700;
+    width:  54px !important;
+    height: 42px !important;
+    border: none !important;
+    background-color: transparent !important;
+}
 
 .js-identify-button {
     div:last-child {

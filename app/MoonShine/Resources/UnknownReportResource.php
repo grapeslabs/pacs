@@ -7,8 +7,11 @@ use App\Models\Organization;
 use App\Models\Tag;
 use App\Models\Stream;
 use App\Models\VideoAnalyticReport;
+use App\MoonShine\Fields\CustomDate;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
 use App\MoonShine\Fields\SelectField;
+use Carbon\Carbon;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
@@ -23,6 +26,8 @@ use MoonShine\Support\Enums\ToastType;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Components\FormBuilder;
+use MoonShine\UI\Components\Layout\Column;
+use MoonShine\UI\Components\Layout\Grid;
 use MoonShine\UI\Fields\Date;
 use MoonShine\UI\Fields\DateRange;
 use MoonShine\UI\Fields\Hidden;
@@ -119,40 +124,86 @@ class UnknownReportResource extends BaseModelResource
     protected function identifyFormBuilder(VideoAnalyticReport $item): FormBuilder
     {
         $photoPath = $item->data['snapshot_path'] ?? null;
+        $photoValue = $photoPath ? ['thumbnails/' . basename($photoPath)] : [];
 
         return FormBuilder::make()
             ->action($this->getAsyncMethodUrl('savePerson', null, ['item_id' => $item->getKey()]))
             ->async()
+            ->fill(['photo' => $photoValue])
             ->fields([
                 Hidden::make('grapesva_uuid')->default($item->person_photobank_id),
+                Grid::make([
+                    Column::make([
+                        CustomText::make('Фамилия', 'last_name')
+                            ->min(2,'Минимум 2 символа')
+                            ->max(50, 'Максимум 50 символов')
+                            ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                            ->nameFormat('Фамилия должна содержать буквы')
+                            ->placeholder('Иванов')
+                            ->required(),
+                    ])->columnSpan(6),
+                    Column::make([
+                        CustomText::make('Имя', 'first_name')
+                            ->min(2,'Минимум 2 символа')
+                            ->max(50, 'Максимум 50 символов')
+                            ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                            ->nameFormat()
+                            ->required()
+                            ->placeholder('Иван'),
+                    ])->columnSpan(6),
+                ]),
+                Grid::make([
+                    Column::make([
+                        CustomText::make('Отчество', 'middle_name')
+                            ->min(2,'Минимум 2 символа')
+                            ->max(50, 'Максимум 50 символов')
+                            ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                            ->nameFormat('Отчество должно содержать буквы')
+                            ->placeholder('Иванович'),
+                    ])->columnSpan(6),
+                    Column::make([
+                        CustomDate::make('Дата рождения', 'birth_date')
+                            ->before(Carbon::now(), 'Дата рождения не может быть будущим')
+                            ->after(Carbon::now()->subYears(120), 'Дата рождения не может быть более 120 лет назад')
+                            ->format('d.m.Y')
+                            ->sortable(),
+                    ])->columnSpan(6),
+                ]),
+                Grid::make([
+                    Column::make([
+                        CustomText::make('Номер удостоверения', 'certificate_number')
+                            ->unique('person', 'certificate_number', 'Номер удостоверения должен быть уникальным'),
+                    ])->columnSpan(6),
+                    Column::make([
+                        SelectField::make('Организация', 'organization_id')
+                            ->placeholder('Выберите организацию')
+                            ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
+                            ->nullable(),
+                    ])->columnSpan(6),
+                ]),
 
-                Text::make('Фамилия', 'last_name')->placeholder('Иванов')->required(),
-                Text::make('Имя', 'first_name')->placeholder('Иван')->required(),
-                Text::make('Отчество', 'middle_name')->placeholder('Иванович'),
-
-                Date::make('Дата рождения', 'birth_date')
-                    ->placeholder('00.00.0000')
-                    ->format('d.m.Y'),
-
-                Text::make('Номер удостоверения', 'certificate_number')
-                    ->placeholder('XXXXXXXXXXXXX'),
-
+                PhotoField::make('Фото', 'photo')
+                    ->multiple()
+                    ->disk('analytic')
+                    ->dir('thumbnails')
+                    ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
                 SelectField::make('Теги', 'tags')
                     ->options(Tag::select('id', 'name')->get())
                     ->multiple(true)
                     ->creatable(true, route('tags.store')),
-                PhotoField::make('Фото', 'photo', fn() => basename($photoPath))
-                    ->disk('analytic')
-                    ->dir('thumbnails')
-                    ->removable()
-                    ->allowedExtensions(['jpg', 'png', 'jpeg', 'webp']),
-
-                SelectField::make('Организация', 'organization_id')
-                    ->placeholder('Выберите организацию')
-                    ->options(Organization::pluck('short_name', 'id')->toArray())
-                    ->nullable(),
-
                 CustomTextarea::make('Комментарий', 'comment'),
+                Grid::make([
+                    Column::make([
+                        CustomDate::make('Заморозить с', 'frozen_start')
+                            ->withTime()
+                            ->nullable(),
+                    ])->columnSpan(6),
+                    Column::make([
+                        CustomDate::make('Заморозить до', 'frozen_end')
+                            ->withTime()
+                            ->nullable()
+                    ])->columnSpan(6)
+                ])
             ])
             ->submit('Сохранить', ['class' => 'btn-primary']);
     }

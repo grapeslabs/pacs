@@ -64,9 +64,9 @@ class KeyController extends Controller
         return response()->json($this->formatKey($keyItem->load(['person'])));
     }
 
-    public function destroy(Key $key): JsonResponse
+    public function destroy(Key $keyItem): JsonResponse
     {
-        $key->delete();
+        $keyItem->delete();
         return response()->json(['message' => 'Ключ успешно удален']);
     }
 

@@ -49,6 +49,7 @@ class KeyResource extends BaseModelResource
     {
         return [
             CustomText::make('Ключ', 'key')
+                ->max(255, 'Ключ не может содержать более 255 символов')
                 ->unique('keys', 'key', 'Ключ должен быть уникальным')
                 ->required(),
             SelectField::make('Тип ключа', 'type')

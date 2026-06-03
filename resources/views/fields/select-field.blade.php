@@ -171,7 +171,15 @@
             }, true);
         }
 
-        this.$watch('selectedIds', () => { this.validate(); });
+        this.$watch('selectedIds', () => {
+            this.validate();
+            this.$nextTick(() => {
+                this.$el.querySelectorAll('input[type=hidden][name]').forEach(input => {
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            });
+        });
 
         const form = this.$el.closest('form');
         if (form) {
@@ -329,12 +337,12 @@
             <template x-for="id in selectedIds" :key="id">
                 <input type="hidden" :name="name + '[]'" :value="id">
             </template>
-            <input type="hidden" :name="selectedIds.length === 0 ? name : null" value="">
+            <input {!! $element->getAttributes() !!} type="hidden" :name="selectedIds.length === 0 ? name : null" value="">
         </div>
     </template>
 
     <template x-if="!multiple">
-        <input type="hidden" :name="name" :value="selectedIds.length > 0 ? selectedIds[0] : ''">
+        <input {!! $element->getAttributes() !!} type="hidden" :name="name" :value="selectedIds.length > 0 ? selectedIds[0] : ''">
     </template>
 
     <span class="select-error-msg" x-text="error ?? ''" :style="!error ? 'visibility: hidden' : ''"></span>

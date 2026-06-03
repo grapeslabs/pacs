@@ -375,7 +375,7 @@
                 init() {
                     this.activeTab = Object.keys(this.tree)[0] || null;
                     this.$nextTick(() => {
-                        const roleSelect = document.querySelector(`select[name="${this.roleField}"]`);
+                        const roleSelect = document.querySelector(`select[name="${this.roleField}"], input[name="${this.roleField}"]`);
 
                         if (roleSelect) {
                             this.hasRoleContext = true;

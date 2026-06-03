@@ -168,6 +168,21 @@ class SelectField extends Field
             }
         }
 
+        $resolved = $this->toValue();
+        if ((is_null($resolved) || (is_array($resolved) && count($resolved) === 0)) && ! is_null($this->defaultValue)) {
+            $default = $this->defaultValue;
+
+            if ($default instanceof Collection) {
+                $default = $default->modelKeys();
+            } elseif ($default instanceof Model) {
+                $default = [$default->getKey()];
+            } elseif (! is_array($default)) {
+                $default = $default !== null && $default !== '' ? [$default] : [];
+            }
+
+            $this->setValue($default);
+        }
+
         return $this;
     }
 

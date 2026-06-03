@@ -247,7 +247,7 @@ class CarResource extends BaseModelResource
             BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
                 ->nullable()
                 ->sortable(),
-            CustomTextarea::make('Комментарий', 'comment')
+            Text::make('Комментарий', 'comment')
                 ->sortable(),
         ];
     }
@@ -285,7 +285,8 @@ class CarResource extends BaseModelResource
                     'maxlength' => '15',
                 ])
                 ->placeholder('А 000 АА 777')
-                ->hint('Используйте только: А, В, Е, К, М, Н, О, Р, С, Т, У, Х'),
+                ->hint('Используйте только: А, В, Е, К, М, Н, О, Р, С, Т, У, Х')
+                ->unique('cars', 'license_plate', 'Данный ГРЗ уже зарегистрирован в системе', 'license_plate', 8),
             SelectField::make('Марка', 'brand_id')
                 ->required()
                 ->options(CarBrand::query()->pluck('name', 'id')->toArray()),
@@ -320,6 +321,15 @@ class CarResource extends BaseModelResource
                 ->options(Organization::query()->pluck('short_name', 'id')->toArray()),
             Textarea::make('Комментарий', 'comment'),
         ];
+    }
+
+    public function prepareForValidation(): void
+    {
+        if (request()->has('license_plate')) {
+            request()->merge([
+                'license_plate' => $this->cleanLicensePlate((string) request()->input('license_plate')),
+            ]);
+        }
     }
 
     public function rules($item): array

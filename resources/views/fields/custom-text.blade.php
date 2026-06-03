@@ -128,7 +128,11 @@
             if (rule.type === 'nameFormat' && !/^(?=.*[А-Яа-яA-Za-zЁё])[А-Яа-яA-Za-zЁё\s\-]+$/.test(this.value)) { this.error = rule.message; return; }
         }
 
-        let ajaxRules = this.rules.filter(r => r.type === 'unique' || r.type === 'exists');
+        let bareLength = String(this.value).replace(/\s/g, '').length;
+        let ajaxRules = this.rules.filter(r =>
+            (r.type === 'unique' || r.type === 'exists') &&
+            (!r.minLength || bareLength >= r.minLength)
+        );
         if (ajaxRules.length > 0) {
             clearTimeout(this.timeout);
             this.timeout = setTimeout(() => {
@@ -150,7 +154,8 @@
                     table: rule.table,
                     column: rule.column,
                     value: this.value,
-                    modelId: this.modelId
+                    modelId: this.modelId,
+                    normalize: rule.normalize ?? null
                 })
             });
             const data = await response.json();

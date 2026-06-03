@@ -226,6 +226,8 @@ services:
       - traefik-public
     expose:
       - 8081
+    user: "0:0"
+    working_dir: /cfg
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-public"
@@ -238,7 +240,7 @@ services:
       - "traefik.http.routers.${TRAEFIK_SERVICE}-media.middlewares=${TRAEFIK_SERVICE}-media-strip"
     volumes:
       - ./media:/data/streams
-      - ./media-config.toml:/app/config.toml
+      - ./media-config:/cfg
     logging: *default-logging
 
   analytic-database:

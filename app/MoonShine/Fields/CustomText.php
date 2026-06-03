@@ -140,14 +140,24 @@ class CustomText extends Text
         return $this;
     }
 
-    public function unique(string $table, string $column, string $message = 'Данное значение уже занято'): static
+    public function unique(string $table, string $column, string $message = 'Данное значение уже занято', ?string $normalize = null, ?int $minLength = null): static
     {
-        $this->customClientRules[] =[
+        $rule = [
             'type' => 'unique',
             'table' => $table,
             'column' => $column,
             'message' => $message
         ];
+
+        if ($normalize !== null) {
+            $rule['normalize'] = $normalize;
+        }
+
+        if ($minLength !== null) {
+            $rule['minLength'] = $minLength;
+        }
+
+        $this->customClientRules[] = $rule;
 
         return $this;
     }

@@ -79,7 +79,7 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
     public function modifyFormComponent(ComponentContract $component): ComponentContract
     {
         if ($component instanceof FormBuilderContract) {
-            $component->submit(null, ['style' => 'width: 136px; margin-left: 1.5rem']);
+            $component->submit(null, ['style' => 'width: 136px']);
         }
         return $component;
     }

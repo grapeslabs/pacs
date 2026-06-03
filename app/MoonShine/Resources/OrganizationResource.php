@@ -59,7 +59,6 @@ class OrganizationResource extends BaseModelResource
     public function rules($item): array
     {
         return [
-            'inn' => ['nullable', 'string', 'max:12', 'unique:organizations,inn,' . ($item?->id ?? 0)],
             'full_name' => ['required', 'string'],
             'short_name' => ['required', 'string'],
             'address' => ['nullable', 'string'],

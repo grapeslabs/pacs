@@ -118,7 +118,7 @@ class CustomIndexPage extends IndexPage
                 ->primary()
                 ->icon('plus')
                 ->canSee(function () use ($resource) {
-                    $checkAction = function() {
+                    $checkAction = function () {
                         $actions = $this->activeActions();
                         $actionsArray = is_array($actions) ? $actions : $actions->toArray();
                         return in_array(Action::CREATE, $actionsArray);
@@ -127,13 +127,11 @@ class CustomIndexPage extends IndexPage
                 });
         }
         return ActionButton::make('Добавить', $resource->getFormPageUrl())
-            ->canSee(static fn (): bool => $resource->hasAction(Action::CREATE) && $resource->can(Ability::CREATE))
+            ->canSee(static fn(): bool => $resource->hasAction(Action::CREATE) && $resource->can(Ability::CREATE))
             ->primary()
             ->icon('plus');
+    }
 
-    /**
-     * Возвращает кнопку импорта, если текущий ресурс — PersonResource.
-     */
     protected function getImportButtonIfNeeded($resource): ?ActionButton
     {
         if (!$resource instanceof PersonResource) {
@@ -160,9 +158,6 @@ class CustomIndexPage extends IndexPage
             );
     }
 
-    /**
-     * Возвращает кнопку экспорта, если текущий ресурс — PersonResource.
-     */
     protected function getExportButtonIfNeeded($resource): ?ActionButton
     {
         if (!$resource instanceof PersonResource) {
