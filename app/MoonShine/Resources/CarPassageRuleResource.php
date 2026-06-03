@@ -75,7 +75,9 @@ class CarPassageRuleResource extends BaseModelResource
     public function formFields(): iterable
     {
         return [
-            CustomText::make('Наименование', 'name')->required(),
+            CustomText::make('Наименование', 'name')
+                ->max(255, "Наименование не может содержать более 255 символов")
+                ->required(),
 
             SelectField::make('Теги авто', 'carTags')
                 ->multiple()
@@ -149,7 +151,12 @@ class CarPassageRuleResource extends BaseModelResource
     public function modifySaveResponse(MoonShineJsonResponse $response): MoonShineJsonResponse
     {
         $item = $this->getItem();
-        $missing = $item ? $this->missingControllers($item) : [];
+
+        if (! $item instanceof Model) {
+            return $response;
+        }
+        $item->load('passages');
+        $missing = $this->missingControllers($item);
 
         if (!empty($missing)) {
             $response->toast(

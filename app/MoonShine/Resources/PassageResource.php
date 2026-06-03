@@ -46,7 +46,9 @@ class PassageResource extends BaseModelResource
     public function formFields(): iterable
     {
         return [
-            CustomText::make('Наименование', 'name')->required(),
+            CustomText::make('Наименование', 'name')
+                ->max(255, 'Наименование не может содержать более 255 символов')
+                ->required(),
 
             Box::make('Въезд', [
                 Grid::make([

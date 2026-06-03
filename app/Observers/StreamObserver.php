@@ -108,7 +108,7 @@ class StreamObserver
         if (empty($options['global_enable'])) {
             $options['is_face_detection'] = 0;
             $options['is_motion_detection'] = 0;
-            if (!config('services.grz.enabled')) {
+            if (config('services.grz.enabled')) {
                 $options['is_plate_recognition'] = 0;
             }
             $stream->va_options = $options;
