@@ -98,7 +98,7 @@ services:
     networks:
       - laravel
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       retries: 3
       timeout: 5s
     logging: *default-logging
@@ -115,7 +115,7 @@ services:
       - ./:/var/www/html:delegated
       - ../packages/:/var/www/packages:delegated
       - ~/.ssh/:/home/laravel/.ssh
-    entrypoint: [ "composer" ]
+    entrypoint: ["composer"]
     environment:
       TZ: Europe/Moscow
     networks:
@@ -127,8 +127,8 @@ services:
     volumes:
       - ./:/var/www/html
     working_dir: /var/www/html
-    entrypoint: [ "npm" ]
-    command: [ "run", "dev" ]
+    entrypoint: ["npm"]
+    command: ["run", "dev"]
     environment:
       TZ: Europe/Moscow
     networks:
@@ -148,7 +148,7 @@ services:
     depends_on:
       - app-database
       - redis
-    entrypoint: [ "php", "/var/www/html/artisan" ]
+    entrypoint: ["php", "/var/www/html/artisan"]
     environment:
       TZ: Europe/Moscow
     networks:
@@ -258,7 +258,7 @@ services:
       - laravel
       - traefik-public
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${ADB_USERNAME}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${ADB_USERNAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -318,65 +318,65 @@ services:
       - laravel
     logging: *default-logging
 
-  grz-database:
+  lpr-database:
     image: pgvector/pgvector:pg15
     environment:
-      POSTGRES_USER: ${GRZ_DB_USERNAME}
-      POSTGRES_PASSWORD: ${GRZ_DB_PASSWORD}
-      POSTGRES_DB: ${GRZ_DB_DATABASE}
+      POSTGRES_USER: ${LPR_DB_USERNAME}
+      POSTGRES_PASSWORD: ${LPR_DB_PASSWORD}
+      POSTGRES_DB: ${LPR_DB_DATABASE}
     expose:
       - 5432
     volumes:
-      - grz_database:/var/lib/postgresql/data
-      - ./grz/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+      - lpr_database:/var/lib/postgresql/data
+      - ./lpr/init_db.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - laravel
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${GRZ_DB_USERNAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${LPR_DB_USERNAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
     logging: *default-logging
 
-  grz-api:
-    image: ${GRZ_API_IMAGE:-grz-api:local}
+  lpr-api:
+    image: ${LPR_API_IMAGE:-lpr-api:local}
     restart: unless-stopped
     environment:
-      - PG_HOST=${GRZ_DB_HOST}
-      - PG_PORT=${GRZ_DB_PORT}
-      - PG_USER=${GRZ_DB_USERNAME}
-      - PG_PASSWORD=${GRZ_DB_PASSWORD}
-      - PG_DATABASE=${GRZ_DB_DATABASE}
+      - PG_HOST=${LPR_DB_HOST}
+      - PG_PORT=${LPR_DB_PORT}
+      - PG_USER=${LPR_DB_USERNAME}
+      - PG_PASSWORD=${LPR_DB_PASSWORD}
+      - PG_DATABASE=${LPR_DB_DATABASE}
       - TZ=Europe/Moscow
       - MODE=pacs
     expose:
       - 5000
     volumes:
-      - ./grz/logs:/app/logs
+      - ./lpr/logs:/app/logs
     depends_on:
-      grz-database:
+      lpr-database:
         condition: service_healthy
     networks:
       - laravel
     logging: *default-logging
 
-  grz-core:
-    image: ${GRZ_CORE_IMAGE:-grz-core:local}
+  lpr-core:
+    image: ${LPR_CORE_IMAGE:-lpr-core:local}
     restart: unless-stopped
     environment:
-      - PG_HOST=${GRZ_DB_HOST}
-      - PG_PORT=${GRZ_DB_PORT}
-      - PG_USER=${GRZ_DB_USERNAME}
-      - PG_PASSWORD=${GRZ_DB_PASSWORD}
-      - PG_DATABASE=${GRZ_DB_DATABASE}
-      - PACS_API_URL=http://grz-api:5000
+      - PG_HOST=${LPR_DB_HOST}
+      - PG_PORT=${LPR_DB_PORT}
+      - PG_USER=${LPR_DB_USERNAME}
+      - PG_PASSWORD=${LPR_DB_PASSWORD}
+      - PG_DATABASE=${LPR_DB_DATABASE}
+      - PACS_API_URL=http://lpr-api:5000
       - TZ=Europe/Moscow
       - MODE=pacs
     volumes:
-      - ./grz/events:/app/events
-      - ./grz/logs:/app/logs
+      - ./lpr/events:/app/events
+      - ./lpr/logs:/app/logs
     depends_on:
-      grz-database:
+      lpr-database:
         condition: service_healthy
         required: false
     networks:
@@ -401,9 +401,9 @@ services:
       TZ: Europe/Moscow
     networks:
       - laravel
-    entrypoint: [ "php", "/var/www/html/artisan", "events:process-new" ]
+    entrypoint: ["php", "/var/www/html/artisan", "events:process-new"]
     logging: *default-logging
-  grz-rules-processor:
+  lpr-rules-processor:
     build:
       context: ./docker/php
       dockerfile: Dockerfile
@@ -421,7 +421,7 @@ services:
       TZ: Europe/Moscow
     networks:
       - laravel
-    entrypoint: [ "php", "/var/www/html/artisan", "grz:process-rules" ]
+    entrypoint: ["php", "/var/www/html/artisan", "lpr:process-rules"]
     logging: *default-logging
 
   ofelia:
@@ -441,5 +441,5 @@ networks:
 volumes:
   app_database:
   analytic_database:
-  grz_database:
+  lpr_database:
   redis_data:
