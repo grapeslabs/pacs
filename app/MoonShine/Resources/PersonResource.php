@@ -303,7 +303,7 @@ class PersonResource extends BaseModelResource
             ->icon('key')
             ->class('js-key-button')
             ->customAttributes([
-                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' })",
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' })",
             ])
             ->async(selector: "#{$this->safeModalName}_content");
     }
