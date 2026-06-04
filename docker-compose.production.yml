@@ -301,7 +301,7 @@ services:
     logging: *default-logging
 
   lpr-api:
-    image: ${LPR_API_IMAGE:-lpr-api:local}
+    image: ghcr.io/grapeslabs/glpr-api:${LPR_VERSION}
     restart: unless-stopped
     environment:
       PG_HOST: "${LPR_DB_HOST}"
@@ -323,7 +323,7 @@ services:
     logging: *default-logging
 
   lpr-core:
-    image: ${LPR_CORE_IMAGE:-lpr-core:local}
+    image: ghcr.io/grapeslabs/glpr:${LPR_VERSION}
     restart: unless-stopped
     environment:
       PG_HOST: "${LPR_DB_HOST}"
