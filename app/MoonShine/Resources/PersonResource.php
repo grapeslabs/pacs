@@ -134,6 +134,11 @@ class PersonResource extends BaseModelResource
         ];
     }
 
+    protected function detailFields(): iterable
+    {
+        return $this->indexFields();
+    }
+
     public function formFields(): iterable
     {
         $this->getItem()?->load('tags');
