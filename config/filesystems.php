@@ -52,10 +52,10 @@ return [
             'throw' => false,
         ],
 
-        'grz-events' => [
+        'lpr-events' => [
             'driver' => 'local',
-            'root' => base_path('grz/events'),
-            'url' => config('app.url').'/grz-events',
+            'root' => base_path('lpr/events'),
+            'url' => config('app.url').'/lpr-events',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -88,7 +88,7 @@ return [
     'links' => [
         public_path('storage') => storage_path('app/public'),
         public_path('analytic-storage') => base_path('analytic'),
-        public_path('grz-events') => base_path('grz/events'),
+        public_path('lpr-events') => base_path('lpr/events'),
     ],
 
 ];

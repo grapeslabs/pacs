@@ -74,11 +74,11 @@ class CarPassageEvent extends Model
 
     public function imageUrl(): ?string
     {
-        return $this->image_path ? Storage::disk('grz-events')->url($this->image_path) : null;
+        return $this->image_path ? Storage::disk('lpr-events')->url($this->image_path) : null;
     }
 
     public function plateImageUrl(): ?string
     {
-        return $this->plate_image_path ? Storage::disk('grz-events')->url($this->plate_image_path) : null;
+        return $this->plate_image_path ? Storage::disk('lpr-events')->url($this->plate_image_path) : null;
     }
 }

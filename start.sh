@@ -37,7 +37,7 @@ is_enabled() {
 }
 
 log "Starting app..."
-if $DOCKER_COMPOSE up -d app; then
+if $DOCKER_COMPOSE up -d reverse-proxy; then
     log "App started."
 else
     error "Starting failed"
@@ -53,7 +53,7 @@ if is_enabled "ANALYTIC_ENABLED"; then
     $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server media-server || warn "FAILED"
 fi
 
-if is_enabled "GRZ_ENABLED"; then
-    log "Starting GRZ services..."
-    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server grz-database grz-api grz-core media-server grz-rules-processor media-server || warn "FAILED"
+if is_enabled "LPR_ENABLED"; then
+    log "Starting LPR services..."
+    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server lpr-database lpr-api lpr-core media-server lpr-rules-processor media-server || warn "FAILED"
 fi

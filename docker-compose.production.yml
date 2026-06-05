@@ -40,7 +40,7 @@ services:
     volumes:
       - public_storage:/var/www/html/public/storage
       - analytic_thumbnails:/var/www/html/public/analytic-storage/thumbnails
-      - grz_events:/var/www/html/public/grz-events
+      - lpr_events:/var/www/html/public/lpr-events
     depends_on:
       - php
     networks:
@@ -67,7 +67,7 @@ services:
     volumes:
       - storage:/var/www/html/storage
       - public_storage:/var/www/html/storage/app/public
-      - grz_events:/var/www/html/grz/events:ro
+      - lpr_events:/var/www/html/lpr/events:ro
     depends_on:
       app-database:
         condition: service_healthy
@@ -120,13 +120,13 @@ services:
     entrypoint: ["php", "/var/www/html/artisan", "events:process-new"]
     logging: *default-logging
 
-  grz-rules-processor:
+  lpr-rules-processor:
     image: ghcr.io/grapeslabs/pacs:${APP_VERSION}
     restart: unless-stopped
     volumes:
       - storage:/var/www/html/storage
       - public_storage:/var/www/html/storage/app/public
-      - grz_events:/var/www/html/grz/events:ro
+      - lpr_events:/var/www/html/lpr/events:ro
     depends_on:
       - app-database
       - redis
@@ -136,7 +136,7 @@ services:
       TZ: Europe/Moscow
     networks:
       - laravel
-    entrypoint: ["php", "/var/www/html/artisan", "grz:process-rules"]
+    entrypoint: ["php", "/var/www/html/artisan", "lpr:process-rules"]
     logging: *default-logging
 
   redis:

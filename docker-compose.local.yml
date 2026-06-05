@@ -16,7 +16,7 @@ services:
     volumes:
       - ./:/var/www/html:delegated
       - ./analytic/thumbnails:/var/www/html/public/analytic-storage/thumbnails
-      - ./grz/events:/var/www/html/public/grz-events
+      - ./lpr/events:/var/www/html/public/lpr-events
     environment:
       TZ: "Europe/Moscow"
       NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-20M}

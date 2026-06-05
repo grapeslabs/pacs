@@ -10,7 +10,7 @@ use MoonShine\Laravel\Pages\Page;
 use MoonShine\Laravel\TypeCasts\ModelCaster;
 use MoonShine\UI\Components\FormBuilder;
 
-class StreamGrzZoneEditorPage extends Page
+class StreamLprZoneEditorPage extends Page
 {
     public function getTitle(): string
     {

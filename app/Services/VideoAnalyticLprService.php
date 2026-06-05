@@ -5,15 +5,15 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class VideoAnalyticGrzService extends BaseAnalyticService
+class VideoAnalyticLprService extends BaseAnalyticService
 {
     private string $rtsp;
 
     public function __construct()
     {
-        $this->url = config('services.grz.url');
+        $this->url = config('services.lpr.url');
         $this->rtsp = config('services.ms.rtsp_url');
-        $this->timeout = (int)config('services.grz.timeout', 10);
+        $this->timeout = (int)config('services.lpr.timeout', 10);
     }
 
     public function cameraList(): array
@@ -29,7 +29,7 @@ class VideoAnalyticGrzService extends BaseAnalyticService
                 'url' => "{$this->rtsp}/rtsp/{$cameraUid}",
                 'name' => $name,
                 'description' => $description ?? '',
-                'timedelay' => config('services.grz.timedelay'),
+                'timedelay' => config('services.lpr.timedelay'),
                 'resize' => 1,
             ],
             'recognition_plate' => [

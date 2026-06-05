@@ -4,7 +4,7 @@ namespace App\Observers;
 
 use App\Models\Stream;
 use App\Services\MediaServerService;
-use App\Services\VideoAnalyticGrzService;
+use App\Services\VideoAnalyticLprService;
 use App\Services\VideoAnalyticService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -15,7 +15,7 @@ class StreamObserver
     public function __construct(
         protected MediaServerService $mediaServer,
         protected VideoAnalyticService $vas,
-        protected VideoAnalyticGrzService $grz,
+        protected VideoAnalyticLprService $lpr,
     ) {}
 
     public function creating(Stream $stream): void
@@ -39,8 +39,8 @@ class StreamObserver
                 $this->vas->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
             }
 
-            if (config('services.grz.enabled')) {
-                $this->grz->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
+            if (config('services.lpr.enabled')) {
+                $this->lpr->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
             }
 
         } catch (Exception $e) {
@@ -76,8 +76,8 @@ class StreamObserver
                 $this->vas->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
             }
 
-            if (config('services.grz.enabled')) {
-                $this->grz->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
+            if (config('services.lpr.enabled')) {
+                $this->lpr->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
             }
         }
     }
@@ -93,10 +93,10 @@ class StreamObserver
             }
         }
 
-        if (config('services.grz.enabled')) {
-            $result = $this->grz->cameraDelete($stream->uid);
+        if (config('services.lpr.enabled')) {
+            $result = $this->lpr->cameraDelete($stream->uid);
             if (empty($result['ok'])) {
-                Log::warning('StreamObserver: GRZ camera delete failed', ['uid' => $stream->uid]);
+                Log::warning('StreamObserver: LPR camera delete failed', ['uid' => $stream->uid]);
             }
         }
     }
@@ -109,7 +109,7 @@ class StreamObserver
             $options['is_face_detection'] = 0;
             $options['is_face_recognition'] = 0;
             $options['is_motion_detection'] = 0;
-            if (config('services.grz.enabled')) {
+            if (config('services.lpr.enabled')) {
                 $options['is_plate_recognition'] = 0;
             }
             $stream->va_options = $options;

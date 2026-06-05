@@ -190,7 +190,7 @@ final class MoonShineLayout extends AppLayout
             MenuGroup::make('Отчеты', [
                 MenuItem::make('Отчеты СКУД', SkudEventResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(SkudEventResource::class, Ability::VIEW_ANY)),
-                ...config('services.grz.enabled') ? [
+                ...config('services.lpr.enabled') ? [
                     MenuItem::make('Отчёты автомобилей', CarEventResource::class)
                         ->canSee(fn () => auth()->user()->hasPermission(CarEventResource::class, Ability::VIEW_ANY)),
                     MenuItem::make('Отчёты проезда', PassageEventResource::class)

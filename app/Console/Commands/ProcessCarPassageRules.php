@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
 
 class ProcessCarPassageRules extends Command
 {
-    protected $signature = 'grz:process-rules';
+    protected $signature = 'lpr:process-rules';
     protected $description = 'Process recognized license plates against car passage rules and trigger controllers';
 
     private const CACHE_KEY = 'car_passage_rules_last_recognized_id';
@@ -97,7 +97,7 @@ class ProcessCarPassageRules extends Command
 
     protected function recognizedPlates(): Builder
     {
-        return DB::connection('grz-database')->table('recognized_plates');
+        return DB::connection('lpr-database')->table('recognized_plates');
     }
 
     protected function getActiveRules(): Collection
@@ -158,8 +158,8 @@ class ProcessCarPassageRules extends Command
             }
         }
 
-        $imagePath      = $this->resolveGrzImagePath($plate->image ?? null);
-        $plateImagePath = $this->resolveGrzImagePath($plate->plate ?? null);
+        $imagePath      = $this->resolveLprImagePath($plate->image ?? null);
+        $plateImagePath = $this->resolveLprImagePath($plate->plate ?? null);
 
         CarPassageEvent::query()->create([
             'recognized_plate_id' => $recognizedId,
@@ -290,13 +290,13 @@ class ProcessCarPassageRules extends Command
         IronLogicProcessor::open_door((string) $controller->id);
     }
 
-    protected function resolveGrzImagePath(?string $grzPath): ?string
+    protected function resolveLprImagePath(?string $lprPath): ?string
     {
-        if (empty($grzPath)) {
+        if (empty($lprPath)) {
             return null;
         }
 
-        $path = ltrim(preg_replace('#^events/#', '', trim($grzPath)), '/');
+        $path = ltrim(preg_replace('#^events/#', '', trim($lprPath)), '/');
 
         return $path ?: null;
     }

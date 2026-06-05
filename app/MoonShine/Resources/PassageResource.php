@@ -61,7 +61,7 @@ class PassageResource extends BaseModelResource
                     Column::make([
                         SelectField::make('Камеры', 'entryCameras')
                             ->multiple()
-                            ->options($this->grzCameraOptions()),
+                            ->options($this->lprCameraOptions()),
                     ], colSpan: 8, adaptiveColSpan: 12),
                 ]),
             ]),
@@ -77,7 +77,7 @@ class PassageResource extends BaseModelResource
                     Column::make([
                         SelectField::make('Камеры', 'exitCameras')
                             ->multiple()
-                            ->options($this->grzCameraOptions()),
+                            ->options($this->lprCameraOptions()),
                     ], colSpan: 8, adaptiveColSpan: 12),
                 ]),
             ]),
@@ -138,7 +138,7 @@ class PassageResource extends BaseModelResource
         return parent::indexQuery()->with(['entryController', 'exitController', 'entryCameras', 'exitCameras']);
     }
 
-    private function grzCameraOptions(): array
+    private function lprCameraOptions(): array
     {
         return Stream::query()
             ->get()

@@ -15,7 +15,7 @@ use App\MoonShine\Fields\FeatureSpoiler;
 use App\MoonShine\Fields\SingleZonePreviewField;
 use App\MoonShine\Fields\MultiZonePreviewField;
 use App\MoonShine\Pages\SettingsPage;
-use App\MoonShine\Pages\StreamGrzZoneEditorPage;
+use App\MoonShine\Pages\StreamLprZoneEditorPage;
 use App\MoonShine\Pages\StreamPlayer;
 use App\MoonShine\Pages\Streams;
 use App\Services\VideoAnalyticService;
@@ -72,7 +72,7 @@ class VideoStreamResource extends BaseModelResource
         $pages[] = StreamPlayer::class;
         $pages[] = StreamFaceZoneEditorPage::class;
         $pages[] = StreamMotionZonesEditorPage::class;
-        $pages[] = StreamGrzZoneEditorPage::class;
+        $pages[] = StreamLprZoneEditorPage::class;
         return $pages;
     }
 
@@ -139,13 +139,13 @@ class VideoStreamResource extends BaseModelResource
                                     ->setupUrl($this->getPageUrl(StreamMotionZonesEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
                                     ->showWhen('va_options->has_motion_detection_zone', '=', true),
                             ]),
-                        ...config('services.grz.enabled')?[
+                        ...config('services.lpr.enabled')?[
                             Divider::make(),
                             FeatureSpoiler::make('Распознавание ГРЗ', 'va_options->is_plate_recognition')
                                 ->nested([
                                     FeatureCheckbox::make('Задать зону распознавания ГРЗ', 'va_options->has_plate_recognition_zone'),
                                     SingleZonePreviewField::make('Превью зоны', 'va_options->plate_recognition_zone')
-                                        ->setupUrl($this->getPageUrl(StreamGrzZoneEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
+                                        ->setupUrl($this->getPageUrl(StreamLprZoneEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
                                         ->showWhen('va_options->has_plate_recognition_zone', '=', true),
                                     FeatureSlider::make('Чувствительность', 'va_options->plate_recognition_sensitivity')
                                         ->default(75)
@@ -176,7 +176,7 @@ class VideoStreamResource extends BaseModelResource
                 Checkbox::make('Детекция движения', 'va_options.is_motion_detection'),
                 Checkbox::make('Детекция человека', 'va_options.is_human_motion_detection')
             ] : [],
-            ...config('services.grz.enabled') ? [
+            ...config('services.lpr.enabled') ? [
                 Checkbox::make('Распознавание ГРЗ', 'va_options.is_plate_recognition')
             ]:[],
         ];
