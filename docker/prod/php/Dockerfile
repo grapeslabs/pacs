@@ -2,6 +2,7 @@ FROM php:8.4-fpm-alpine AS base
 
 ARG UID=1000
 ARG GID=1000
+ARG PHPREDIS_VERSION=6.2.0
 
 RUN apk add --no-cache \
     curl \
@@ -20,8 +21,17 @@ RUN docker-php-ext-install -j$(nproc) \
     pdo_pgsql \
     pcntl \
     zip \
-    && pecl install redis \
+    && mkdir -p /tmp/phpredis \
+    && curl -fsSL "https://github.com/phpredis/phpredis/archive/refs/tags/${PHPREDIS_VERSION}.tar.gz" \
+    | tar -xz -C /tmp/phpredis --strip-components=1 \
+    && cd /tmp/phpredis \
+    && phpize \
+    && ./configure \
+    && make -j$(nproc) \
+    && make install \
     && docker-php-ext-enable redis \
+    && cd / \
+    && rm -rf /tmp/phpredis \
     && apk del .build-deps \
     && docker-php-source delete
 
