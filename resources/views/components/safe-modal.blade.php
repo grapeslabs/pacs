@@ -36,6 +36,13 @@
             this.closeModal();
         },
 
+        saveAndClose() {
+            const form = document.querySelector(`#${this.modalId}_content form`);
+            if (form) {
+                form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+            }
+        },
+
         toggleBodyScroll() {
             if (this.open) {
                 document.body.style.overflow = 'hidden';
@@ -53,7 +60,7 @@
             toggleModal();
         }
     "
-    @submit.window="if(open) { forceClose(); }"
+    @toast.window="if(open && (event.detail.type === 'success' || event.detail.type === 'warning')) { forceClose(); }"
 >
     <template x-teleport="body">
 
@@ -80,7 +87,7 @@
 
                 <div style="display: flex; flex-direction: column; height: 100vh; max-height: 100vh; width: 100%;">
 
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; flex-shrink: 0;" class="dark:border-moonshine-dark-500">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; flex-shrink: 0;">
                         <h3 style="font-size: 1.125rem; font-weight: 500; margin: 0;" class="text-gray-900 dark:text-gray-100" x-text="modalTitle"></h3>
                         <button @click="tryClose()" type="button" style="background: transparent; border: none; cursor: pointer; padding: 0.25rem;" class="text-gray-400 hover:text-gray-500">
                             <x-moonshine::icon icon="x-mark" size="6" />
@@ -88,34 +95,46 @@
                     </div>
 
                     <div style="flex: 1 1 0%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; position: relative;">
-
                         <div id="{{ $name }}_content" style="padding: 1.5rem;" @input="isDirty = true" @change="isDirty = true">
                             {{ $slot ?? '' }}
                         </div>
-
                     </div>
 
                 </div>
 
                 <div x-show="showConfirm"
                      x-transition.opacity.duration.200ms
-                     style="display: none; position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; text-align: center; background-color: rgba(255, 255, 255, 0.95);"
-                     class="dark:bg-moonshine-dark/95">
+                     style="display: none; position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 50;">
 
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 1rem; border-radius: 50px; padding: 20px; background-color: #fef3c7;">
-                        <x-moonshine::icon icon="exclamation-triangle" class="h-8 w-8 text-yellow-600 dark:text-yellow-500" />
-                        <h3 style="font-size: 24px; font-weight: 700; margin: 0;">Есть несохраненные изменения</h3>
-                        <x-moonshine::icon icon="exclamation-triangle" class="h-8 w-8 text-yellow-600 dark:text-yellow-500" />
+                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: rgba(17, 24, 39, 0.75);" class="dark:bg-moonshine-dark/75">
+                        <div style="background-color: #ffffff; border-radius: 16px; padding: 24px; width: 90%; max-width: 340px; position: relative; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);" class="dark:bg-moonshine-dark">
+
+                            <button @click="showConfirm = false" type="button" style="position: absolute; top: 12px; right: 12px; background: transparent; border: none; cursor: pointer; padding: 0.25rem;" class="text-gray-400 hover:text-gray-500">
+                                <x-moonshine::icon icon="x-mark" size="5" />
+                            </button>
+
+                            <h3 style="font-size: 1.125rem; font-weight: 500; margin-top: 0; margin-bottom: 0.5rem; text-align: left;" class="text-gray-900 dark:text-gray-100">Несохраненные изменения</h3>
+
+                            <p style="margin-top: 0; margin-bottom: 1.5rem; font-size: 0.875rem; color: #6b7280; text-align: left; line-height: 1.25rem;" class="dark:text-gray-400">
+                                Если закроете окно, изменения не будут сохранены.
+                            </p>
+
+                            <div style="display: flex; gap: 0.75rem; justify-content: space-between; width: 100%;">
+                                <button @click="saveAndClose()"
+                                        type="button"
+                                        style="flex: 1; padding: 0.625rem 0; border-radius: 9999px; background-color: #F1F3FB; color: #6972F0; cursor: pointer; font-weight: 500; border: none; font-size: 0.875rem; text-align: center;">
+                                    Сохранить
+                                </button>
+                                <button @click="forceClose()"
+                                        type="button"
+                                        style="flex: 1; padding: 0.625rem 0; border-radius: 9999px; background-color: #6972F0; color: #ffffff; cursor: pointer; font-weight: 500; border: none; font-size: 0.875rem; text-align: center;">
+                                    Не сохранять
+                                </button>
+                            </div>
+
+                        </div>
                     </div>
 
-                    <p style="margin-bottom: 2rem;" class="text-gray-500 dark:text-gray-400">
-                        Вы внесли данные, но не сохранили их. Если вы закроете панель сейчас, эти данные будут потеряны.
-                    </p>
-
-                    <div style="display: flex; gap: 0.75rem; width: 100%; justify-content: center;">
-                        <button @click="showConfirm = false" style="padding: 20px; border: 1px solid #d1d5db; border-radius: 20px; background-color: transparent; cursor: pointer; font-weight: 500;">Отмена</button>
-                        <button @click="forceClose()" style="padding: 20px; border: none; border-radius: 20px; background-color: #dc2626; color: #ffffff; cursor: pointer; font-weight: 500;">Закрыть без сохранения</button>
-                    </div>
                 </div>
 
             </div>

@@ -52,6 +52,14 @@ return [
             'throw' => false,
         ],
 
+        'lpr-events' => [
+            'driver' => 'local',
+            'root' => base_path('lpr/events'),
+            'url' => config('app.url').'/lpr-events',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -80,6 +88,7 @@ return [
     'links' => [
         public_path('storage') => storage_path('app/public'),
         public_path('analytic-storage') => base_path('analytic'),
+        public_path('lpr-events') => base_path('lpr/events'),
     ],
 
 ];

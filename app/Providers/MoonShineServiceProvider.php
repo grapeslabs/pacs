@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\User;
 use App\MoonShine\Pages\SettingsPage;
+use App\MoonShine\Resources\CarEventResource;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\PeopleReportResource;
+use App\MoonShine\Resources\StorageResource;
 use App\MoonShine\Resources\TriggerResource;
 use App\MoonShine\Resources\SkudEventResource;
 use App\MoonShine\Resources\UnknownReportResource;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use MoonShine\Contracts\Core\DependencyInjection\ConfiguratorContract;
 use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
@@ -25,6 +29,10 @@ use App\MoonShine\Resources\GuestResource;
 use App\MoonShine\Resources\TerminalResource;
 use App\MoonShine\Resources\BarrierResource;
 use App\MoonShine\Resources\ControllerResource;
+use App\MoonShine\Resources\CarPassageRuleResource;
+use App\MoonShine\Resources\CarTagResource;
+use App\MoonShine\Resources\PassageResource;
+use App\MoonShine\Resources\PassageEventResource;
 use App\MoonShine\Resources\ReferenceResource;
 use App\MoonShine\Resources\SettingResource;
 use App\MoonShine\Resources\CarBrandResource;
@@ -36,6 +44,8 @@ use App\MoonShine\Resources\BarrierEventResource;
 use App\MoonShine\Resources\ApiKeyResource;
 use App\MoonShine\Resources\InviterResource;
 use App\MoonShine\Resources\VideoStreamResource;
+use MoonShine\Contracts\Core\ResourceContract;
+use MoonShine\Laravel\Enums\Ability;
 
 class MoonShineServiceProvider extends ServiceProvider
 {
@@ -55,6 +65,10 @@ class MoonShineServiceProvider extends ServiceProvider
                 TerminalResource::class,
                 BarrierResource::class,
                 ControllerResource::class,
+                PassageResource::class,
+                CarPassageRuleResource::class,
+                PassageEventResource::class,
+                CarTagResource::class,
                 ReferenceResource::class,
                 SettingResource::class,
                 CarBrandResource::class,
@@ -66,6 +80,7 @@ class MoonShineServiceProvider extends ServiceProvider
                 ApiKeyResource::class,
                 ...config('services.ms.enabled')?[
                     VideoStreamResource::class,
+                    StorageResource::class,
                 ]:[],
                 ...config('services.va.enabled')?[
                     BotResource::class,
@@ -73,11 +88,28 @@ class MoonShineServiceProvider extends ServiceProvider
                     EventReportResource::class,
                     PeopleReportResource::class,
                     UnknownReportResource::class,
+                    CarEventResource::class,
                 ]:[],
             ])
             ->pages([
                 ...$config->getPages(),
                 ...config('services.ms.enabled')?[SettingsPage::class]:[],
             ]);
+        $config->authorizationRules(
+            static function (ResourceContract $resource, Model $user, Ability $ability): bool {
+                if (!$user instanceof User) {
+                    return false;
+                }
+
+                if ($user->moonshine_user_role_id === 1) {
+                    return true;
+                }
+
+                return $user->hasPermission(
+                    $resource::class,
+                    $ability->value
+                );
+            }
+        );
     }
 }

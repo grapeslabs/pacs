@@ -3,6 +3,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\CarPassageEvent;
+use App\Models\VideoAnalyticReport;
 use Illuminate\Database\Seeder;
 
 class DemoDatabaseSeeder extends Seeder
@@ -66,6 +68,12 @@ class DemoDatabaseSeeder extends Seeder
         $this->command->info('📋 Завершение: Создание событий СКУД...');
         $this->callWith(SkudEventSeeder::class, ['command' => $this->command]);
 
+        $this->command->info('📋 Создание событий проезда автомобилей...');
+        $this->callWith(CarPassageEventSeeder::class, ['command' => $this->command]);
+
+        $this->command->info('📋 Создание событий аналитики лиц...');
+        $this->callWith(VideoAnalyticReportSeeder::class, ['command' => $this->command]);
+
         $this->command->info('✅ Все демо-данные успешно созданы!');
 
         // Показываем статистику
@@ -95,6 +103,8 @@ class DemoDatabaseSeeder extends Seeder
             'Триггеры' => \App\Models\Trigger::count(),
             'Api-ключи' => \App\Models\ApiKey::count(),
             'События СКУД' => \GrapesLabs\PinvideoSkud\Models\SkudEvent::count(),
+            'События автомобилей' => CarPassageEvent::count(),
+            'События аналитики лиц' => VideoAnalyticReport::count(),
         ];
 
         foreach ($tables as $name => $count) {

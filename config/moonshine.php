@@ -9,20 +9,22 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use MoonShine\Laravel\Exceptions\MoonShineNotFoundException;
 use MoonShine\Laravel\Forms\FiltersForm;
-use MoonShine\Laravel\Forms\LoginForm;
+use App\MoonShine\Forms\CustomFiltersForm;
 use MoonShine\Laravel\Http\Middleware\Authenticate;
 use MoonShine\Laravel\Http\Middleware\ChangeLocale;
-use MoonShine\Permissions\Models\MoonshineUser;
+use App\Models\User;
 use App\MoonShine\Pages\Dashboard;
 use MoonShine\Laravel\Pages\ErrorPage;
-use MoonShine\Laravel\Pages\LoginPage;
+use App\MoonShine\Pages\LoginPage;
 use MoonShine\Laravel\Pages\ProfilePage;
-use App\Http\Middleware\CheckDiskSpace;
+use \MoonShine\Laravel\Forms\LoginForm;
+use \App\Http\Middleware\CheckDiskSpace;
+use \App\Http\Middleware\CheckCaptcha;
 
 return [
     'title' => 'GRAPES PACS',
     'logo' => '/images/logo.svg',
-    'logo_small' => '/images/logo_small.svg',
+    'logo_small' => '/images/logo.svg',
     'ui' => [
         'theme' => 'light', // Принудительно светлая тема
         'dark_mode' => false, // Отключаем темный режим
@@ -48,6 +50,7 @@ return [
 
     // Middleware
     'middleware' => [
+        CheckCaptcha::class,
         EncryptCookies::class,
         AddQueuedCookiesToResponse::class,
         StartSession::class,
@@ -56,7 +59,6 @@ return [
         VerifyCsrfToken::class,
         SubstituteBindings::class,
         ChangeLocale::class,
-        CheckDiskSpace::class
     ],
 
     // Storage
@@ -68,7 +70,7 @@ return [
     'auth' => [
         'enabled' => true,
         'guard' => 'moonshine',
-        'model' => MoonshineUser::class,
+        'model' => User::class,
         'middleware' => Authenticate::class,
         'pipelines' => [],
     ],
@@ -86,13 +88,13 @@ return [
 
     'forms' => [
         'login' => LoginForm::class,
-        'filters' => FiltersForm::class,
+        'filters' => CustomFiltersForm::class,
     ],
 
     'pages' => [
         'dashboard' => App\MoonShine\Pages\Dashboard::class,
         'profile' => ProfilePage::class,
-        'login' => LoginPage::class,
+        'login' => \App\MoonShine\Pages\LoginPage::class,
         'error' => ErrorPage::class,
     ],
 

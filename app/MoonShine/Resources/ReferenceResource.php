@@ -3,6 +3,7 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Reference;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
@@ -11,7 +12,7 @@ use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Select;
-use MoonShine\UI\Fields\Textarea;
+use App\MoonShine\Fields\CustomTextarea;
 use MoonShine\UI\Fields\Checkbox;
 use MoonShine\UI\Fields\Number;
 use MoonShine\UI\Fields\Json;
@@ -71,7 +72,7 @@ class ReferenceResource extends BaseModelResource
             Text::make('Код', 'code')
                 ->required(),
 
-            Select::make('Тип справочника', 'type')
+            SelectField::make('Тип справочника', 'type')
                 ->options([
                     Reference::TYPE_STATUS => 'Статусы',
                     Reference::TYPE_CATEGORY => 'Категории',
@@ -81,7 +82,7 @@ class ReferenceResource extends BaseModelResource
                 ])
                 ->required(),
 
-            Textarea::make('Описание', 'description')
+            CustomTextarea::make('Описание', 'description')
                 ->nullable(),
 
             Json::make('Данные', 'data')
@@ -104,7 +105,7 @@ class ReferenceResource extends BaseModelResource
             Text::make('Код', 'code'),
             Text::make('Тип справочника', 'type')
                 ->setValue(fn($item) => $item->type_label),
-            Textarea::make('Описание', 'description'),
+            CustomTextarea::make('Описание', 'description'),
             Json::make('Данные', 'data')
                 ->keyValue('Ключ', 'Значение'),
             Checkbox::make('Активен', 'is_active')
@@ -138,7 +139,7 @@ class ReferenceResource extends BaseModelResource
     public function filters(): array
     {
         return [
-            Select::make('Тип', 'type')
+            SelectField::make('Тип', 'type')
                 ->options([
                     Reference::TYPE_STATUS => 'Статусы',
                     Reference::TYPE_CATEGORY => 'Категории',

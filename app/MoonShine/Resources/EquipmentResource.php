@@ -3,6 +3,7 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Equipment;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
@@ -11,7 +12,7 @@ use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Select;
-use MoonShine\UI\Fields\Textarea;
+use App\MoonShine\Fields\CustomTextarea;
 use MoonShine\UI\Fields\Json;
 
 class EquipmentResource extends BaseModelResource
@@ -77,7 +78,7 @@ class EquipmentResource extends BaseModelResource
             Text::make('Название', 'name')
                 ->required(),
 
-            Select::make('Тип оборудования', 'type')
+            SelectField::make('Тип оборудования', 'type')
                 ->options([
                     Equipment::TYPE_TERMINAL => 'Терминал доступа',
                     Equipment::TYPE_BARRIER => 'Шлагбаум',
@@ -91,7 +92,7 @@ class EquipmentResource extends BaseModelResource
             Text::make('Серийный номер', 'serial_number')
                 ->nullable(),
 
-            Select::make('Статус', 'status')
+            SelectField::make('Статус', 'status')
                 ->options([
                     Equipment::STATUS_ACTIVE => 'Активен',
                     Equipment::STATUS_INACTIVE => 'Неактивен',
@@ -102,7 +103,7 @@ class EquipmentResource extends BaseModelResource
             Text::make('Местоположение', 'location')
                 ->nullable(),
 
-            Textarea::make('Описание', 'description')
+            CustomTextarea::make('Описание', 'description')
                 ->nullable(),
 
             Json::make('Характеристики', 'specifications')
@@ -123,7 +124,7 @@ class EquipmentResource extends BaseModelResource
             Text::make('Статус', 'status')
                 ->setValue(fn($item) => $item->status_label),
             Text::make('Местоположение', 'location'),
-            Textarea::make('Описание', 'description'),
+            CustomTextarea::make('Описание', 'description'),
             Json::make('Характеристики', 'specifications')
                 ->keyValue('Параметр', 'Значение'),
         ];
@@ -157,7 +158,7 @@ class EquipmentResource extends BaseModelResource
     public function filters(): array
     {
         return [
-            Select::make('Тип', 'type')
+            SelectField::make('Тип', 'type')
                 ->options([
                     Equipment::TYPE_TERMINAL => 'Терминалы доступа',
                     Equipment::TYPE_BARRIER => 'Шлагбаумы',
@@ -165,7 +166,7 @@ class EquipmentResource extends BaseModelResource
                 ])
                 ->nullable(),
 
-            Select::make('Статус', 'status')
+            SelectField::make('Статус', 'status')
                 ->options([
                     Equipment::STATUS_ACTIVE => 'Активен',
                     Equipment::STATUS_INACTIVE => 'Неактивен',

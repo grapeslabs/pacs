@@ -11,6 +11,7 @@ use App\Models\Trigger;
 use App\Models\VideoAnalyticReport;
 use App\MoonShine\Components\EventLogComponent;
 use App\MoonShine\Components\InfoPanel;
+use App\MoonShine\Components\NotificationWidget;
 use App\MoonShine\Resources\BotResource;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\PeopleReportResource;
@@ -44,7 +45,7 @@ class Dashboard extends Page
             $eventLogsRaw = VideoAnalyticReport::query()->limit(10)->orderByDesc('id')->get();
             $eventLogs = $eventLogsRaw->map(fn($log) => [
                 'icon' => Storage::disk('analytic')->url('thumbnails/' . basename($log->data['snapshot_path'])),
-                'title' => 'Распознано лицо: ' . ($log->is_unknown?'Неопознано':Person::find($log->person_photobank_id)?->getFullName()??'Неопознано'),
+                'title' => 'Распознано лицо: ' . ($log->is_unknown?'Неопознано':Person::where('grapesva_uuid', $log->person_photobank_id)->first()?->getFullName()??'Неопознано'),
                 'subtitle' => Stream::where('uid', $log->camera_id)->first()?->name,
                 'isError' => false,
             ]);
@@ -124,7 +125,8 @@ class Dashboard extends Page
                         ->description('Актуальное руководство по использованию системы: настройка интерфейса, ботов и оборудования СКУД.')
                         ->icon(public_path('icons/menu-guide.svg'))
                         ->btnText('Перейти к инструкции')
-                        ->btnUrl('https://grapeslabs.ru/projects')
+                        ->btnUrl('https://grapeslabs.ru/projects'),
+                    NotificationWidget::make(),
                 ])->columnSpan(6)
             ])
         ];

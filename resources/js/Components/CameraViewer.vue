@@ -536,6 +536,7 @@ const setPlaying = (val) => isPlaying.value = val;
                         :volume="volume / 100"
                         :playback-rate="speed"
                         :muted='false'
+                        :live="isLive"
                         @timeupdate="onTimeUpdate"
                         @play="setPlaying(true)"
                         @pause="setPlaying(false)"

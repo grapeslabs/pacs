@@ -19,6 +19,8 @@ class ControllerResource extends BaseModelResource
     protected string $model = SkudController::class;
     protected string $title = 'Контроллеры СКУД';
     protected string $column = 'serial_number';
+    protected bool $softDelete = false;
+
     protected function pages(): array
     {
         return [

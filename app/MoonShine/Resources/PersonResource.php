@@ -5,38 +5,42 @@ namespace App\MoonShine\Resources;
 use App\Models\Key;
 use App\Models\Person;
 use App\Models\Organization;
+use App\Models\VideoAnalyticReport;
+use App\MoonShine\Fields\CustomDate;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
 use App\Models\Tag;
-use App\MoonShine\Fields\Select2Field;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use Carbon\Carbon;
 use Closure;
+use Illuminate\Support\Facades\Storage;
+use App\MoonShine\Resources\OrganizationResource;
+use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Fields\Relationships\BelongsToMany;
+use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
+use MoonShine\Laravel\MoonShineRequest;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use App\Services\VideoAnalyticService;
 use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
-use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
-use MoonShine\Laravel\Resources\ModelResource;
-use MoonShine\Support\Enums\PageType;
+use MoonShine\Support\Enums\ToastType;
 use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\Laravel\TypeCasts\ModelDataWrapper;
 use MoonShine\UI\Components\Badge;
+use MoonShine\UI\Components\FormBuilder;
+use MoonShine\UI\Fields\Hidden;
+use MoonShine\UI\Components\Layout\Column;
+use MoonShine\UI\Components\Layout\Grid;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Date;
 use MoonShine\UI\Fields\Image;
 use MoonShine\UI\Fields\Select;
-use MoonShine\UI\Fields\Textarea;
-use MoonShine\Contracts\UI\ActionButtonContract;
+use App\MoonShine\Fields\CustomTextarea;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Contracts\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Log;
-use GrapesLabs\PinvideoSkud\Models\SkudCommand;
-use GrapesLabs\PinvideoSkud\Models\SkudController;
 
 class PersonResource extends BaseModelResource
 {
@@ -62,17 +66,7 @@ class PersonResource extends BaseModelResource
 
     protected function indexButtons(): ListOf
     {
-        return parent::indexButtons()->prepend(
-            ActionButton::make(
-                '',
-                fn($item) => toPage('form-page', app(KeyResource::class), ['person_id' => $item->id])
-            )->icon('key')->class('btn-key')
-        );
-    }
-
-    protected function modifyDetailButton(ActionButtonContract $button): ActionButtonContract
-    {
-        return $button->canSee(fn() => false);
+        return parent::indexButtons()->prepend($this->getKeyButton());
     }
 
     public function indexQuery(): \Illuminate\Database\Eloquent\Builder
@@ -82,13 +76,16 @@ class PersonResource extends BaseModelResource
 
     public function trAttributes(): ?Closure
     {
-        return function (mixed $item, int $index): array {
+        $parentClosure = parent::trAttributes() ?? fn() => [];
+        return function (mixed $item, int $index) use ($parentClosure): array {
+            $attrs = $parentClosure($item, $index);
+
             if ($item === null) {
-                return [];
+                return $attrs;
             }
             $model = $item instanceof ModelDataWrapper ? $item->getOriginal() : $item;
             if (!isset($model->frozen_start)) {
-                return [];
+                return $attrs;
             }
 
             $now = Carbon::now();
@@ -96,7 +93,11 @@ class PersonResource extends BaseModelResource
                 && $now->greaterThanOrEqualTo($model->frozen_start)
                 && ($model->frozen_end === null || $now->lessThan($model->frozen_end));
 
-            return $isFrozen ? ['class' => 'frozen'] : [];
+            if ($isFrozen) {
+                $attrs['class'] = trim(($attrs['class'] ?? '') . ' frozen');
+            }
+
+            return $attrs;
         };
     }
     public function indexFields(): iterable
@@ -125,13 +126,17 @@ class PersonResource extends BaseModelResource
             Image::make('Фото', 'photo')
                 ->multiple()
                 ->setLabel('Фото'),
-            Select::make('Организация', 'organization_id')
-                ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
+            BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
                 ->sortable(),
             Text::make('Комментарий', 'comment')->sortable(),
-            Date::make('Заморозить с', 'frozen_start'),
-            Date::make('Заморозить до', 'frozen_end'),
+            Date::make('Заморожен с', 'frozen_start'),
+            Date::make('Заморожен до', 'frozen_end'),
         ];
+    }
+
+    protected function detailFields(): iterable
+    {
+        return $this->indexFields();
     }
 
     public function formFields(): iterable
@@ -139,71 +144,78 @@ class PersonResource extends BaseModelResource
         $this->getItem()?->load('tags');
 
         return [
-            ID::make(),
-            Text::make('Фамилия', 'last_name')
-                ->placeholder('Иванов')
-                ->required(),
-            Text::make('Имя', 'first_name')
-                ->required()
-                ->placeholder('Иван'),
-            Text::make('Отчество', 'middle_name')
-                ->placeholder('Иванович'),
-            Date::make('Дата рождения', 'birth_date')
-                ->placeholder('00.00.0000')
-                ->format('d.m.Y')
-                ->sortable(),
-            Text::make('Номер удостоверения', 'certificate_number')->placeholder('XXXXXXXXXXXXX'),
+            Grid::make([
+                Column::make([
+                    CustomText::make('Фамилия', 'last_name')
+                        ->min(2,'Минимум 2 символа')
+                        ->max(50, 'Максимум 50 символов')
+                        ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                        ->nameFormat('Фамилия должна содержать буквы')
+                        ->placeholder('Иванов')
+                        ->required(),
+                ])->columnSpan(6),
+                Column::make([
+                    CustomText::make('Имя', 'first_name')
+                        ->min(2,'Минимум 2 символа')
+                        ->max(50, 'Максимум 50 символов')
+                        ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                        ->nameFormat()
+                        ->required()
+                        ->placeholder('Иван'),
+                ])->columnSpan(6),
+            ]),
+            Grid::make([
+                Column::make([
+                    CustomText::make('Отчество', 'middle_name')
+                        ->min(2,'Минимум 2 символа')
+                        ->max(50, 'Максимум 50 символов')
+                        ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                        ->nameFormat('Отчество должно содержать буквы')
+                        ->placeholder('Иванович'),
+                ])->columnSpan(6),
+                Column::make([
+                    CustomDate::make('Дата рождения', 'birth_date')
+                        ->before(Carbon::now(), 'Дата рождения не может быть будущим')
+                        ->after(Carbon::now()->subYears(120), 'Дата рождения не может быть более 120 лет назад')
+                        ->format('d.m.Y')
+                        ->sortable(),
+                ])->columnSpan(6),
+            ]),
+            Grid::make([
+                Column::make([
+                    CustomText::make('Номер удостоверения', 'certificate_number')
+                        ->unique('person', 'certificate_number', 'Номер удостоверения должен быть уникальным'),
+                ])->columnSpan(6),
+                Column::make([
+                    SelectField::make('Организация', 'organization_id')
+                        ->placeholder('Выберите организацию')
+                        ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
+                        ->nullable(),
+                ])->columnSpan(6),
+            ]),
+
+            PhotoField::make('Фото', 'photo')
+                ->multiple()
+                ->disk('public')
+                ->dir('person/photos')
+                ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
             SelectField::make('Теги', 'tags')
                 ->options(Tag::select('id', 'name')->get())
                 ->multiple(true)
                 ->creatable(true, route('tags.store')),
-            PhotoField::make('Фото', 'photo')
-                ->multiple()
-                ->removable()
-                ->dir('person/photos')
-                ->allowedExtensions(['jpg', 'png', 'jpeg', 'webp'])
-                ->onApply(function ($data): mixed {
-                    return $data;
-                })
-                ->onAfterApply(function ($data, false|array $values, Image $field) {
-                    $remainingValues = $field->getRemainingValues() ?? [];
-
-                    if ($remainingValues instanceof \Illuminate\Support\Collection) {
-                        $remainingValues = $remainingValues->toArray();
-                    }
-
-                    if ($values !== false) {
-                        foreach ($values as $value) {
-                            if ($value instanceof \Illuminate\Http\UploadedFile) {
-                                $path = $value->store($field->getDir(), 'public');
-                                $remainingValues[] = $path;
-                            }
-                        }
-                    }
-
-                    $data->update(['photo' => array_values($remainingValues)]);
-                    return $data;
-                })
-                ->onAfterDestroy(function ($data, mixed $values, Image $field) {
-                    if (is_array($values)) {
-                        foreach ($values as $value) {
-                            Storage::disk('public')->delete($value);
-                        }
-                    }
-                    return $data;
-                }),
-            Select::make('Организация', 'organization_id')
-                ->placeholder('Выберите организацию')
-                ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
-                ->searchable()
-                ->nullable(),
-            Textarea::make('Комментарий', 'comment'),
-            Date::make('Заморозить с', 'frozen_start')
-                ->withTime()
-                ->nullable(),
-            Date::make('Заморозить до', 'frozen_end')
-                ->withTime()
-                ->nullable()
+            CustomTextarea::make('Комментарий', 'comment'),
+            Grid::make([
+                Column::make([
+                    CustomDate::make('Заморозить с', 'frozen_start')
+                        ->withTime()
+                        ->nullable(),
+                ])->columnSpan(6),
+                Column::make([
+                    CustomDate::make('Заморозить до', 'frozen_end')
+                        ->withTime()
+                        ->nullable()
+                ])->columnSpan(6)
+            ])
         ];
     }
 
@@ -239,10 +251,9 @@ class PersonResource extends BaseModelResource
             Date::make('Дата рождения', 'birth_date')
                 ->placeholder('Фильтрация по дате рождения'),
 
-            Select::make('Организация', 'organization_id')
+            SelectField::make('Организация', 'organization_id')
                 ->placeholder('Фильтрация по организации')
                 ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
-                ->searchable()
                 ->nullable(),
 
             SelectField::make('Теги', 'tags')
@@ -275,4 +286,62 @@ class PersonResource extends BaseModelResource
             'photo.*.max' => 'Размер изображения не должен превышать 5 МБ',
         ];
     }
+
+    protected function getKeyButton(): ActionButton
+    {
+        return ActionButton::make(
+            '',
+            fn($item) => $this->getAsyncMethodUrl(
+                method: 'getKeyForm',
+                params: [
+                    'item_id' => $item->getKey(),
+                    '_component_name' => $this->getListComponentName(),
+                    '_async_form' => true,
+                ]
+            )
+        )
+            ->icon('key')
+            ->class('js-key-button')
+            ->customAttributes([
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' })",
+            ])
+            ->async(selector: "#{$this->safeModalName}_content");
+    }
+
+    public function getKeyForm(MoonShineRequest $request): string
+    {
+        $itemId = $request->get('item_id');
+        return FormBuilder::make()
+            ->action($this->getAsyncMethodUrl('saveKey', null, ['item_id' => $itemId]))
+            ->async()
+            ->fields([
+                    Hidden::make('person_id')->default($itemId),
+                    CustomText::make('Ключ', 'key')
+                        ->max(255)
+                        ->unique('keys', 'key', 'Ключ должен быть уникальным')
+                        ->required(),
+                    Select::make('Тип ключа', 'type')
+                        ->options([
+                            'Mifare' => 'Mifare',
+                        ])
+                        ->required()
+                        ->default('Mifare'),
+                ]
+            )
+            ->submit('Сохранить', ['class' => 'btn-primary', 'style' => 'margin-left: 1.5rem']);
+    }
+
+    public function saveKey(MoonShineRequest $request)
+    {
+        $data = $request->all();
+        $key = Key::create([
+            'person_id' => $data['person_id'] ?? null,
+            'type' => $data['type'] ?? null,
+            'key' => $data['key'] ?? null,
+        ]);
+        return MoonShineJsonResponse::make()
+            ->toast('Ключ успешно добавлен!', ToastType::SUCCESS)
+            ->redirect(app(KeyResource::class)->getUrl());
+    }
+
 }

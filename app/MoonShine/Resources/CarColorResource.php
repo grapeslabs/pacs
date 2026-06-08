@@ -1,6 +1,8 @@
 <?php
 
 namespace App\MoonShine\Resources;
+use App\MoonShine\Fields\CustomText;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
@@ -13,12 +15,11 @@ use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Text;
 
-class CarColorResource extends BaseModelResource implements HasImportExportContract
+class CarColorResource extends BaseModelResource
 {
     protected string $model = CarColor::class;
     protected string $title = 'Цвета автомобилей';
     protected string $column = 'name';
-    use ImportExportConcern;
     protected function pages(): array
     {
         return [
@@ -26,11 +27,6 @@ class CarColorResource extends BaseModelResource implements HasImportExportContr
             DetailPage::class,
             FormPage::class,
         ];
-    }
-
-    protected function export()
-    {
-        return false;
     }
 
     protected function importFields():iterable
@@ -51,7 +47,7 @@ class CarColorResource extends BaseModelResource implements HasImportExportContr
     {
         return [
             ID::make(),
-            Text::make('Название', 'name')->required(),
+            CustomText::make('Название', 'name')->required(),
         ];
     }
 
@@ -78,11 +74,10 @@ class CarColorResource extends BaseModelResource implements HasImportExportContr
     protected function filters(): iterable
     {
         return [
-            Select::make('Цвет', 'id')
+            SelectField::make('Цвет', 'id')
                 ->options(CarColor::query()->get()->pluck('name', 'id')->toArray())
                 ->multiple()
                 ->placeholder('Фильтрация по названию')
-                ->searchable(false)
                 ->nullable()
         ];
     }

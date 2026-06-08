@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Car extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
+    protected $connection = 'pgsql';
     protected $table = 'cars';
 
     protected $fillable = [
@@ -23,6 +25,16 @@ class Car extends Model
     public function people(): BelongsToMany
     {
         return $this->belongsToMany(Person::class, 'car_person');
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(CarTag::class, 'car_car_tag', 'car_id', 'car_tag_id');
+    }
+
+    public function getTagsListAttribute(): string
+    {
+        return $this->tags->pluck('name')->implode(', ');
     }
 
     public function organization(): BelongsTo

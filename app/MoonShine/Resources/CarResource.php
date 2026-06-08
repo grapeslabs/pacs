@@ -7,7 +7,15 @@ use App\Models\CarBrand;
 use App\Models\CarColor;
 use App\Models\Organization;
 use App\Models\Person;
+use App\Models\CarTag;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
+use App\MoonShine\Resources\CarBrandResource;
+use App\MoonShine\Resources\CarColorResource;
+use App\MoonShine\Resources\OrganizationResource;
+use MoonShine\Laravel\Fields\Relationships\BelongsTo;
+use MoonShine\Laravel\Fields\Relationships\BelongsToMany;
+use MoonShine\UI\Components\Badge;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
@@ -15,12 +23,13 @@ use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Select;
-use MoonShine\UI\Fields\Textarea;
-use MoonShine\Contracts\UI\ActionButtonContract;
+use App\MoonShine\Fields\CustomText;
+use App\MoonShine\Fields\CustomTextarea;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use MoonShine\UI\Fields\Textarea;
 
 class CarResource extends BaseModelResource
 {
@@ -33,11 +42,6 @@ class CarResource extends BaseModelResource
             DetailPage::class,
             FormPage::class,
         ];
-    }
-
-    protected function modifyDetailButton(ActionButtonContract $button): ActionButtonContract
-    {
-        return $button->canSee(fn() => false);
     }
 
     /**
@@ -224,11 +228,9 @@ class CarResource extends BaseModelResource
     {
         return [
             Text::make('ГРЗ', 'license_plate')->sortable(),
-            Select::make('Марка', 'brand_id')
-                ->options(CarBrand::query()->pluck('name', 'id')->toArray())
+            BelongsTo::make('Марка', 'brand', 'name', resource: CarBrandResource::class)
                 ->sortable(),
-            Select::make('Цвет', 'color_id')
-                ->options(CarColor::query()->pluck('name', 'id')->toArray())
+            BelongsTo::make('Цвет', 'color', 'name', resource: CarColorResource::class)
                 ->sortable(),
             Text::make('Персоны', 'people_names')->sortable(function (
                 Builder $query,
@@ -240,12 +242,12 @@ class CarResource extends BaseModelResource
                     $direction,
                 );
             }),
-            Select::make('Организация', 'organization_id')
-                ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
-                ->searchable()
+            BelongsToMany::make('Теги', 'tags', 'name', resource: CarTagResource::class)
+                ->inLine(' ', fn($model, $value) => Badge::make((string) $value, 'primary')),
+            BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
                 ->nullable()
                 ->sortable(),
-            Textarea::make('Комментарий', 'comment')
+            Text::make('Комментарий', 'comment')
                 ->sortable(),
         ];
     }
@@ -258,71 +260,51 @@ class CarResource extends BaseModelResource
         }
 
         return [
-            Text::make('ГРЗ', 'license_plate')
+            CustomText::make('ГРЗ', 'license_plate')
                 ->required()
                 ->customAttributes([
-                    'x-data' => '{ licensePlate: $el.value || "" }',
-                    'x-model' => 'licensePlate',
                     'x-on:input' => '
                     let value = $event.target.value.toUpperCase();
-                    let formatted = "";
-                    let cursorPos = $event.target.selectionStart;
-
                     value = value.replace(/[^А-Я0-9\s]/g, "");
-
                     let chars = value.replace(/\s/g, "").split("");
                     let result = [];
-
                     for (let i = 0; i < chars.length; i++) {
-                        if (i === 0) {
-                            if (/[А-Я]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        } else if (i >= 1 && i <= 3) {
-                            if (/[0-9]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        } else if (i >= 4 && i <= 5) {
-                            if (/[А-Я]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        } else if (i >= 6 && i <= 8) {
-                            if (/[0-9]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        }
+                        if (i === 0) { if (/[А-Я]/.test(chars[i])) result.push(chars[i]); }
+                        else if (i >= 1 && i <= 3) { if (/[0-9]/.test(chars[i])) result.push(chars[i]); }
+                        else if (i >= 4 && i <= 5) { if (/[А-Я]/.test(chars[i])) result.push(chars[i]); }
+                        else if (i >= 6 && i <= 8) { if (/[0-9]/.test(chars[i])) result.push(chars[i]); }
                     }
-
+                    let formatted = "";
                     if (result.length > 0) formatted += result[0];
                     if (result.length > 1) formatted += " " + result.slice(1, 4).join("");
                     if (result.length > 4) formatted += " " + result.slice(4, 6).join("");
                     if (result.length > 6) formatted += " " + result.slice(6, 9).join("");
-
                     $event.target.value = formatted;
                 ',
                     'placeholder' => 'А 123 БЦ 78',
-                    'maxlength' => '15'
+                    'maxlength' => '15',
                 ])
                 ->placeholder('А 000 АА 777')
-                ->hint('Используйте только: А, В, Е, К, М, Н, О, Р, С, Т, У, Х'),
-            Select::make('Марка', 'brand_id')
+                ->hint('Используйте только: А, В, Е, К, М, Н, О, Р, С, Т, У, Х')
+                ->unique('cars', 'license_plate', 'Данный ГРЗ уже зарегистрирован в системе', 'license_plate', 8),
+            SelectField::make('Марка', 'brand_id')
                 ->required()
-                ->options(CarBrand::query()->pluck('name', 'id')->toArray())
-                ->searchable(),
-            Select::make('Цвет', 'color_id')
+                ->options(CarBrand::query()->pluck('name', 'id')->toArray()),
+            SelectField::make('Цвет', 'color_id')
                 ->required()
-                ->options(CarColor::query()->pluck('name', 'id')->toArray())
-                ->searchable(),
-            Select::make('Персоны', 'people_ids')
+                ->options(CarColor::query()->pluck('name', 'id')->toArray()),
+            SelectField::make('Персоны', 'people_ids')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray())
-                ->searchable()
                 ->multiple()
                 ->default($personIds),
-            Select::make('Организация', 'organization_id')
+            SelectField::make('Теги авто', 'tags')
+                ->options(CarTag::select('id', 'name')->get())
+                ->multiple(true)
+                ->creatable(true, route('car-tags.store')),
+            SelectField::make('Организация', 'organization_id')
                 ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
-                ->searchable()
                 ->nullable(),
-            Textarea::make('Комментарий', 'comment')->nullable(),
+            CustomTextarea::make('Комментарий', 'comment')->nullable(),
         ];
     }
 
@@ -341,6 +323,15 @@ class CarResource extends BaseModelResource
         ];
     }
 
+    public function prepareForValidation(): void
+    {
+        if (request()->has('license_plate')) {
+            request()->merge([
+                'license_plate' => $this->cleanLicensePlate((string) request()->input('license_plate')),
+            ]);
+        }
+    }
+
     public function rules($item): array
     {
         return [
@@ -356,71 +347,46 @@ class CarResource extends BaseModelResource
 
     public function search(): array
     {
-        return ['license_plate', 'organization.short_name', 'brand.name', 'color.name', 'people.last_name','comment'];
+        return ['license_plate', 'organization.short_name', 'brand.name', 'color.name', 'people.last_name', 'tags.name', 'comment'];
     }
 
     public function filters(): array
     {
         return [
-            Text::make('ГРЗ', 'license_plate')
+            CustomText::make('ГРЗ', 'license_plate')
                 ->customAttributes([
-                    'x-data' => '{ licensePlate: "" }',
-                    'x-model' => 'licensePlate',
                     'x-on:input' => '
                     let value = $event.target.value.toUpperCase();
-                    let formatted = "";
-                    let cursorPos = $event.target.selectionStart;
-
                     value = value.replace(/[^А-Я0-9\s]/g, "");
-
                     let chars = value.replace(/\s/g, "").split("");
                     let result = [];
-
                     for (let i = 0; i < chars.length; i++) {
-                        if (i === 0) {
-                            if (/[А-Я]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        } else if (i >= 1 && i <= 3) {
-                            if (/[0-9]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        } else if (i >= 4 && i <= 5) {
-                            if (/[А-Я]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        } else if (i >= 6 && i <= 8) {
-                            if (/[0-9]/.test(chars[i])) {
-                                result.push(chars[i]);
-                            }
-                        }
+                        if (i === 0) { if (/[А-Я]/.test(chars[i])) result.push(chars[i]); }
+                        else if (i >= 1 && i <= 3) { if (/[0-9]/.test(chars[i])) result.push(chars[i]); }
+                        else if (i >= 4 && i <= 5) { if (/[А-Я]/.test(chars[i])) result.push(chars[i]); }
+                        else if (i >= 6 && i <= 8) { if (/[0-9]/.test(chars[i])) result.push(chars[i]); }
                     }
-
+                    let formatted = "";
                     if (result.length > 0) formatted += result[0];
                     if (result.length > 1) formatted += " " + result.slice(1, 4).join("");
                     if (result.length > 4) formatted += " " + result.slice(4, 6).join("");
                     if (result.length > 6) formatted += " " + result.slice(6, 9).join("");
-
                     $event.target.value = formatted;
                 ',
                     'placeholder' => 'Фильтрация по ГРЗ',
-                    'maxlength' => '15'
+                    'maxlength' => '15',
                 ]),
-            Select::make('Марка', 'brand_id')
+            SelectField::make('Марка', 'brand_id')
                 ->options(CarBrand::query()->pluck('name', 'id')->toArray())
-                ->searchable()
                 ->nullable(),
-            Select::make('Цвет', 'color_id')
+            SelectField::make('Цвет', 'color_id')
                 ->options(CarColor::query()->pluck('name', 'id')->toArray())
-                ->searchable()
                 ->nullable(),
-            Select::make('Организация', 'organization_id')
+            SelectField::make('Организация', 'organization_id')
                 ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
-                ->searchable()
                 ->nullable(),
-            Select::make('Персоны', 'people_filter')
+            SelectField::make('Персоны', 'people_filter')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray())
-                ->searchable()
                 ->multiple()
                 ->nullable()
                 ->onApply(function (Builder $query, $value) {
@@ -432,12 +398,25 @@ class CarResource extends BaseModelResource
                         $q->whereIn('person.id', (array)$value);
                     });
                 }),
+            SelectField::make('Теги авто', 'tags_filter')
+                ->options(CarTag::query()->pluck('name', 'id')->toArray())
+                ->multiple()
+                ->nullable()
+                ->onApply(function (Builder $query, $value) {
+                    if (empty($value)) {
+                        return $query;
+                    }
+
+                    return $query->whereHas('tags', function ($q) use ($value) {
+                        $q->whereIn('tags.id', (array)$value);
+                    });
+                }),
             Text::make('Комментарий', 'comment'),
         ];
     }
 
     public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
     {
-        return parent::indexQuery()->with(['brand', 'color', 'organization', 'people']);
+        return parent::indexQuery()->with(['brand', 'color', 'organization', 'people', 'tags']);
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 use App\Models\Setting;
 use App\Models\Stream;
+use App\Models\User;
+use App\Notifications\SystemNotification;
 use App\Services\MediaServerService;
 use App\Services\VideoAnalyticService;
 use Illuminate\Console\Command;
@@ -28,9 +30,24 @@ class DriveCheck extends Command
         }
         $is_autoresume = Setting::where('key', 'stream_autoresume')->value('value')??true;
         $is_stoped = Cache::get('drive_limit_stoped', false);
+        $is_notificated = Cache::get('drive_limit_notificated', false);
         $limitMB = (int) Setting::where('key', 'drive_limit')->value('value')??100;
         $limitBytes = $limitMB * 1048576;
         $freeBytes = disk_free_space(app_path());
+        if (!$is_notificated && $freeBytes < ($limitBytes*1.15)) {
+            Cache::forever('drive_limit_notificated', true);
+            $notification = new SystemNotification(
+                'warning',
+                'Заканчивается место на диске, видеопотоки могут быть отключены. Освободите место для стабильной работы.'
+            );
+            foreach (User::all() as $user) {
+                $user->notify($notification);
+            }
+        } else {
+            if($is_notificated &&  $freeBytes > ($limitBytes*1.15)) {
+                Cache::forever('drive_limit_notificated', false);
+            }
+        }
         if (!$is_stoped && $freeBytes < $limitBytes) {
             $this->warn('Видеопотоки остановливаются: диск переполнен');
             $streams = Stream::all();
@@ -39,6 +56,13 @@ class DriveCheck extends Command
                 $vss->cameraDelete($stream->uid);
             }
             Cache::forever('drive_limit_stoped', true);
+            $notification = new SystemNotification(
+                'error',
+                'Видеопотоки отключены — недостаточно места на диске. Освободите место, чтобы восстановить работу.'
+            );
+            foreach (User::all() as $user) {
+                $user->notify($notification);
+            }
         } else {
             if($is_stoped && $is_autoresume && $freeBytes > $limitBytes) {
                 $streams = Stream::all();
@@ -50,7 +74,15 @@ class DriveCheck extends Command
                         }
                     }
                 }
+                $notification = new SystemNotification(
+                    'info',
+                    'Видеопотоки включены — место на диске освобождено.'
+                );
+                foreach (User::all() as $user) {
+                    $user->notify($notification);
+                }
                 Cache::forever('drive_limit_stoped', false);
+                Cache::forever('drive_limit_notificated', false);
             }
         }
         $lock->release();

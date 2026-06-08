@@ -15,11 +15,7 @@ class Equipment extends Model
         'name',
         'description',
         'type',
-        'model',
-        'serial_number',
-        'status',
-        'location',
-        'skud_controller_id',
+        'skud_controller_sn',
         'person_uid',
         'person_name',
     ];

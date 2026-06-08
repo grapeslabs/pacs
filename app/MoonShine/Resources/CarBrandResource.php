@@ -3,6 +3,7 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\CarBrand;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Pages\CustomIndexPage;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
@@ -13,9 +14,8 @@ use MoonShine\UI\Fields\Text;
 use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
 
-class CarBrandResource extends BaseModelResource implements HasImportExportContract
+class CarBrandResource extends BaseModelResource
 {
-    use ImportExportConcern;
     protected string $model = CarBrand::class;
     protected string $title = 'Марки автомобилей';
     protected string $column = 'name';
@@ -36,16 +36,11 @@ class CarBrandResource extends BaseModelResource implements HasImportExportContr
         ];
     }
 
-    protected function export(): ?Handler
-    {
-        return null;
-    }
-
     public function formFields(): iterable
     {
         return [
             ID::make(),
-            Text::make('Название', 'name')->required(),
+            CustomText::make('Название', 'name')->required()->unique('car_brands', 'name'),
         ];
     }
 

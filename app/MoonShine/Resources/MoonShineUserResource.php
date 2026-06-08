@@ -1,28 +1,37 @@
 <?php
-
-declare(strict_types=1);
-
 namespace App\MoonShine\Resources;
 
+use App\MoonShine\Fields\CustomDate;
+use App\MoonShine\Fields\CustomPassword;
+use App\MoonShine\Fields\CustomText;
+use App\MoonShine\Fields\PhotoField;
+use App\Models\User;
+use App\MoonShine\Fields\PermissionMatrixField;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
+use Carbon\Carbon;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
+use MoonShine\Laravel\Models\MoonshineUserRole;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
-use MoonShine\Permissions\Models\MoonshineUser;
-use MoonShine\Permissions\Traits\WithPermissions;
-use MoonShine\Laravel\Models\MoonshineUserRole;
 use MoonShine\MenuManager\Attributes\Group;
 use MoonShine\MenuManager\Attributes\Order;
 use MoonShine\Support\Attributes\Icon;
 use MoonShine\Support\Enums\Color;
 use MoonShine\Support\ListOf;
+use MoonShine\Contracts\UI\ComponentContract;
+use MoonShine\Contracts\UI\FormBuilderContract;
+use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Components\Collapse;
 use MoonShine\UI\Components\Layout\Box;
+use MoonShine\UI\Components\Layout\Column;
+use MoonShine\UI\Components\Layout\Div;
 use MoonShine\UI\Components\Layout\Flex;
+use MoonShine\UI\Components\Layout\Grid;
 use MoonShine\UI\Components\Tabs;
 use MoonShine\UI\Components\Tabs\Tab;
 use MoonShine\UI\Fields\Date;
@@ -39,35 +48,29 @@ use Stringable;
 #[Group('moonshine::ui.resource.system', 'users', translatable: true)]
 #[Order(1)]
 /**
- * @extends BaseModelResource<MoonshineUser>
+ * @extends BaseModelResource<User>
  */
 class MoonShineUserResource extends BaseModelResource
 {
-    use WithPermissions;
-
-    protected string $model = MoonshineUser::class;
+    protected string $model = User::class;
     protected string $column = 'name';
     protected string $title = 'Пользователи';
     protected array $with = ['moonshineUserRole'];
-    protected bool $editInModal = false;
+    protected bool $createInModal=false;
+    protected bool $editInModal=false;
 
-    protected function pages(): array
+    protected function activeActions(): ListOf
     {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
+        return parent::activeActions()->only(Action::CREATE, Action::DELETE, Action::UPDATE);
     }
 
     protected function indexFields(): iterable
     {
         return [
             ID::make()->sortable(),
-
             BelongsTo::make('Роль',
                 'moonshineUserRole',
-                formatted: static fn (MoonshineUserRole $model) => $model->name,
+                formatted: static fn ($model) => $model->name,
                 resource: MoonShineUserRoleResource::class,
             )->badge(Color::PURPLE),
 
@@ -91,53 +94,73 @@ class MoonShineUserResource extends BaseModelResource
         return $this->indexFields();
     }
 
+    public function modifyFormComponent(ComponentContract $component): ComponentContract
+    {
+        if ($component instanceof FormBuilderContract) {
+            $component->hideSubmit();
+        }
+        return $component;
+    }
+
     protected function formFields(): iterable
     {
         return [
             Box::make([
-                Tabs::make([
-                    Tab::make('Основная информация', [
-                        ID::make()->sortable(),
-
-                        BelongsTo::make(
-                            'Роль',
-                            'moonshineUserRole',
-                            formatted: static fn (MoonshineUserRole $model) => $model->name,
-                            resource: MoonShineUserRoleResource::class,
-                        )
-                            ->creatable()
-                            ->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
-
-                        Flex::make([
-                            Text::make('Имя', 'name')
-                                ->required(),
-
-                            Email::make('E-mail', 'email')
-                                ->required(),
-                        ]),
-
+                Grid::make([
+                    Column::make([
+                        CustomText::make('Имя', 'name')
+                            ->min(2, 'Минимум 2 символа')
+                            ->required(),
+                    ])->columnSpan(3),
+                    Column::make([
+                        CustomText::make('E-mail', 'email')
+                            ->email()
+                            ->unique('moonshine_users', 'email','Почта должна быть уникальной')
+                            ->required(),
+                    ])->columnSpan(3),
+                ]),
+                Grid::make([
+                    Column::make([
+                        SelectField::make('Роль','moonshine_user_role_id')
+                            ->options(MoonshineUserRole::all()->pluck('name', 'id')),
+                    ])->columnSpan(3),
+                    Column::make([
+                        CustomDate::make('Дата создания', 'created_at')
+                            ->before(Carbon::now(), 'Дата создания не может быть будущим'),
+                    ])->columnSpan(3),
+                ]),
+                Grid::make([
+                    Column::make([
+                        CustomPassword::make('Пароль', 'password')
+                            ->min(6, 'Пароль должен содержать не менее 6 символов')
+                            ->hasUpper()
+                            ->hasLower()
+                            ->hasDigit()
+                            ->customAttributes(['autocomplete' => 'new-password'])
+                            ->eye(),
+                    ])->columnSpan(3),
+                    Column::make([
+                        CustomPassword::make('Повторите пароль', 'password_repeat')
+                            ->confirm('password')
+                            ->customAttributes(['autocomplete' => 'confirm-password'])
+                            ->onApply(fn($query, $value, $field) => $query)
+                            ->eye(),
+                    ])->columnSpan(3),
+                ]),
+                Grid::make([
+                    Column::make([
                         Image::make('Аватар', 'avatar')
                             ->disk(moonshineConfig()->getDisk())
                             ->dir('moonshine_users')
                             ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
 
-                        Date::make('Дата создания', 'created_at')
-                            ->format("d.m.Y")
-                            ->default(now()->toDateTimeString()),
-                    ])->icon('user-circle'),
-
-                    Tab::make('Пароль', [
-                        Collapse::make('Изменить пароль', [
-                            Password::make('Пароль', 'password')
-                                ->customAttributes(['autocomplete' => 'new-password'])
-                                ->eye(),
-
-                            PasswordRepeat::make('Повторите пароль', 'password_repeat')
-                                ->customAttributes(['autocomplete' => 'confirm-password'])
-                                ->eye(),
-                        ])->icon('lock-closed'),
-                    ])->icon('lock-closed'),
+                    ])->columnSpan(6)
                 ]),
+                PermissionMatrixField::make('Права', 'permissions')
+                    ->roleField('moonshine_user_role_id'),
+                ActionButton::make('Сохранить')
+                    ->customAttributes(['type' => 'submit', 'style' => 'width: 136px'])
+                    ->primary(),
             ]),
         ];
     }
@@ -177,7 +200,7 @@ class MoonShineUserResource extends BaseModelResource
         return [
             BelongsTo::make('Роль',
                 'moonshineUserRole',
-                formatted: static fn (MoonshineUserRole $model) => $model->name,
+                formatted: static fn ($model) => $model->name,
                 resource: MoonShineUserRoleResource::class,
             )->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
 

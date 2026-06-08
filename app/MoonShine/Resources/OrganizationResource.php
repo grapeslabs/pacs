@@ -3,6 +3,7 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Organization;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\DadataOrganizationField;
 use App\MoonShine\Pages\CustomIndexPage;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
@@ -11,8 +12,7 @@ use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
-use MoonShine\UI\Fields\Textarea;
-use MoonShine\Contracts\UI\ActionButtonContract;
+use App\MoonShine\Fields\CustomTextarea;
 
 class OrganizationResource extends BaseModelResource
 {
@@ -28,21 +28,19 @@ class OrganizationResource extends BaseModelResource
         ];
     }
 
-    protected function modifyDetailButton(ActionButtonContract $button): ActionButtonContract
-    {
-        return $button->canSee(fn() => false);
-    }
-
     public function formFields(): iterable
     {
         return [
             DadataOrganizationField::make('Поиск организации', 'search_query'),
-            Text::make('ИНН', 'inn')->mask('999999999999'),
-            Text::make('Название полное', 'full_name')->required(),
-            Text::make('Название сокращенное', 'short_name')->required(),
-            Text::make('Адрес', 'address'),
-            Text::make('Контактные данные', 'contact_data'),
-            Textarea::make('Комментарий', 'comment'),
+            CustomText::make('ИНН', 'inn')
+                ->pattern('/^(\d{10}|\d{12})$/', 'ИНН должен содержать 10 или 12 цифр')
+                ->mask('999999999999')
+                ->unique('organizations', 'inn'),
+            CustomText::make('Название полное', 'full_name')->required(),
+            CustomText::make('Название сокращенное', 'short_name')->required(),
+            CustomText::make('Адрес', 'address'),
+            CustomText::make('Контактные данные', 'contact_data'),
+            CustomTextarea::make('Комментарий', 'comment'),
         ];
     }
 
@@ -54,14 +52,13 @@ class OrganizationResource extends BaseModelResource
             Text::make('Название сокращенное', 'short_name')->sortable(),
             Text::make('Адрес', 'address')->sortable(),
             Text::make('Контактные данные', 'contact_data')->sortable(),
-            Textarea::make('Комментарий', 'comment')->sortable(),
+            CustomTextarea::make('Комментарий', 'comment')->sortable(),
         ];
     }
 
     public function rules($item): array
     {
         return [
-            'inn' => ['nullable', 'string', 'max:12', 'unique:organizations,inn,' . ($item?->id ?? 0)],
             'full_name' => ['required', 'string'],
             'short_name' => ['required', 'string'],
             'address' => ['nullable', 'string'],
@@ -100,7 +97,7 @@ class OrganizationResource extends BaseModelResource
             Text::make('Контактные данные', 'contact_data')
                 ->placeholder('Фильтрация по контактным данным'),
 
-            Textarea::make('Комментарий', 'comment')
+            CustomTextarea::make('Комментарий', 'comment')
                 ->placeholder('Фильтрация по комментарию'),
         ];
     }

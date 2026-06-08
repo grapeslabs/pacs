@@ -52,3 +52,8 @@ if is_enabled "ANALYTIC_ENABLED"; then
     log "Starting analytic services..."
     $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server events-processor media-server || warn "FAILED"
 fi
+
+if is_enabled "LPR_ENABLED"; then
+    log "Starting LPR services..."
+    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server lpr-database lpr-api lpr-core media-server lpr-rules-processor media-server || warn "FAILED"
+fi

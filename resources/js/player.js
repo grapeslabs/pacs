@@ -2,7 +2,7 @@ import { createApp } from 'vue';
 import VideoPlayer from './Components/CameraViewer.vue';
 
 document.addEventListener('DOMContentLoaded', () => {
-    const playerContainer = document.getElementById('stream-player');
+    const playerContainer = document.getElementById('player');
 
     if (playerContainer) {
         const rawData = playerContainer.dataset.item;
@@ -11,6 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
             camera: itemData
         });
 
-        app.mount('#stream-player');
+        app.mount('#player');
     }
 });

@@ -3,6 +3,9 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\ApiKey;
+use App\MoonShine\Fields\CustomDate;
+use App\MoonShine\Fields\CustomText;
+use App\MoonShine\Fields\SelectField;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Fields\Text;
@@ -31,6 +34,7 @@ class ApiKeyResource extends BaseModelResource
                     '',
                     fn($item) => "javascript:navigator.clipboard.writeText('{$item->key}').then(() => dispatchEvent(new CustomEvent('toast', {detail: {type: 'success', text: 'Ключ скопирован'}})))"
                 )
+                    ->class('js-copy-button')
                     ->icon('clipboard')
                     ->showInLine()
             );
@@ -66,20 +70,19 @@ class ApiKeyResource extends BaseModelResource
     public function formFields(): iterable
     {
         return [
-            Text::make('Название', 'name')
+            CustomText::make('Название', 'name')
                 ->required()
                 ->placeholder('Введите название ключа'),
 
             Checkbox::make('Бессрочный', 'is_unlimited')
                 ->setValue(false),
 
-            Date::make('Срок действия', 'expires_at')
-                ->withTime(false)
+            CustomDate::make('Срок действия', 'expires_at')
+                ->after(Carbon::now(), 'Срок действия не может быть в прощлом')
                 ->format('d.m.Y')
                 ->nullable()
-                ->showWhen('is_unlimited', '=', false)
-                ->hint('Укажите дату окончания действия ключа'),
-        ];
+                ->showWhen('is_unlimited', '=', false),
+            ];
     }
 
     public function rules($item): array
@@ -116,111 +119,21 @@ class ApiKeyResource extends BaseModelResource
     {
         return [
             Text::make('Название', 'name')
-                ->placeholder('Поиск по названию')
-                ->onApply(function ($query, $value) {
-                    return $value ? $query->where('name', 'like', "%{$value}%") : $query;
-                }),
+                ->placeholder('Поиск по названию'),
+            DateRange::make('Дата создания (с/по)', 'created_at'),
+            DateRange::make('Срок действия (с/по)', 'expires_at'),
+            Switcher::make('Активен', 'is_active')
+                ->offValue(false)
+                ->onValue(true),
 
-            DateRange::make('Дата создания (с/по)', 'created_at')
-                ->format('d.m.Y')
-                ->onApply(function ($query, $value) {
-                    if (!empty($value['from'])) {
-                        $fromDate = date('Y-m-d', strtotime($value['from'])) . ' 00:00:00';
-                        $query->where('created_at', '>=', $fromDate);
-                    }
-                    if (!empty($value['to'])) {
-                        $toDate = date('Y-m-d', strtotime($value['to'])) . ' 23:59:59';
-                        $query->where('created_at', '<=', $toDate);
-                    }
-                    return $query;
-                }),
-
-            DateRange::make('Срок действия (с/по)', 'expires_at')
-                ->format('d.m.Y')
-                ->nullable()
-                ->onApply(function ($query, $value) {
-                    if (!empty($value['from'])) {
-                        $fromDate = Carbon::parse($value['from'])->startOfDay();
-                        $query->where('expires_at', '>=', $fromDate);
-                    }
-                    if (!empty($value['to'])) {
-                        $toDate = Carbon::parse($value['to'])->endOfDay();
-                        $query->where('expires_at', '<=', $toDate);
-                    }
-                    return $query;
-                }),
-
-            Select::make('Активен', 'is_active')
-                ->options([
-                    '' => 'Все',
-                    'active' => 'Активен',
-                    'inactive' => 'Неактивен',
-                ])
-                ->nullable()
-                ->default('')
-                ->native()
-                ->onApply(function ($query, $value) {
-                    if ($value === 'active') {
-                        return $query->where('is_active', true);
-                    } elseif ($value === 'inactive') {
-                        return $query->where('is_active', false);
-                    }
-                    return $query;
-                }),
-
-            Select::make('Бессрочный', 'is_unlimited')
-                ->options([
-                    '' => 'Все',
-                    'unlimited' => 'Бессрочные',
-                    'limited' => 'Срочные',
-                ])
-                ->nullable()
-                ->default('')
-                ->native()
-                ->onApply(function ($query, $value) {
-                    if ($value === 'unlimited') {
-                        return $query->where(function($q) {
-                            $q->where('is_unlimited', true)
-                                ->orWhereNull('expires_at');
-                        });
-                    } elseif ($value === 'limited') {
-                        return $query->where('is_unlimited', false)
-                            ->whereNotNull('expires_at');
-                    }
-                    return $query;
-                }),
+            Switcher::make('Бессрочный', 'is_unlimited')
+                ->offValue(false)
+                ->onValue(true)
         ];
     }
 
-    public function beforeRender(): void
+    public function modifyQueryBuilder($builder): \Illuminate\Contracts\Database\Eloquent\Builder
     {
-        parent::beforeRender();
-
-        if (moonshineRequest()->isIndex()) {
-            ?>
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    // Принудительный сброс select при нажатии кнопки сброса
-                    const resetBtn = document.querySelector('button[type="reset"]');
-                    if (resetBtn) {
-                        resetBtn.addEventListener('click', function() {
-                            setTimeout(() => {
-                                document.querySelectorAll('select[name^="filters["]').forEach(select => {
-                                    select.value = '';
-                                });
-                            }, 50);
-                        });
-                    }
-                });
-            </script>
-            <?php
-        }
-    }
-
-
-
-    public function indexQuery(): \Illuminate\Contracts\Database\Eloquent\Builder
-    {
-        return parent::indexQuery()->orderBy('created_at', 'desc');
+        return $builder->orderBy('created_at', 'desc');
     }
 }

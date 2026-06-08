@@ -6,6 +6,7 @@ use App\Models\Bot;
 use App\Models\Stream;
 use App\Models\Tag;
 use App\Models\Trigger;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\Select2Field;
 use App\MoonShine\Fields\SelectField;
 use Closure;
@@ -113,10 +114,12 @@ class TriggerResource extends BaseModelResource
 
         return [
             ID::make(),
-            Text::make('Название', 'name')
+
+            CustomText::make('Название', 'name')
+                ->unique('triggers', 'name', 'Название триггера должно быть уникальным')
                 ->required(),
 
-            Select::make('Тип устройства', 'device_type')
+            SelectField::make('Тип устройства', 'device_type')
                 ->options([
                     Trigger::DEVICE_CAMERA => 'Камера',
 //                    Trigger::DEVICE_TERMINAL => 'Терминал доступа',
@@ -132,9 +135,8 @@ class TriggerResource extends BaseModelResource
                     "
                 ]),
 
-            Select::make('Устройство', 'device_id_camera')
+            SelectField::make('Устройство', 'device_id_camera')
                 ->options(Stream::query()->pluck('name', 'id')->toArray())
-                ->searchable()
                 ->showWhen('device_type', '=', Trigger::DEVICE_CAMERA)
                 ->onApply(function ($item, $value) {
                     if ($value) {
@@ -144,9 +146,8 @@ class TriggerResource extends BaseModelResource
                 })
                 ->setValue($item->device_id ?? null),
 
-            Select::make('Устройство', 'device_id_terminal')
+            SelectField::make('Устройство', 'device_id_terminal')
                 ->options(SkudController::query()->where('type', 'pinterm')->pluck('serial_number', 'id')->toArray())
-                ->searchable()
                 ->showWhen('device_type', '=', Trigger::DEVICE_TERMINAL)
                 ->onApply(function ($item, $value) {
                     if ($value) {
@@ -156,9 +157,8 @@ class TriggerResource extends BaseModelResource
                 })
                 ->setValue($item->device_id ?? null),
 
-            Select::make('Устройство', 'device_id_barier')
+            SelectField::make('Устройство', 'device_id_barier')
                 ->options(SkudController::query()->where('type', 'pingate')->pluck('serial_number', 'id')->toArray())
-                ->searchable()
                 ->showWhen('device_type', '=', Trigger::DEVICE_BARIER)
                 ->onApply(function ($item, $value) {
                     if ($value) {
@@ -168,9 +168,8 @@ class TriggerResource extends BaseModelResource
                 })
                 ->setValue($item->device_id ?? null),
 
-            Select::make('Устройство', 'device_id_controller')
+            SelectField::make('Устройство', 'device_id_controller')
                 ->options(SkudController::query()->whereIn('type', ['z5rweb', 'ironlogic'])->pluck('serial_number', 'id')->toArray())
-                ->searchable()
                 ->showWhen('device_type', '=', Trigger::DEVICE_CONTROLLER)
                 ->onApply(function ($item, $value) {
                     if ($value) {
@@ -180,7 +179,7 @@ class TriggerResource extends BaseModelResource
                 })
                 ->setValue($item->device_id ?? null),
 
-            Select::make('Событие', 'event_type')
+            SelectField::make('Событие', 'event_type')
                 ->options([
                     Trigger::EVENT_INCOME => 'Вход',
                     Trigger::EVENT_OUTCOME => 'Выход',
@@ -195,7 +194,7 @@ class TriggerResource extends BaseModelResource
                     return $item;
                 }),
 
-            Select::make('Событие', 'event_type_camera')
+            SelectField::make('Событие', 'event_type_camera')
                 ->options([
                     Trigger::EVENT_KNOWED => 'Появление известного лица',
                     Trigger::EVENT_UNKNOWED => 'Появление неизвестного лица',
@@ -209,10 +208,9 @@ class TriggerResource extends BaseModelResource
                 })
                 ->setValue($item->event_type ?? null),
 
-            Select::make('Бот', 'bot_id')
+            SelectField::make('Бот', 'bot_id')
                 ->options(Bot::query()->pluck('name', 'id')->toArray())
-                ->required()
-                ->searchable(),
+                ->required(),
 
             Checkbox::make('Дата', 'data->date')
                 ->setValue((boolean)$item?->data['date'] ?? false),
@@ -281,9 +279,8 @@ class TriggerResource extends BaseModelResource
                 ->placeholder('Фильтрация по названию')
                 ->nullable(),
 
-            Select::make('Тип устройства', 'device_type')
+            SelectField::make('Тип устройства', 'device_type')
                 ->placeholder('Фильтрация по типу устройства')
-                ->searchable()
                 ->nullable()
                 ->options([
                     Trigger::DEVICE_CAMERA => 'Камера',
@@ -294,13 +291,12 @@ class TriggerResource extends BaseModelResource
 
             Switcher::make('Активность', 'is_active'),
 
-            Select::make('Бот', 'bot_id')
+            SelectField::make('Бот', 'bot_id')
                 ->options(Bot::query()->pluck('name', 'id')->toArray())
                 ->placeholder('Фильтрация по боту')
-                ->nullable()
-                ->searchable(),
+                ->nullable(),
 
-            Select::make('Событие', 'event_type')
+            SelectField::make('Событие', 'event_type')
                 ->options([
                     Trigger::EVENT_UNKNOWED => 'Неизвестное лицо',
                     Trigger::EVENT_KNOWED => 'Известное лицо',
@@ -310,8 +306,7 @@ class TriggerResource extends BaseModelResource
                     Trigger::EVENT_DENIED => 'Отказано',
                 ])
                 ->placeholder('Фильтрация по типу')
-                ->nullable()
-                ->searchable(),
+                ->nullable(),
 
             SelectField::make('Теги', 'tags')
                 ->options(Tag::select('id', 'name')->get())

@@ -3,7 +3,10 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Guest;
+use App\MoonShine\Fields\CustomDate;
+use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
+use Carbon\Carbon;
 use Dflydev\DotAccessData\Data;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Support\ListOf;
@@ -18,7 +21,7 @@ use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Phone;
 use MoonShine\UI\Fields\Image;
-use MoonShine\UI\Fields\Textarea;
+use App\MoonShine\Fields\CustomTextarea;
 use Illuminate\Support\Facades\Storage;
 
 class GuestResource extends BaseModelResource
@@ -66,13 +69,15 @@ class GuestResource extends BaseModelResource
     public function formFields(): iterable
     {
         return [
-            Text::make('Внешний ID', 'external_id')
+            CustomText::make('Внешний ID', 'external_id')
+                ->unique('guests','external_id')
                 ->nullable(),
-            Text::make('ФИО', 'full_name')
+            CustomText::make('ФИО', 'full_name')
+                ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
                 ->required(),
-            Phone::make('Телефон', 'phone')
+            CustomText::make('Телефон', 'phone')
                 ->nullable()
-                ->mask('+7 (999) 999-99-99'),
+                ->phone(),
             PhotoField::make('Фото', 'photo')
                 ->multiple()
                 ->removable()
@@ -108,16 +113,14 @@ class GuestResource extends BaseModelResource
                     }
                     return $data;
                 }),
-            Text::make('Документ', 'document')
+            CustomText::make('Документ', 'document')
                 ->nullable(),
-            Textarea::make('Комментарий', 'comment')
+            CustomTextarea::make('Комментарий', 'comment')
                 ->nullable(),
-            Date::make('Действует с', 'entry_start')
-                ->nullable()
-                ->withTime(),
-            Date::make('Действует до', 'entry_end')
-                ->nullable()
-                ->withTime(),
+            CustomDate::make('Действует с', 'entry_start')
+                ->after(Carbon::now(), 'Начало действия не может в прошлом'),
+            CustomDate::make('Действует до', 'entry_end')
+                ->afterField('entry_start', 'Конец действия не может быть раньше его начала'),
         ];
     }
 

@@ -26,7 +26,7 @@ services:
     environment:
       TZ: "Europe/Moscow"
     depends_on:
-      -  app
+      - app
     networks:
       - traefik-public
     logging: *default-logging
@@ -40,6 +40,7 @@ services:
     volumes:
       - public_storage:/var/www/html/public/storage
       - analytic_thumbnails:/var/www/html/public/analytic-storage/thumbnails
+      - lpr_events:/var/www/html/public/lpr-events
     depends_on:
       - php
     networks:
@@ -66,6 +67,7 @@ services:
     volumes:
       - storage:/var/www/html/storage
       - public_storage:/var/www/html/storage/app/public
+      - lpr_events:/var/www/html/lpr/events:ro
     depends_on:
       app-database:
         condition: service_healthy
@@ -77,6 +79,8 @@ services:
       - "ofelia.enabled=true"
       - "ofelia.job-exec.drive-check.schedule=@every 1m"
       - "ofelia.job-exec.drive-check.command=php /var/www/html/artisan drive:check"
+      - "ofelia.job-exec.demo-user.schedule=@daily"
+      - "ofelia.job-exec.demo-user.command=php /var/www/html/artisan demo:manage-demo-user"
     env_file:
       - .env
 
@@ -116,6 +120,25 @@ services:
     entrypoint: ["php", "/var/www/html/artisan", "events:process-new"]
     logging: *default-logging
 
+  lpr-rules-processor:
+    image: ghcr.io/grapeslabs/pacs:${APP_VERSION}
+    restart: unless-stopped
+    volumes:
+      - storage:/var/www/html/storage
+      - public_storage:/var/www/html/storage/app/public
+      - lpr_events:/var/www/html/lpr/events:ro
+    depends_on:
+      - app-database
+      - redis
+    env_file:
+      - .env
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    entrypoint: ["php", "/var/www/html/artisan", "lpr:process-rules"]
+    logging: *default-logging
+
   redis:
     image: redis:alpine
     restart: unless-stopped
@@ -128,7 +151,7 @@ services:
     networks:
       - laravel
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       retries: 3
       timeout: 5s
     logging: *default-logging
@@ -163,6 +186,8 @@ services:
       - traefik-public
     expose:
       - 8081
+    user: "0:0"
+    working_dir: /cfg
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-public"
@@ -175,7 +200,7 @@ services:
       - "traefik.http.routers.${TRAEFIK_SERVICE}-media.middlewares=${TRAEFIK_SERVICE}-media-strip"
     volumes:
       - media_streams:/data/streams
-      - ./media_config.toml:/app/config.toml
+      - ./media-config:/cfg
     logging: *default-logging
 
   analytic-database:
@@ -254,6 +279,72 @@ services:
       - laravel
     logging: *default-logging
 
+  lpr-database:
+    image: pgvector/pgvector:pg15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${LPR_DB_USERNAME}"
+      POSTGRES_PASSWORD: "${LPR_DB_PASSWORD}"
+      POSTGRES_DB: "${LPR_DB_DATABASE}"
+    expose:
+      - 5432
+    volumes:
+      - lpr_database:/var/lib/postgresql/data
+      - ./lpr/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - laravel
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LPR_DB_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  lpr-api:
+    image: ghcr.io/grapeslabs/glpr-api:${LPR_VERSION}
+    restart: unless-stopped
+    environment:
+      PG_HOST: "${LPR_DB_HOST}"
+      PG_PORT: "${LPR_DB_PORT}"
+      PG_USER: "${LPR_DB_USERNAME}"
+      PG_PASSWORD: "${LPR_DB_PASSWORD}"
+      PG_DATABASE: "${LPR_DB_DATABASE}"
+      TZ: "Europe/Moscow"
+      MODE: "pacs"
+    expose:
+      - 5000
+    volumes:
+      - lpr_logs:/app/logs
+    depends_on:
+      lpr-database:
+        condition: service_healthy
+    networks:
+      - laravel
+    logging: *default-logging
+
+  lpr-core:
+    image: ghcr.io/grapeslabs/glpr:${LPR_VERSION}
+    restart: unless-stopped
+    environment:
+      PG_HOST: "${LPR_DB_HOST}"
+      PG_PORT: "${LPR_DB_PORT}"
+      PG_USER: "${LPR_DB_USERNAME}"
+      PG_PASSWORD: "${LPR_DB_PASSWORD}"
+      PG_DATABASE: "${LPR_DB_DATABASE}"
+      PACS_API_URL: "http://lpr-api:5000"
+      TZ: "Europe/Moscow"
+      MODE: "pacs"
+    volumes:
+      - lpr_events:/app/events
+      - lpr_logs:/app/logs
+    depends_on:
+      lpr-database:
+        condition: service_healthy
+        required: false
+    networks:
+      - laravel
+    logging: *default-logging
+
   ofelia:
     image: mcuadros/ofelia:latest
     restart: unless-stopped
@@ -261,7 +352,6 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     logging: *default-logging
-
 
 networks:
   laravel:
@@ -275,6 +365,10 @@ volumes:
   analytic_thumbnails:
   analytic_captured_images:
   analytic_person_photos:
+  lpr_database:
+  lpr_events:
+  lpr_logs:
+  lpr_config:
   media_config:
   media_streams:
   public_storage:

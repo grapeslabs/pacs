@@ -5,18 +5,16 @@ declare(strict_types=1);
 namespace App\MoonShine\Pages;
 
 use App\Models\Stream;
+use App\MoonShine\Components\StreamGridComponent;
+use App\MoonShine\Resources\VideoStreamResource;
 use MoonShine\AssetManager\Css;
 use MoonShine\AssetManager\Js;
-use MoonShine\Laravel\Pages\Page;
 use MoonShine\Contracts\UI\ComponentContract;
 use MoonShine\UI\Components\ActionButton;
-use MoonShine\UI\Components\Layout\Box;
-use MoonShine\UI\Components\Layout\Column;
 use MoonShine\UI\Components\Layout\Divider;
-use MoonShine\UI\Components\Layout\Grid;
-use MoonShine\UI\Fields\Text;
+use MoonShine\UI\Components\Layout\Flex;
 
-class Streams extends Page
+class Streams extends CustomIndexPage
 {
     /**
      * @return array<string, string>
@@ -47,27 +45,23 @@ class Streams extends Page
      */
     protected function components(): array
     {
-        $streams = Stream::all()->sortByDesc('created_at');
-        $columns = [];
-
-        foreach ($streams as $stream) {
-            $columns[] =  Column::make([
-                Box::make('')->customView('components.stream-box', ['stream' => $stream])
-            ])->columnSpan(4);
-        }
-        $grid = Grid::make($columns);
-
         return [
-            ActionButton::make('Добавить поток',
-                route('moonshine.resource.page',
-                    ['video-stream-resource','form-page']
-                ))->primary(),
-            ActionButton::make('Список потоков',
-                route('moonshine.resource.page',
-                    ['video-stream-resource','custom-index-page']
-                ))->primary(),
+            Flex::make([
+                $this->getCustomCreateButton(),
+                ActionButton::make('Список потоков',
+                    route('moonshine.resource.page',
+                        ['video-stream-resource', 'custom-index-page']
+                    ))->primary(),
+            ])->justifyAlign('start'),
             Divider::make(),
-            $grid
+            StreamGridComponent::make()
+                ->items(Stream::all()->sortBy('created_at'))
+                ->editUrlResolver(
+                    fn($item) => $this->getResource()->getFormPageUrl($item->getKey(), params:[
+                        '_component_name' => $this->getResource()->getListComponentName(),
+                        '_async_form' => true,
+                    ], fragment: 'crud-form')
+                ),
         ];
     }
 }

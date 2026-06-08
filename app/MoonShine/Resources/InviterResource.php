@@ -6,6 +6,7 @@ use App\Models\Inviter;
 use App\Models\Person;
 use App\Models\Organization;
 use App\Models\Tag;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Validation\Rule;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
@@ -159,7 +160,7 @@ class InviterResource extends BaseModelResource
                 ->default(auth()->user()->name ?? 'System')
                 ->readonly()
                 ->required(),
-            Select::make('Персона', 'person_id')
+            SelectField::make('Персона', 'person_id')
                 ->options(
                     Person::query()
                         ->with('organization')
@@ -176,7 +177,6 @@ class InviterResource extends BaseModelResource
                         })
                         ->toArray()
                 )
-                ->searchable()
                 ->nullable()
                 ->placeholder('Выберите персону')
                 ->required(),
@@ -219,7 +219,7 @@ class InviterResource extends BaseModelResource
         return [
             Text::make('Пользователь', 'user_name')
                 ->placeholder('Фильтрация по пользователю'),
-            Select::make('Персона', 'person_id')
+            SelectField::make('Персона', 'person_id')
                 ->options(
                     Person::query()
                         ->get()
@@ -228,17 +228,15 @@ class InviterResource extends BaseModelResource
                         ])
                         ->toArray()
                 )
-                ->searchable()
                 ->nullable()
                 ->placeholder('Фильтрация по персоне'),
-            Select::make('Организация', 'person.organization_id')
+            SelectField::make('Организация', 'person.organization_id')
                 ->options(
                     Organization::query()
                         ->get()
                         ->pluck('short_name', 'id')
                         ->toArray()
                 )
-                ->searchable()
                 ->nullable()
                 ->placeholder('Фильтрация по организации')
                 ->onApply(function (Builder $query, $value) {
@@ -246,7 +244,7 @@ class InviterResource extends BaseModelResource
                         $q->where('id', $value);
                     });
                 }),
-            Select::make('Теги', 'person.tags')
+            SelectField::make('Теги', 'person.tags')
                 ->multiple()
                 ->options(
                     Tag::query()
@@ -254,7 +252,6 @@ class InviterResource extends BaseModelResource
                         ->pluck('name', 'id')
                         ->toArray()
                 )
-                ->searchable()
                 ->nullable()
                 ->placeholder('Фильтрация по тегам')
                 ->onApply(function (Builder $query, $value) {

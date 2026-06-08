@@ -11,14 +11,14 @@
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.2",
         "laravel/tinker": "^2.8",
-        "moonshine/import-export": "1.0.5",
         "moonshine/moonshine": "^3.16",
-        "moonshine/permissions": "^2.0",
+        "moonshine/import-export": "1.0.5",
         "moonshine/ru": "^1.0",
         "telegram-bot/api": "^2.5"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
+        "laravel/boost": "^1.8",
         "laravel/pint": "^1.0",
         "laravel/sail": "^1.18",
         "mockery/mockery": "^1.4.4",

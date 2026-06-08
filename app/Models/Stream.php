@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Stream extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
+    protected $connection='pgsql';
     protected $table = 'streams';
     protected $fillable = [
         'uid',
@@ -17,6 +19,17 @@ class Stream extends Model
         'rtsp',
         'archive_time',
         'is_active',
-        'is_recognize'
+        'is_recognize',
+        'va_options',
+        'va_options->global_enable',
+        'va_options->is_face_detection',
+        'va_options->is_motion_detection',
     ];
+    protected $casts = [
+        'va_options' => 'json',
+    ];
+
+    public function storage() {
+        return $this->belongsTo(Storage::class);
+    }
 }

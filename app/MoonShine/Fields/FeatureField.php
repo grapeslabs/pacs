@@ -3,6 +3,7 @@
 namespace App\MoonShine\Fields;
 
 use Closure;
+use MoonShine\Contracts\Core\TypeCasts\DataWrapperContract;
 use MoonShine\UI\Fields\Checkbox;
 
 class FeatureField extends Checkbox
@@ -49,6 +50,15 @@ class FeatureField extends Checkbox
     }
 
 
+
+    protected function prepareFill(array $raw = [], ?DataWrapperContract $casted = null): mixed
+    {
+        $value = data_get($raw, str_replace('->', '.', $this->getColumn()));
+        if (!is_null($value) && $value !== false) {
+            return $value;
+        }
+        return parent::prepareFill($raw, $casted);
+    }
 
     protected function viewData(): array
     {

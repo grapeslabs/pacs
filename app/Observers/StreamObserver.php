@@ -1,8 +1,10 @@
 <?php
+
 namespace App\Observers;
 
 use App\Models\Stream;
 use App\Services\MediaServerService;
+use App\Services\VideoAnalyticLprService;
 use App\Services\VideoAnalyticService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -12,33 +14,43 @@ class StreamObserver
 {
     public function __construct(
         protected MediaServerService $mediaServer,
-        protected VideoAnalyticService $vas
+        protected VideoAnalyticService $vas,
+        protected VideoAnalyticLprService $lpr,
     ) {}
 
     public function creating(Stream $stream): void
     {
-        $stream->storage_id = (string) Str::uuid();
+        $stream->uid = (string)Str::uuid();
 
         try {
             $stream->uid = $this->mediaServer->createStream(
                 $stream->rtsp,
-                $stream->storage_id,
-                (int) $stream->archive_time
+                $stream->uid,
+                (int)$stream->archive_time
             );
 
             if (!$stream->is_active) {
                 $this->mediaServer->pauseStream($stream->uid);
             }
 
-            if ($stream->is_recognize) {
-                $this->createVasStream($stream);
+            $vaOptions = $stream->va_options ?? [];
+
+            if (config('services.va.enabled')) {
+                $this->vas->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
+            }
+
+            if (config('services.lpr.enabled')) {
+                $this->lpr->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
             }
 
         } catch (Exception $e) {
             if (!empty($stream->uid)) {
-                try { $this->mediaServer->deleteStream($stream->uid); } catch (\Throwable $t) {}
+                try {
+                    $this->mediaServer->deleteStream($stream->uid);
+                } catch (\Throwable) {
+                }
             }
-            Log::error("Ошибка создания: " . $e->getMessage());
+            Log::error('StreamObserver: error on creating', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
@@ -46,67 +58,61 @@ class StreamObserver
     public function updating(Stream $stream): void
     {
         if ($stream->isDirty(['rtsp', 'archive_time'])) {
-            $this->mediaServer->updateStream($stream->uid, $stream->storage_id,$stream->rtsp, (int)$stream->archive_time);
+            $this->mediaServer->updateStream($stream->uid, $stream->rtsp, (int)$stream->archive_time);
         }
 
         if ($stream->isDirty('is_active')) {
-            if ($stream->is_active) {
-                $this->mediaServer->resumeStream($stream->uid);
-            } else {
-                $this->mediaServer->pauseStream($stream->uid);
-            }
+            $stream->is_active
+                ? $this->mediaServer->resumeStream($stream->uid)
+                : $this->mediaServer->pauseStream($stream->uid);
         }
 
-        $this->handleVasUpdate($stream);
+        if ($stream->isDirty('va_options')) {
+            $this->normalizeVaOptions($stream);
+
+            $vaOptions = $stream->va_options ?? [];
+
+            if (config('services.va.enabled')) {
+                $this->vas->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
+            }
+
+            if (config('services.lpr.enabled')) {
+                $this->lpr->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
+            }
+        }
     }
 
     public function deleting(Stream $stream): void
     {
         $this->mediaServer->deleteStream($stream->uid);
 
-        $result = $this->vas->cameraDelete($stream->uid);
-        if (empty($result['ok'])) {
-            Log::warning("Ошибка удаления из VAS", ['uid' => $stream->uid]);
-        }
-    }
-
-    private function handleVasUpdate(Stream $stream): void
-    {
-        $wasRecognized = (bool) $stream->getOriginal('is_recognize');
-        $isRecognizedNow = (bool) $stream->is_recognize;
-
-        if ($wasRecognized && !$isRecognizedNow) {
-            $this->deleteVasStream($stream);
-            return;
+        if (config('services.va.enabled')) {
+            $result = $this->vas->cameraDelete($stream->uid);
+            if (empty($result['ok'])) {
+                Log::warning('StreamObserver: VA camera delete failed', ['uid' => $stream->uid]);
+            }
         }
 
-        if (!$wasRecognized && $isRecognizedNow) {
-            $this->createVasStream($stream);
-            return;
-        }
-
-        if ($wasRecognized && $isRecognizedNow) {
-            if ($stream->isDirty(['name', 'location', 'rtsp'])) {
-                $this->createVasStream($stream);
+        if (config('services.lpr.enabled')) {
+            $result = $this->lpr->cameraDelete($stream->uid);
+            if (empty($result['ok'])) {
+                Log::warning('StreamObserver: LPR camera delete failed', ['uid' => $stream->uid]);
             }
         }
     }
 
-    private function createVasStream(Stream $stream): void
+    private function normalizeVaOptions(Stream $stream): void
     {
-        $result = $this->vas->cameraCreate($stream->storage_id, $stream->uid, $stream->name, $stream->location);
-        if (empty($result['ok'])) {
-            Log::error("Ошибка VAS cameraCreate", $result ?? []);
-            throw new Exception("Ошибка при добавлении потока в систему видео-аналитики");
-        }
-    }
+        $options = $stream->va_options ?? [];
 
-    private function deleteVasStream(Stream $camera): void
-    {
-        $result = $this->vas->cameraDelete($camera->uid);
-        if (empty($result['ok'])) {
-            Log::error("Ошибка VAS cameraDelete", $result ?? []);
-            throw new Exception('Не удалось отключить поток от системы видео-аналитики');
+        if (empty($options['global_enable'])) {
+            $options['is_face_detection'] = 0;
+            $options['is_face_recognition'] = 0;
+            $options['is_motion_detection'] = 0;
+            if (config('services.lpr.enabled')) {
+                $options['is_plate_recognition'] = 0;
+            }
+            $stream->va_options = $options;
         }
     }
 }

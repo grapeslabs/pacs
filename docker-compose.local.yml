@@ -16,6 +16,7 @@ services:
     volumes:
       - ./:/var/www/html:delegated
       - ./analytic/thumbnails:/var/www/html/public/analytic-storage/thumbnails
+      - ./lpr/events:/var/www/html/public/lpr-events
     environment:
       TZ: "Europe/Moscow"
       NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-20M}
@@ -78,6 +79,8 @@ services:
       - "ofelia.enabled=true"
       - "ofelia.job-exec.drive-check.schedule=@every 1m"
       - "ofelia.job-exec.drive-check.command=php /var/www/html/artisan drive:check"
+      - "ofelia.job-exec.demo-user.schedule=@daily"
+      - "ofelia.job-exec.demo-user.command=php /var/www/html/artisan demo:manage-demo-user"
     networks:
       - laravel
       - traefik-public
@@ -87,7 +90,7 @@ services:
     image: redis:alpine
     restart: unless-stopped
     volumes:
-      - ./docker/redis:/data:delegated
+      - redis_data:/data:delegated
     expose:
       - 6379
     environment:
@@ -95,7 +98,7 @@ services:
     networks:
       - laravel
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       retries: 3
       timeout: 5s
     logging: *default-logging
@@ -112,7 +115,7 @@ services:
       - ./:/var/www/html:delegated
       - ../packages/:/var/www/packages:delegated
       - ~/.ssh/:/home/laravel/.ssh
-    entrypoint: [ "composer" ]
+    entrypoint: ["composer"]
     environment:
       TZ: Europe/Moscow
     networks:
@@ -124,8 +127,8 @@ services:
     volumes:
       - ./:/var/www/html
     working_dir: /var/www/html
-    entrypoint: [ "npm" ]
-    command: [ "run", "dev" ]
+    entrypoint: ["npm"]
+    command: ["run", "dev"]
     environment:
       TZ: Europe/Moscow
     networks:
@@ -145,7 +148,7 @@ services:
     depends_on:
       - app-database
       - redis
-    entrypoint: [ "php", "/var/www/html/artisan" ]
+    entrypoint: ["php", "/var/www/html/artisan"]
     environment:
       TZ: Europe/Moscow
     networks:
@@ -215,7 +218,7 @@ services:
 
   media-server:
     restart: unless-stopped
-    image: grapeslabs/pacs:1.0.0
+    image: ${MEDIA_SERVER_IMAGE:-ghcr.io/grapeslabs/media-server:1.0.0}
     environment:
       TZ: "Europe/Moscow"
     networks:
@@ -223,6 +226,8 @@ services:
       - traefik-public
     expose:
       - 8081
+    user: "0:0"
+    working_dir: /cfg
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-public"
@@ -233,10 +238,10 @@ services:
       - "traefik.http.services.${TRAEFIK_SERVICE}-media.loadbalancer.server.port=8081"
       - "traefik.http.middlewares.${TRAEFIK_SERVICE}-media-strip.stripprefix.prefixes=/media"
       - "traefik.http.routers.${TRAEFIK_SERVICE}-media.middlewares=${TRAEFIK_SERVICE}-media-strip"
-
     volumes:
-      - ./media/streams:/data/streams
-      - ./media/config.toml:/app/config.toml
+      - ./media:/data/streams
+      - ./media-config:/cfg
+    logging: *default-logging
 
   analytic-database:
     image: pgvector/pgvector:pg15
@@ -253,19 +258,20 @@ services:
       - laravel
       - traefik-public
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${ADB_USERNAME}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${ADB_USERNAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging: *default-logging
 
   analytic-api:
-    image: ghcr.io/grapeslabs/analytic-api:1.0.0
+    image: ${ANALYTIC_API_IMAGE:-ghcr.io/grapeslabs/analytic-api:1.0.0}
     environment:
       - PG_HOST=${ADB_HOST}
       - PG_PORT=${ADB_PORT}
       - PG_USER=${ADB_USERNAME}
       - PG_PASSWORD=${ADB_PASSWORD}
-      - FR_DB=${ADB_DATABASE}
+      - PG_DATABASE=${ADB_DATABASE}
       - API_PORT=8082
       - DEBUG_MODE=${APP_DEBUG}
       - PERSON_PHOTOS_PATH=/app/person_photos
@@ -284,15 +290,16 @@ services:
         condition: service_healthy
     networks:
       - laravel
+    logging: *default-logging
 
   analytic-server:
-    image: ghcr.io/grapeslabs/analytic-server:1.0.0
+    image: ${ANALYTIC_SERVER_IMAGE:-ghcr.io/grapeslabs/analytic:1.0.0}
     environment:
       - PG_HOST=${ADB_HOST}
       - PG_PORT=${ADB_PORT}
       - PG_USER=${ADB_USERNAME}
       - PG_PASSWORD=${ADB_PASSWORD}
-      - FR_DB=${ADB_DATABASE}
+      - PG_DATABASE=${ADB_DATABASE}
       - PACS_API_URL=http://analytic-api:8082
       - THUMBNAIL_PATH=/app/thumbnails
       - DEBUG_MODE=${APP_DEBUG}
@@ -309,6 +316,73 @@ services:
         condition: service_started
     networks:
       - laravel
+    logging: *default-logging
+
+  lpr-database:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_USER: ${LPR_DB_USERNAME}
+      POSTGRES_PASSWORD: ${LPR_DB_PASSWORD}
+      POSTGRES_DB: ${LPR_DB_DATABASE}
+    expose:
+      - 5432
+    volumes:
+      - lpr_database:/var/lib/postgresql/data
+      - ./lpr/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - laravel
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LPR_DB_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  lpr-api:
+    image: ${LPR_API_IMAGE:-lpr-api:local}
+    restart: unless-stopped
+    environment:
+      - PG_HOST=${LPR_DB_HOST}
+      - PG_PORT=${LPR_DB_PORT}
+      - PG_USER=${LPR_DB_USERNAME}
+      - PG_PASSWORD=${LPR_DB_PASSWORD}
+      - PG_DATABASE=${LPR_DB_DATABASE}
+      - TZ=Europe/Moscow
+      - MODE=pacs
+    expose:
+      - 5000
+    volumes:
+      - ./lpr/logs:/app/logs
+    depends_on:
+      lpr-database:
+        condition: service_healthy
+    networks:
+      - laravel
+    logging: *default-logging
+
+  lpr-core:
+    image: ${LPR_CORE_IMAGE:-lpr-core:local}
+    restart: unless-stopped
+    environment:
+      - PG_HOST=${LPR_DB_HOST}
+      - PG_PORT=${LPR_DB_PORT}
+      - PG_USER=${LPR_DB_USERNAME}
+      - PG_PASSWORD=${LPR_DB_PASSWORD}
+      - PG_DATABASE=${LPR_DB_DATABASE}
+      - PACS_API_URL=http://lpr-api:5000
+      - TZ=Europe/Moscow
+      - MODE=pacs
+    volumes:
+      - ./lpr/events:/app/events
+      - ./lpr/logs:/app/logs
+    depends_on:
+      lpr-database:
+        condition: service_healthy
+        required: false
+    networks:
+      - laravel
+    logging: *default-logging
+
   events-processor:
     build:
       context: ./docker/php
@@ -317,7 +391,7 @@ services:
       args:
         - UID=${UID:-1000}
         - GID=${GID:-1000}
-    restart: always
+    restart: unless-stopped
     volumes:
       - ./:/var/www/html:delegated
     depends_on:
@@ -327,7 +401,27 @@ services:
       TZ: Europe/Moscow
     networks:
       - laravel
-    entrypoint: [ "php", "/var/www/html/artisan", "events:process-new" ]
+    entrypoint: ["php", "/var/www/html/artisan", "events:process-new"]
+    logging: *default-logging
+  lpr-rules-processor:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+      target: app
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html:delegated
+    depends_on:
+      - app-database
+      - redis
+    environment:
+      TZ: Europe/Moscow
+    networks:
+      - laravel
+    entrypoint: ["php", "/var/www/html/artisan", "lpr:process-rules"]
     logging: *default-logging
 
   ofelia:
@@ -347,3 +441,5 @@ networks:
 volumes:
   app_database:
   analytic_database:
+  lpr_database:
+  redis_data:

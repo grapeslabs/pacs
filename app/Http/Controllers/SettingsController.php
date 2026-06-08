@@ -20,7 +20,12 @@ class SettingsController extends Controller
 
          if (!$settings['face_recognition']) {
             foreach ($streams as $stream) {
-                $stream->update(['is_recognize' => false]);
+                $stream->update([
+                        'va_options->global_enable' => false,
+                        'va_options->is_face_detection' => false,
+                        'va_options->is_motion_detection' => false,
+                    ]
+                );
             }
         }
 

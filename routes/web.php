@@ -1,58 +1,79 @@
 <?php
 
+use App\Http\Controllers\CarTagController;
 use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DadataController;
 use App\Models\Person;
-use \App\Http\Controllers\ChatsController;
-use \App\Http\Controllers\SettingsController;
-use \App\Http\Controllers\StreamController;
+use App\Http\Controllers\ChatsController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\StreamController;
+use App\Http\Controllers\CustomFieldController;
+use App\Http\Controllers\PersonPhotoArchiveController;
 
-Route::get('/', function () {
-    return view('welcome');
+Route::get("/", function () {
+    return view("welcome");
 });
 
 Route::prefix('tags')->group(function() {
     Route::get('list', [TagController::class, 'index'])->name('tags.index');
     Route::post('store', [TagController::class, 'store'])->name('tags.store');
-    Route::delete('{tag}', [TagController::class, 'store'])->name('tags.destroy');
+    Route::delete('{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
 });
 
-Route::prefix('settings')->group(function() {
-   Route::post('store', [SettingsController::class, 'store'])->name('settings.store');
+Route::prefix('car-tags')->group(function() {
+    Route::get('list', [CarTagController::class, 'index'])->name('car-tags.index');
+    Route::post('store', [CarTagController::class, 'store'])->name('car-tags.store');
+    Route::delete('{carTag}', [CarTagController::class, 'destroy'])->name('car-tags.destroy');
 });
 
-Route::prefix('chats')->group(function () {
-   Route::get('list', [ChatsController::class, 'index'])->name('chats.index');
-   Route::post('store', [ChatsController::class, 'store'])->name('chats.store');
-   Route::get('test', [ChatsController::class, 'test'])->name('chats.test');
+Route::post("/field-validation", [CustomFieldController::class, "validate"])->name("field.validation");
+
+Route::prefix("settings")->group(function () {
+    Route::post("store", [SettingsController::class, "store"])->name("settings.store");
+});
+
+Route::prefix("chats")->group(function () {
+    Route::get("list", [ChatsController::class, "index"])->name("chats.index");
+    Route::post("store", [ChatsController::class, "store"])->name("chats.store");
+    Route::get("test", [ChatsController::class, "test"])->name("chats.test");
 });
 
 Route::prefix("/streams")->group(function () {
-    Route::post("/archive-download/{stream}", [StreamController::class, 'downloadArchive'])->name("streams.archive_download");
-    Route::get("/download-status/{stream}", [StreamController::class, 'downloadStatus'])->name("streams.download_status");
-    Route::get("/download-file/{stream}", [StreamController::class, 'downloadArchiveFile'])->name("streams.download_file");
+    Route::post("/archive-download/{stream}", [StreamController::class, "downloadArchive"])->name(
+        "streams.archive_download",
+    );
+    Route::get("/download-status/{stream}", [StreamController::class, "downloadStatus"])->name(
+        "streams.download_status",
+    );
+    Route::get("/download-file/{stream}", [StreamController::class, "downloadArchiveFile"])->name(
+        "streams.download_file",
+    );
 });
 
-Route::get('/organizations/search-dadata', [DadataController::class, 'searchOrganizations'])
-    ->name('organizations.search-dadata');
+Route::get("/organizations/search-dadata", [DadataController::class, "searchOrganizations"])->name(
+    "organizations.search-dadata",
+);
 
-Route::post('/organizations/save-direct', [DadataController::class, 'saveDirect'])
-    ->name('organizations.save-direct')
-    ->middleware('web');
-Route::get('/test-clean-data', [DadataController::class, 'testCleanData']);
+Route::post("/organizations/save-direct", [DadataController::class, "saveDirect"])
+    ->name("organizations.save-direct")
+    ->middleware("web");
+Route::get("/test-clean-data", [DadataController::class, "testCleanData"]);
 
 Route::post("/test-multipart-direct", function (Illuminate\Http\Request $request) {
     return response()->json([
         "status" => "direct_route_works",
         "content_type" => $request->header("Content-Type"),
-        "is_multipart" => str_contains($request->header("Content-Type"), "multipart")
+        "is_multipart" => str_contains($request->header("Content-Type"), "multipart"),
     ]);
 });
 
+Route::post("/person-photos/import", [PersonPhotoArchiveController::class, "import"])->name("person-photos.import");
+Route::get("/person-photos/export-all", [PersonPhotoArchiveController::class, "exportAll"])->name(
+    "person-photos.export-all",
+);
 
-
-Route::get('/test-person-skud', function() {
+Route::get("/test-person-skud", function () {
     \Log::info("🧪 TEST Person SKUD Integration Started");
 
     // Проверим существующие персоны
@@ -65,15 +86,15 @@ Route::get('/test-person-skud', function() {
 
     // Проверим методы модели
     \Log::info("🧪 Person methods:", [
-        'skud_uid' => $person->getSkudUid(),
-        'full_name' => $person->getFullName(),
-        'photos_count' => count($person->photo ?? [])
+        "skud_uid" => $person->getSkudUid(),
+        "full_name" => $person->getFullName(),
+        "photos_count" => count($person->photo ?? []),
     ]);
 
     return response()->json([
-        'person_id' => $person->id,
-        'skud_uid' => $person->getSkudUid(),
-        'full_name' => $person->getFullName(),
-        'photos' => $person->photo ?? []
+        "person_id" => $person->id,
+        "skud_uid" => $person->getSkudUid(),
+        "full_name" => $person->getFullName(),
+        "photos" => $person->photo ?? [],
     ]);
 });
