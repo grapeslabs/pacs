@@ -61,10 +61,13 @@ class PassageEventResource extends BaseModelResource
 
             ColoredSelectField::make('Тип события', 'status')
                 ->options([
-                    'allowed'        => ['label' => 'Проезд разрешён', 'color' => 'green'],
-                    'denied'         => ['label' => 'Проезд запрещён', 'color' => 'red'],
-                    'in_db'          => ['label' => 'В базе',          'color' => 'blue'],
-                    'not_in_db'      => ['label' => 'Не в базе',       'color' => 'yellow'],
+                    'allowed' => ['label' => 'Проезд разрешён', 'color' => 'green'],
+                    'allowed_inactive' => ['label' => 'Разрешён, устройство неактивно', 'color' => 'gray'],
+                    'allowed_no_link' => ['label' => 'Разрешён, нет связи', 'color' => 'orange'],
+                    'allowed_offline' => ['label' => 'Разрешён, отвал устройства', 'color' => 'red'],
+                    'denied' => ['label' => 'Проезд запрещён', 'color' => 'red'],
+                    'in_db' => ['label' => 'В базе',          'color' => 'blue'],
+                    'not_in_db' => ['label' => 'Не в базе',       'color' => 'yellow'],
                     'not_recognized' => ['label' => 'Не распознан',    'color' => 'pink'],
                 ]),
 

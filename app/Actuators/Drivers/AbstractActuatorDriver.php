@@ -10,7 +10,7 @@ abstract class AbstractActuatorDriver implements ActuatorDriver
 {
     public function capabilities(): array
     {
-        return ['open', 'close'];
+        return ['open', 'close', 'test'];
     }
 
     public function test(ActuatorDevice $device): bool

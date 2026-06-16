@@ -144,7 +144,7 @@ class ActuatorDeviceResource extends BaseModelResource
         return parent::indexButtons()
             ->prepend($this->actionButton('Закрыть', 'doClose', 'lock-closed', 'close'))
             ->prepend($this->actionButton('Открыть', 'doOpen', 'lock-open', 'open'))
-            ->prepend($this->actionButton('Тест', 'doTest', 'signal'));
+            ->prepend($this->actionButton('Тест', 'doTest', 'signal', 'test'));
     }
 
     private function actionButton(string $label, string $method, string $icon, ?string $capability = null): ActionButton
@@ -162,6 +162,7 @@ class ActuatorDeviceResource extends BaseModelResource
             ->customAttributes([
                 'title' => $label,
                 '@click.stop' => '',
+                'class' => 'js-actuator-button',
             ]);
 
         if ($capability !== null) {

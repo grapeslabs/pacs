@@ -1602,6 +1602,33 @@ textarea {
     background-color: transparent !important;
 }
 
+.js-actuator-button {
+    font-weight: 700;
+    width: 54px !important;
+    height: 42px !important;
+    border: none !important;
+    background-color: transparent !important;
+
+    > div:not(.spinner) {
+        width: 30px !important;
+        height: 30px !important;
+
+        svg {
+            width: 30px !important;
+            height: 30px !important;
+        }
+    }
+
+    .spinner {
+        flex-shrink: 0 !important;
+        aspect-ratio: 1 / 1 !important;
+    }
+
+    .spinner ~ div {
+        display: none !important;
+    }
+}
+
 .heading div {
     font-weight: 700 !important;
 }

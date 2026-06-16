@@ -43,6 +43,12 @@ class HttpDriver extends AbstractActuatorDriver
         ];
     }
 
+    public function test(ActuatorDevice $device): bool
+    {
+        Http::timeout(5)->get((string) $this->setting($device, 'base_url'));
+        return true;
+    }
+
     public function open(ActuatorDevice $device): void
     {
         $this->request($device, (string) $this->setting($device, 'open_url'));

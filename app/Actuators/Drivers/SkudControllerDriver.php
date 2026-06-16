@@ -51,17 +51,6 @@ class SkudControllerDriver extends AbstractActuatorDriver
         throw new \RuntimeException('Закрытие не поддерживается у СКУД-контроллера (открытие двери импульсное).');
     }
 
-    public function test(ActuatorDevice $device): bool
-    {
-        $controllerId = $this->settingScalar($device, 'controller_id');
-
-        if (! GrapeslabsSkudController::query()->whereKey($controllerId)->exists()) {
-            throw new \RuntimeException('Выбранный СКУД-контроллер не найден.');
-        }
-
-        return true;
-    }
-
     private function controllerOptions(): array
     {
         return GrapeslabsSkudController::query()

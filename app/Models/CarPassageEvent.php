@@ -15,16 +15,22 @@ class CarPassageEvent extends Model
     protected $table = 'car_passage_events';
 
     public const STATUS_ALLOWED = 'allowed';
+    public const STATUS_ALLOWED_INACTIVE = 'allowed_inactive';
+    public const STATUS_ALLOWED_NO_LINK = 'allowed_no_link';
+    public const STATUS_ALLOWED_OFFLINE = 'allowed_offline';
     public const STATUS_DENIED = 'denied';
     public const STATUS_IN_DB = 'in_db';
     public const STATUS_NOT_IN_DB = 'not_in_db';
     public const STATUS_NOT_RECOGNIZED = 'not_recognized';
 
     public const STATUSES = [
-        self::STATUS_ALLOWED        => 'Проезд разрешён',
-        self::STATUS_DENIED         => 'Проезд запрещён',
-        self::STATUS_IN_DB          => 'В базе',
-        self::STATUS_NOT_IN_DB      => 'Не в базе',
+        self::STATUS_ALLOWED => 'Проезд разрешён',
+        self::STATUS_ALLOWED_INACTIVE => 'Разрешён, устройство неактивно',
+        self::STATUS_ALLOWED_NO_LINK => 'Разрешён, нет связи',
+        self::STATUS_ALLOWED_OFFLINE => 'Разрешён, отвал устройства',
+        self::STATUS_DENIED => 'Проезд запрещён',
+        self::STATUS_IN_DB => 'В базе',
+        self::STATUS_NOT_IN_DB => 'Не в базе',
         self::STATUS_NOT_RECOGNIZED => 'Не распознан',
     ];
 

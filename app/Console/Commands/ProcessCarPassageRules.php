@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actuators\ActuatorService;
+use App\Models\ActuatorDevice;
 use App\Models\Car;
 use App\Models\CarPassageEvent;
 use App\Models\CarPassageRule;
@@ -141,8 +142,7 @@ class ProcessCarPassageRules extends Command
 
             if ($decisiveRule !== null) {
                 if ($decisiveRule->type === CarPassageRule::TYPE_ALLOW) {
-                    $status          = CarPassageEvent::STATUS_ALLOWED;
-                    $controllersInfo = $this->openController($passage, $direction, $decisiveRule, $plateText, $cameraUid);
+                    [$status, $controllersInfo] = $this->openController($passage, $direction, $decisiveRule, $plateText, $cameraUid);
                 } else {
                     $status = CarPassageEvent::STATUS_DENIED;
                     Log::info('Car passage rules: access denied by rule', [
@@ -207,7 +207,7 @@ class ProcessCarPassageRules extends Command
         }
 
         foreach ($rules as $rule) {
-            if (! $rule->passages->contains('id', $passage->id)) {
+            if ($rule->passages->isNotEmpty() && ! $rule->passages->contains('id', $passage->id)) {
                 continue;
             }
 
@@ -243,7 +243,7 @@ class ProcessCarPassageRules extends Command
                 'direction'  => $direction,
                 'rule_id'    => $rule->id,
             ]);
-            return [];
+            return [CarPassageEvent::STATUS_ALLOWED, []];
         }
 
         try {
@@ -258,18 +258,41 @@ class ProcessCarPassageRules extends Command
                 'actuator_device_id' => $device->id,
             ]);
 
-            return [[
+            return [CarPassageEvent::STATUS_ALLOWED, [[
                 'actuator_device_id' => $device->id,
                 'name'               => $device->name,
                 'driver'             => $device->driver_key,
-            ]];
+            ]]];
         } catch (\Throwable $e) {
+            $status = $this->openFailureStatus($device, $e);
+
             Log::error('Car passage rules: failed to open actuator device', [
                 'actuator_device_id' => $device->id,
+                'status'             => $status,
                 'message'            => $e->getMessage(),
             ]);
-            return [];
+
+            return [$status, [[
+                'actuator_device_id' => $device->id,
+                'name' => $device->name,
+                'driver' => $device->driver_key,
+                'error' => $e->getMessage(),
+            ]]];
         }
+    }
+
+    protected function openFailureStatus(ActuatorDevice $device, \Throwable $e): string
+    {
+        if ($device->status !== ActuatorDevice::STATUS_ACTIVE) {
+            return CarPassageEvent::STATUS_ALLOWED_INACTIVE;
+        }
+        $message = $e->getMessage();
+        if (str_contains($message, 'не ответило по Modbus')
+            || str_contains($message, 'interrupted by an incoming signal')
+        ) {
+            return CarPassageEvent::STATUS_ALLOWED_OFFLINE;
+        }
+        return CarPassageEvent::STATUS_ALLOWED_NO_LINK;
     }
 
     protected function resolveLprImagePath(?string $lprPath): ?string
