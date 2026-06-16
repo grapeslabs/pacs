@@ -43,6 +43,8 @@ services:
       - lpr_events:/var/www/html/public/lpr-events
     depends_on:
       - php
+    ports:
+      - "${APP_HTTP_BIND:-127.0.0.1:8888}:80"
     networks:
       - laravel
       - traefik-public

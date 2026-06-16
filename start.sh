@@ -37,10 +37,21 @@ is_enabled() {
 }
 
 log "Starting app..."
-if $DOCKER_COMPOSE up -d reverse-proxy; then
-    log "App started."
+if [ -n "$DOCKER_DOMAIN" ]; then
+    log "DOCKER_DOMAIN=$DOCKER_DOMAIN - starting Traefik"
+    if $DOCKER_COMPOSE up -d reverse-proxy; then
+        log "App started (Traefik)."
+    else
+        error "Starting failed"
+    fi
 else
-    error "Starting failed"
+    warn "DOCKER_DOMAIN not found."
+    export APP_HTTP_BIND="0.0.0.0:8888"
+    if $DOCKER_COMPOSE up -d app; then
+        log "App started (HTTP :8888, no Traefik)."
+    else
+        error "Starting failed"
+    fi
 fi
 
 if is_enabled "MEDIA_SERVER_ENABLED"; then

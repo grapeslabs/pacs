@@ -11,9 +11,6 @@ use App\Http\Controllers\StreamController;
 use App\Http\Controllers\CustomFieldController;
 use App\Http\Controllers\PersonPhotoArchiveController;
 
-Route::get("/", function () {
-    return view("welcome");
-});
 
 Route::prefix('tags')->group(function() {
     Route::get('list', [TagController::class, 'index'])->name('tags.index');
