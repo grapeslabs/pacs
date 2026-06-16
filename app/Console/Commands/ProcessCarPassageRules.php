@@ -2,14 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Actuators\ActuatorService;
+use App\Models\ActuatorDevice;
 use App\Models\Car;
 use App\Models\CarPassageEvent;
 use App\Models\CarPassageRule;
 use App\Models\Passage;
 use App\Models\Stream;
-use GrapesLabs\PinvideoSkud\ControllerFactory;
-use GrapesLabs\PinvideoSkud\Controllers\IronLogicAdapter\OutputPacketProcessor as IronLogicProcessor;
-use GrapesLabs\PinvideoSkud\Models\SkudController;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -112,7 +111,7 @@ class ProcessCarPassageRules extends Command
     protected function getActivePassages(): Collection
     {
         return Passage::query()
-            ->with(['entryCameras', 'exitCameras', 'entryController', 'exitController'])
+            ->with(['entryCameras', 'exitCameras', 'entryActuatorDevice', 'exitActuatorDevice'])
             ->get();
     }
 
@@ -143,8 +142,7 @@ class ProcessCarPassageRules extends Command
 
             if ($decisiveRule !== null) {
                 if ($decisiveRule->type === CarPassageRule::TYPE_ALLOW) {
-                    $status          = CarPassageEvent::STATUS_ALLOWED;
-                    $controllersInfo = $this->openController($passage, $direction, $decisiveRule, $plateText, $cameraUid);
+                    [$status, $controllersInfo] = $this->openController($passage, $direction, $decisiveRule, $plateText, $cameraUid);
                 } else {
                     $status = CarPassageEvent::STATUS_DENIED;
                     Log::info('Car passage rules: access denied by rule', [
@@ -209,7 +207,7 @@ class ProcessCarPassageRules extends Command
         }
 
         foreach ($rules as $rule) {
-            if (! $rule->passages->contains('id', $passage->id)) {
+            if ($rule->passages->isNotEmpty() && ! $rule->passages->contains('id', $passage->id)) {
                 continue;
             }
 
@@ -235,59 +233,66 @@ class ProcessCarPassageRules extends Command
         string $plateText,
         ?string $cameraUid
     ): array {
-        $controller = $direction === CarPassageRule::DIRECTION_ENTRY
-            ? $passage->entryController
-            : $passage->exitController;
+        $device = $direction === CarPassageRule::DIRECTION_ENTRY
+            ? $passage->entryActuatorDevice
+            : $passage->exitActuatorDevice;
 
-        if (! $controller) {
-            Log::warning('Car passage rules: no controller configured for direction', [
+        if (! $device) {
+            Log::warning('Car passage rules: no actuator device configured for direction', [
                 'passage_id' => $passage->id,
                 'direction'  => $direction,
                 'rule_id'    => $rule->id,
             ]);
-            return [];
+            return [CarPassageEvent::STATUS_ALLOWED, []];
         }
 
         try {
-            $this->sendOpen($controller);
+            app(ActuatorService::class)->execute($device, 'open');
 
-            Log::info('Car passage rules: open signal sent', [
-                'rule_id'       => $rule->id,
-                'passage_id'    => $passage->id,
-                'direction'     => $direction,
-                'plate'         => $plateText,
-                'camera_uid'    => $cameraUid,
-                'controller_id' => $controller->id,
-                'controller_sn' => $controller->serial_number,
+            Log::info('Car passage rules: actuator opened', [
+                'rule_id'            => $rule->id,
+                'passage_id'         => $passage->id,
+                'direction'          => $direction,
+                'plate'              => $plateText,
+                'camera_uid'         => $cameraUid,
+                'actuator_device_id' => $device->id,
             ]);
 
-            return [[
-                'id'            => $controller->id,
-                'serial_number' => $controller->serial_number,
-                'type'          => $controller->type,
-            ]];
+            return [CarPassageEvent::STATUS_ALLOWED, [[
+                'actuator_device_id' => $device->id,
+                'name'               => $device->name,
+                'driver'             => $device->driver_key,
+            ]]];
         } catch (\Throwable $e) {
-            Log::error('Car passage rules: failed to send open signal', [
-                'controller_id' => $controller->id,
-                'message'       => $e->getMessage(),
+            $status = $this->openFailureStatus($device, $e);
+
+            Log::error('Car passage rules: failed to open actuator device', [
+                'actuator_device_id' => $device->id,
+                'status'             => $status,
+                'message'            => $e->getMessage(),
             ]);
-            return [];
+
+            return [$status, [[
+                'actuator_device_id' => $device->id,
+                'name' => $device->name,
+                'driver' => $device->driver_key,
+                'error' => $e->getMessage(),
+            ]]];
         }
     }
 
-    protected function sendOpen(SkudController $controller): void
+    protected function openFailureStatus(ActuatorDevice $device, \Throwable $e): string
     {
-        try {
-            ControllerFactory::create($controller);
-        } catch (\InvalidArgumentException) {
-            Log::warning('Car passage rules: unsupported controller type', [
-                'controller_id' => $controller->id,
-                'type'          => $controller->type,
-            ]);
-            return;
+        if ($device->status !== ActuatorDevice::STATUS_ACTIVE) {
+            return CarPassageEvent::STATUS_ALLOWED_INACTIVE;
         }
-
-        IronLogicProcessor::open_door((string) $controller->id);
+        $message = $e->getMessage();
+        if (str_contains($message, 'не ответило по Modbus')
+            || str_contains($message, 'interrupted by an incoming signal')
+        ) {
+            return CarPassageEvent::STATUS_ALLOWED_OFFLINE;
+        }
+        return CarPassageEvent::STATUS_ALLOWED_NO_LINK;
     }
 
     protected function resolveLprImagePath(?string $lprPath): ?string

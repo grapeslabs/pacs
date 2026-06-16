@@ -177,12 +177,12 @@ class CarPassageRuleResource extends BaseModelResource
 
         foreach ($item->passages as $passage) {
             if (in_array($direction, [CarPassageRule::DIRECTION_ENTRY, CarPassageRule::DIRECTION_BOTH], true)
-                && ! $passage->hasEntryController()) {
-                $missing[] = "«{$passage->name}» - нет контроллера въезда";
+                && ! $passage->hasEntryActuatorDevice()) {
+                $missing[] = "«{$passage->name}» - нет устройства въезда";
             }
             if (in_array($direction, [CarPassageRule::DIRECTION_EXIT, CarPassageRule::DIRECTION_BOTH], true)
-                && ! $passage->hasExitController()) {
-                $missing[] = "«{$passage->name}» - нет контроллера выезда";
+                && ! $passage->hasExitActuatorDevice()) {
+                $missing[] = "«{$passage->name}» - нет устройства выезда";
             }
         }
 

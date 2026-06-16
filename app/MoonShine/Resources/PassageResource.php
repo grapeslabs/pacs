@@ -2,13 +2,13 @@
 
 namespace App\MoonShine\Resources;
 
+use App\Models\ActuatorDevice;
 use App\Models\Passage;
 use App\Models\Stream;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\CustomTextarea;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
-use GrapesLabs\PinvideoSkud\Models\SkudController;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\UI\Components\Layout\Box;
@@ -23,8 +23,6 @@ class PassageResource extends BaseModelResource
     protected string $title = 'Проезды';
     protected string $column = 'name';
 
-    private const OPENABLE_CONTROLLER_TYPES = ['z5rweb', 'ironlogic'];
-
     protected function pages(): array
     {
         return [CustomIndexPage::class, DetailPage::class, FormPage::class];
@@ -35,9 +33,9 @@ class PassageResource extends BaseModelResource
         return [
             ID::make()->sortable(),
             Text::make('Наименование', 'name')->sortable(),
-            Text::make('Контроллер въезда', 'entryController', fn($item) => $item->entryController?->serial_number ?? '—'),
+            Text::make('Устройство въезда', 'entryActuatorDevice', fn($item) => $item->entryActuatorDevice?->name ?? '—'),
             Text::make('Камеры въезда', 'entryCameras', fn($item) => $item->entryCameras->pluck('name')->implode(', ') ?: '—'),
-            Text::make('Контроллер выезда', 'exitController', fn($item) => $item->exitController?->serial_number ?? '—'),
+            Text::make('Устройство выезда', 'exitActuatorDevice', fn($item) => $item->exitActuatorDevice?->name ?? '—'),
             Text::make('Камеры выезда', 'exitCameras', fn($item) => $item->exitCameras->pluck('name')->implode(', ') ?: '—'),
             Text::make('Комментарий', 'comment'),
         ];
@@ -53,9 +51,9 @@ class PassageResource extends BaseModelResource
             Box::make('Въезд', [
                 Grid::make([
                     Column::make([
-                        SelectField::make('Контроллер', 'entry_controller_id')
+                        SelectField::make('Исп. устройство', 'entry_actuator_device_id')
                             ->nullable()
-                            ->options($this->controllerOptions()),
+                            ->options($this->actuatorDeviceOptions()),
                     ], colSpan: 4, adaptiveColSpan: 12),
 
                     Column::make([
@@ -69,9 +67,9 @@ class PassageResource extends BaseModelResource
             Box::make('Выезд', [
                 Grid::make([
                     Column::make([
-                        SelectField::make('Контроллер', 'exit_controller_id')
+                        SelectField::make('Исп. устройство', 'exit_actuator_device_id')
                             ->nullable()
-                            ->options($this->controllerOptions()),
+                            ->options($this->actuatorDeviceOptions()),
                     ], colSpan: 4, adaptiveColSpan: 12),
 
                     Column::make([
@@ -91,9 +89,9 @@ class PassageResource extends BaseModelResource
         return [
             ID::make(),
             Text::make('Наименование', 'name'),
-            Text::make('Контроллер въезда', 'entryController', fn($item) => $item->entryController?->serial_number ?? '—'),
+            Text::make('Устройство въезда', 'entryActuatorDevice', fn($item) => $item->entryActuatorDevice?->name ?? '—'),
             Text::make('Камеры въезда', 'entryCameras', fn($item) => $item->entryCameras->pluck('name')->implode(', ') ?: '—'),
-            Text::make('Контроллер выезда', 'exitController', fn($item) => $item->exitController?->serial_number ?? '—'),
+            Text::make('Устройство выезда', 'exitActuatorDevice', fn($item) => $item->exitActuatorDevice?->name ?? '—'),
             Text::make('Камеры выезда', 'exitCameras', fn($item) => $item->exitCameras->pluck('name')->implode(', ') ?: '—'),
             Text::make('Комментарий', 'comment'),
         ];
@@ -102,22 +100,21 @@ class PassageResource extends BaseModelResource
     public function rules($item): array
     {
         return [
-            'name'                => ['required', 'string', 'max:255'],
-            'entry_controller_id' => ['nullable', 'required_without:exit_controller_id', 'exists:grapeslabs_skud_controllers,id'],
-            'exit_controller_id'  => ['nullable', 'required_without:entry_controller_id', 'exists:grapeslabs_skud_controllers,id'],
-            'entryCameras'        => ['nullable', 'array'],
-            'entryCameras.*'      => ['exists:streams,id'],
-            'exitCameras'         => ['nullable', 'array'],
-            'exitCameras.*'       => ['exists:streams,id'],
-            'comment'             => ['nullable', 'string'],
+            'name' => ['required', 'string', 'max:255'],
+            'entry_actuator_device_id' => ['nullable', 'required_without:exit_actuator_device_id', 'exists:actuator_devices,id'],
+            'exit_actuator_device_id' => ['nullable', 'exists:actuator_devices,id'],
+            'entryCameras' => ['nullable', 'array'],
+            'entryCameras.*' => ['exists:streams,id'],
+            'exitCameras' => ['nullable', 'array'],
+            'exitCameras.*' => ['exists:streams,id'],
+            'comment' => ['nullable', 'string'],
         ];
     }
 
     public function validationMessages(): array
     {
         return [
-            'entry_controller_id.required_without' => 'Необходимо заполнить хотя бы один блок: «Въезд» или «Выезд».',
-            'exit_controller_id.required_without'  => 'Необходимо заполнить хотя бы один блок: «Въезд» или «Выезд».',
+            'entry_actuator_device_id.required_without' => 'Укажите хотя бы одно исполнительное устройство: на въезд или на выезд.',
         ];
     }
 
@@ -135,7 +132,7 @@ class PassageResource extends BaseModelResource
 
     public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
     {
-        return parent::indexQuery()->with(['entryController', 'exitController', 'entryCameras', 'exitCameras']);
+        return parent::indexQuery()->with(['entryCameras', 'exitCameras', 'entryActuatorDevice', 'exitActuatorDevice']);
     }
 
     private function lprCameraOptions(): array
@@ -147,14 +144,11 @@ class PassageResource extends BaseModelResource
             ->toArray();
     }
 
-    private function controllerOptions(): array
+    private function actuatorDeviceOptions(): array
     {
-        return SkudController::query()
-            ->whereIn('type', self::OPENABLE_CONTROLLER_TYPES)
-            ->get()
-            ->mapWithKeys(fn (SkudController $c) => [
-                $c->id => trim(($c->serial_number ?? (string) $c->id) . ' (' . $c->type . ')'),
-            ])
+        return ActuatorDevice::query()
+            ->orderBy('name')
+            ->pluck('name', 'id')
             ->toArray();
     }
 }

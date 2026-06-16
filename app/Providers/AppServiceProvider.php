@@ -46,7 +46,9 @@ class AppServiceProvider extends ServiceProvider
         Person::observe(PersonObserver::class);
         Stream::observe(StreamObserver::class);
         Car::observe(CarObserver::class);
-        URL::forceScheme('https');
+        if (env('DOCKER_DOMAIN')) {
+            URL::forceScheme('https');
+        }
         $this->app->afterResolving(AssetManagerContract::class, function (AssetManagerContract $assets) {
             $assets->add([
                 InlineCss::make('<link rel="preload" href="/css/moonshine-custom.css" as="style">')
