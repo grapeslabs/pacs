@@ -20,6 +20,7 @@ use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
 use App\MoonShine\Resources\MoonShineUserResource;
 use App\MoonShine\Resources\MoonShineUserRoleResource;
 use App\MoonShine\Resources\EquipmentResource;
+use App\MoonShine\Resources\ActuatorDeviceResource;
 use App\MoonShine\Resources\PersonResource;
 use App\MoonShine\Resources\OrganizationResource;
 use App\MoonShine\Resources\TagResource;
@@ -56,6 +57,7 @@ class MoonShineServiceProvider extends ServiceProvider
                 MoonShineUserResource::class,
                 MoonShineUserRoleResource::class,
                 EquipmentResource::class,
+                ActuatorDeviceResource::class,
                 PersonResource::class,
                 OrganizationResource::class,
                 TagResource::class,

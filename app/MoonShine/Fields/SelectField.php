@@ -95,6 +95,28 @@ class SelectField extends Field
         return $this;
     }
 
+    protected function resolvePreview(): \Illuminate\Contracts\Support\Renderable|string
+    {
+        $value  = $this->toValue();
+        $values = is_array($value) ? $value : ($value === null || $value === '' ? [] : [$value]);
+
+        if ($values === []) {
+            return '—';
+        }
+
+        $labels = array_map(function ($v) {
+            foreach ($this->options as $o) {
+                if ((string) $o['id'] === (string) $v) {
+                    return $o['name'];
+                }
+            }
+
+            return (string) $v;
+        }, $values);
+
+        return e(implode(', ', $labels));
+    }
+
     protected function resolveValue(): mixed
     {
         $value = parent::resolveValue();

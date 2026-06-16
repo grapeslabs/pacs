@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use GrapesLabs\PinvideoSkud\Models\SkudController;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,19 +17,19 @@ class Passage extends Model
 
     protected $fillable = [
         'name',
-        'entry_controller_id',
-        'exit_controller_id',
+        'entry_actuator_device_id',
+        'exit_actuator_device_id',
         'comment',
     ];
 
-    public function entryController(): BelongsTo
+    public function entryActuatorDevice(): BelongsTo
     {
-        return $this->belongsTo(SkudController::class, 'entry_controller_id');
+        return $this->belongsTo(ActuatorDevice::class, 'entry_actuator_device_id');
     }
 
-    public function exitController(): BelongsTo
+    public function exitActuatorDevice(): BelongsTo
     {
-        return $this->belongsTo(SkudController::class, 'exit_controller_id');
+        return $this->belongsTo(ActuatorDevice::class, 'exit_actuator_device_id');
     }
 
     public function entryCameras(): BelongsToMany
@@ -53,13 +52,13 @@ class Passage extends Model
         return $this->hasMany(CarPassageEvent::class, 'passage_id');
     }
 
-    public function hasEntryController(): bool
+    public function hasEntryActuatorDevice(): bool
     {
-        return ! is_null($this->entry_controller_id);
+        return ! is_null($this->entry_actuator_device_id);
     }
 
-    public function hasExitController(): bool
+    public function hasExitActuatorDevice(): bool
     {
-        return ! is_null($this->exit_controller_id);
+        return ! is_null($this->exit_actuator_device_id);
     }
 }

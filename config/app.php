@@ -169,6 +169,7 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\MoonShineServiceProvider::class,
+        App\Providers\ActuatorServiceProvider::class,
         GrapesLabs\PinvideoSkud\PinvideoSkudServiceProvider::class,
     ])->toArray(),
 

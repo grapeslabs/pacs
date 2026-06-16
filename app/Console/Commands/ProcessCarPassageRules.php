@@ -2,14 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Actuators\ActuatorService;
 use App\Models\Car;
 use App\Models\CarPassageEvent;
 use App\Models\CarPassageRule;
 use App\Models\Passage;
 use App\Models\Stream;
-use GrapesLabs\PinvideoSkud\ControllerFactory;
-use GrapesLabs\PinvideoSkud\Controllers\IronLogicAdapter\OutputPacketProcessor as IronLogicProcessor;
-use GrapesLabs\PinvideoSkud\Models\SkudController;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -112,7 +110,7 @@ class ProcessCarPassageRules extends Command
     protected function getActivePassages(): Collection
     {
         return Passage::query()
-            ->with(['entryCameras', 'exitCameras', 'entryController', 'exitController'])
+            ->with(['entryCameras', 'exitCameras', 'entryActuatorDevice', 'exitActuatorDevice'])
             ->get();
     }
 
@@ -235,12 +233,12 @@ class ProcessCarPassageRules extends Command
         string $plateText,
         ?string $cameraUid
     ): array {
-        $controller = $direction === CarPassageRule::DIRECTION_ENTRY
-            ? $passage->entryController
-            : $passage->exitController;
+        $device = $direction === CarPassageRule::DIRECTION_ENTRY
+            ? $passage->entryActuatorDevice
+            : $passage->exitActuatorDevice;
 
-        if (! $controller) {
-            Log::warning('Car passage rules: no controller configured for direction', [
+        if (! $device) {
+            Log::warning('Car passage rules: no actuator device configured for direction', [
                 'passage_id' => $passage->id,
                 'direction'  => $direction,
                 'rule_id'    => $rule->id,
@@ -249,45 +247,29 @@ class ProcessCarPassageRules extends Command
         }
 
         try {
-            $this->sendOpen($controller);
+            app(ActuatorService::class)->execute($device, 'open');
 
-            Log::info('Car passage rules: open signal sent', [
-                'rule_id'       => $rule->id,
-                'passage_id'    => $passage->id,
-                'direction'     => $direction,
-                'plate'         => $plateText,
-                'camera_uid'    => $cameraUid,
-                'controller_id' => $controller->id,
-                'controller_sn' => $controller->serial_number,
+            Log::info('Car passage rules: actuator opened', [
+                'rule_id'            => $rule->id,
+                'passage_id'         => $passage->id,
+                'direction'          => $direction,
+                'plate'              => $plateText,
+                'camera_uid'         => $cameraUid,
+                'actuator_device_id' => $device->id,
             ]);
 
             return [[
-                'id'            => $controller->id,
-                'serial_number' => $controller->serial_number,
-                'type'          => $controller->type,
+                'actuator_device_id' => $device->id,
+                'name'               => $device->name,
+                'driver'             => $device->driver_key,
             ]];
         } catch (\Throwable $e) {
-            Log::error('Car passage rules: failed to send open signal', [
-                'controller_id' => $controller->id,
-                'message'       => $e->getMessage(),
+            Log::error('Car passage rules: failed to open actuator device', [
+                'actuator_device_id' => $device->id,
+                'message'            => $e->getMessage(),
             ]);
             return [];
         }
-    }
-
-    protected function sendOpen(SkudController $controller): void
-    {
-        try {
-            ControllerFactory::create($controller);
-        } catch (\InvalidArgumentException) {
-            Log::warning('Car passage rules: unsupported controller type', [
-                'controller_id' => $controller->id,
-                'type'          => $controller->type,
-            ]);
-            return;
-        }
-
-        IronLogicProcessor::open_door((string) $controller->id);
     }
 
     protected function resolveLprImagePath(?string $lprPath): ?string

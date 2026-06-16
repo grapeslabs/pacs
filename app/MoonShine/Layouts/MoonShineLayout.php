@@ -8,6 +8,7 @@ use App\MoonShine\Components\CustomDeleteModal;
 use App\MoonShine\Components\SafeModal;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Pages\Dashboard;
+use App\MoonShine\Resources\ActuatorDeviceResource;
 use App\MoonShine\Resources\CarEventResource;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\PeopleReportResource;
@@ -215,6 +216,8 @@ final class MoonShineLayout extends AppLayout
 //                    ->canSee(fn () => auth()->user()->hasPermission(BarrierResource::class, Ability::VIEW_ANY)),
                 MenuItem::make('Контроллеры СКУД', ControllerResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(ControllerResource::class, Ability::VIEW_ANY)),
+                MenuItem::make('Исполнительные устройства', ActuatorDeviceResource::class)
+                    ->canSee(fn () => auth()->user()->hasPermission(ActuatorDeviceResource::class, Ability::VIEW_ANY)),
             ])->icon(file_get_contents(public_path('icons/menu-equipments.svg')),true),
 
             MenuGroup::make('Справочники', [
