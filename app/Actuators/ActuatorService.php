@@ -19,6 +19,16 @@ class ActuatorService
             throw new InvalidArgumentException("Недопустимое действие: {$action}");
         }
 
+        if ($device->status !== ActuatorDevice::STATUS_ACTIVE) {
+            Log::warning('Actuator: команда отклонена — устройство неактивно', [
+                'device_id'  => $device->id,
+                'driver_key' => $device->driver_key,
+                'action'     => $action,
+            ]);
+
+            throw new \RuntimeException("Устройство «{$device->name}» неактивно.");
+        }
+
         $driver = $this->manager->driver((string) $device->driver_key);
 
         if (! in_array($action, $driver->capabilities(), true)) {

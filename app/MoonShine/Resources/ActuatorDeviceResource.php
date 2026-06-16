@@ -8,6 +8,7 @@ use App\Models\ActuatorDevice;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
+use Illuminate\Support\Facades\Log;
 use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
 use MoonShine\Laravel\MoonShineRequest;
 use MoonShine\Support\Enums\ToastType;
@@ -197,6 +198,10 @@ class ActuatorDeviceResource extends BaseModelResource
             return MoonShineJsonResponse::make()->toast('Устройство не найдено', ToastType::ERROR);
         }
 
+        if ($inactive = $this->guardActive($device, 'test')) {
+            return $inactive;
+        }
+
         try {
             app(ActuatorService::class)->test($device);
 
@@ -206,12 +211,34 @@ class ActuatorDeviceResource extends BaseModelResource
         }
     }
 
+    private function guardActive(ActuatorDevice $device, string $action): ?MoonShineJsonResponse
+    {
+        if ($device->status === ActuatorDevice::STATUS_ACTIVE) {
+            return null;
+        }
+
+        Log::warning('Actuator: ручная команда отклонена — устройство неактивно', [
+            'device_id'  => $device->id,
+            'driver_key' => $device->driver_key,
+            'action'     => $action,
+        ]);
+
+        return MoonShineJsonResponse::make()->toast(
+            "Устройство «{$device->name}» неактивно",
+            ToastType::WARNING,
+        );
+    }
+
     private function runAction(MoonShineRequest $request, string $action, string $okMessage): MoonShineJsonResponse
     {
         $device = ActuatorDevice::find($request->get('item_id'));
 
         if (! $device) {
             return MoonShineJsonResponse::make()->toast('Устройство не найдено', ToastType::ERROR);
+        }
+
+        if ($inactive = $this->guardActive($device, $action)) {
+            return $inactive;
         }
 
         try {
