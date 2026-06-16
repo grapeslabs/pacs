@@ -13,7 +13,7 @@ services:
       - --providers.docker
       - --providers.docker.exposedByDefault=false
       - --api
-      - --certificatesresolvers.le.acme.email=${CERT_ADMIN_EMAIL:-admin@pinspb.ru}
+      - --certificatesresolvers.le.acme.email=${CERT_ADMIN_EMAIL:-admin@example.ru}
       - --certificatesresolvers.le.acme.storage=/certs/acme.json
       - --certificatesresolvers.le.acme.tlschallenge=true
       - --log.level=debug
