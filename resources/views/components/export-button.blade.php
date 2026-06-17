@@ -61,7 +61,7 @@
         }
     </style>
 
-    <a href="{{ $attributes->get('data-excel-url', '#') }}" class="btn btn-primary split-btn-main" title="Экспорт Excel">
+    <a href="{{ $attributes->get('data-excel-url', '#') }}" data-role="excel" class="btn btn-primary split-btn-main" title="Экспорт Excel">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
         </svg>
@@ -82,10 +82,10 @@
          x-transition:leave-start="transform opacity-100 scale-100"
          x-transition:leave-end="transform opacity-0 scale-95"
          class="split-dropdown bg-white dark:bg-dark-500 border border-gray-100 dark:border-dark-400">
-        <a href="{{ $attributes->get('data-excel-url', '#') }}" class="split-dropdown-item text-gray-700 dark:text-gray-200">
+        <a href="{{ $attributes->get('data-excel-url', '#') }}" data-role="excel" class="split-dropdown-item text-gray-700 dark:text-gray-200">
             Excel
         </a>
-        <a href="{{ $attributes->get('data-csv-url', '#') }}" class="split-dropdown-item text-gray-700 dark:text-gray-200">
+        <a href="{{ $attributes->get('data-csv-url', '#') }}" data-role="csv" class="split-dropdown-item text-gray-700 dark:text-gray-200">
             CSV
         </a>
     </div>

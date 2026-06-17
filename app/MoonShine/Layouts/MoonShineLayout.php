@@ -8,6 +8,7 @@ use App\MoonShine\Components\CustomDeleteModal;
 use App\MoonShine\Components\SafeModal;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Pages\Dashboard;
+use App\MoonShine\Pages\PresenceReportPage;
 use App\MoonShine\Resources\ActuatorDeviceResource;
 use App\MoonShine\Resources\CarEventResource;
 use App\MoonShine\Resources\EventReportResource;
@@ -206,6 +207,7 @@ final class MoonShineLayout extends AppLayout
                         ->canSee(fn () => auth()->user()->hasPermission(PeopleReportResource::class, Ability::VIEW_ANY)),
                     MenuItem::make('Отчеты по неизвестным', UnknownReportResource::class)
                         ->canSee(fn () => auth()->user()->hasPermission(UnknownReportResource::class, Ability::VIEW_ANY)),
+                    MenuItem::make('Отчёт пребывания', PresenceReportPage::class),
                 ]:[],
             ])->icon(file_get_contents(public_path('icons/menu-reports.svg')), true),
 

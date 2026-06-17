@@ -10,6 +10,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\CustomFieldController;
 use App\Http\Controllers\PersonPhotoArchiveController;
+use App\Http\Controllers\PresenceReportController;
 
 
 Route::prefix('tags')->group(function() {
@@ -25,6 +26,12 @@ Route::prefix('car-tags')->group(function() {
 });
 
 Route::post("/field-validation", [CustomFieldController::class, "validate"])->name("field.validation");
+
+Route::prefix("presence-report")->group(function () {
+    Route::post("generate", [PresenceReportController::class, "generate"])->name("presence-report.generate");
+    Route::get("status/{report}", [PresenceReportController::class, "status"])->name("presence-report.status");
+    Route::get("export/{report}", [PresenceReportController::class, "export"])->name("presence-report.export");
+});
 
 Route::prefix("settings")->group(function () {
     Route::post("store", [SettingsController::class, "store"])->name("settings.store");
