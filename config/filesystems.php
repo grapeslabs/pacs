@@ -39,7 +39,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -47,7 +47,7 @@ return [
         'analytic' => [
             'driver' => 'local',
             'root' => base_path('analytic'),
-            'url' => config('app.url').'/analytic-storage',
+            'url' => '/analytic-storage',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -55,7 +55,7 @@ return [
         'lpr-events' => [
             'driver' => 'local',
             'root' => base_path('lpr/events'),
-            'url' => config('app.url').'/lpr-events',
+            'url' => '/lpr-events',
             'visibility' => 'public',
             'throw' => false,
         ],
