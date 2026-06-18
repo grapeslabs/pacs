@@ -185,21 +185,10 @@ services:
       TZ: "Europe/Moscow"
     networks:
       - laravel
-      - traefik-public
     expose:
       - 8081
     user: "0:0"
     working_dir: /cfg
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik-public"
-      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.rule=Host(`${DOCKER_DOMAIN}`) && PathPrefix(`/media`)"
-      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.entrypoints=websecure"
-      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.tls=true"
-      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.tls.certresolver=le"
-      - "traefik.http.services.${TRAEFIK_SERVICE}-media.loadbalancer.server.port=8081"
-      - "traefik.http.middlewares.${TRAEFIK_SERVICE}-media-strip.stripprefix.prefixes=/media"
-      - "traefik.http.routers.${TRAEFIK_SERVICE}-media.middlewares=${TRAEFIK_SERVICE}-media-strip"
     volumes:
       - media_streams:/data/streams
       - ./media-config:/cfg
