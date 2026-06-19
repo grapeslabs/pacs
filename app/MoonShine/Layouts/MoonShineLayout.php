@@ -59,6 +59,7 @@ use App\MoonShine\Resources\TerminalResource;
 use App\MoonShine\Resources\BarrierResource;
 use App\MoonShine\Resources\ControllerResource;
 use App\MoonShine\Resources\CarPassageRuleResource;
+use App\MoonShine\Resources\PersonPassageRuleResource;
 use App\MoonShine\Resources\CarTagResource;
 use App\MoonShine\Resources\PassageResource;
 use App\MoonShine\Resources\PassageEventResource;
@@ -169,6 +170,8 @@ final class MoonShineLayout extends AppLayout
                     ->canSee(fn () => auth()->user()->hasPermission(OrganizationResource::class, Ability::VIEW_ANY)),
                 MenuItem::make('Ключи', KeyResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(KeyResource::class, Ability::VIEW_ANY)),
+                MenuItem::make('Правила прохода', PersonPassageRuleResource::class)
+                    ->canSee(fn () => auth()->user()->hasPermission(PersonPassageRuleResource::class, Ability::VIEW_ANY)),
                 MenuItem::make('Автомобили', CarResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(CarResource::class, Ability::VIEW_ANY)),
                 MenuItem::make('Проезды', PassageResource::class)

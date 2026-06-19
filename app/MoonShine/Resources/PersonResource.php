@@ -45,10 +45,39 @@ use Illuminate\Contracts\Database\Eloquent\Builder;
 class PersonResource extends BaseModelResource
 {
     private VideoAnalyticService $vas;
+
+    private array $oldTagIds = [];
+
     public function __construct(CoreContract $core, VideoAnalyticService $vas)
     {
         parent::__construct($core);
         $this->vas = $vas;
+    }
+
+    protected function beforeUpdating(mixed $item): mixed
+    {
+        $this->oldTagIds = $item->tags()->pluck('tags.id')->sort()->values()->all();
+
+        return $item;
+    }
+
+    protected function afterUpdated(mixed $item): mixed
+    {
+        $newTagIds = $item->tags()->pluck('tags.id')->sort()->values()->all();
+
+        if ($newTagIds !== $this->oldTagIds) {
+            $person = Person::query()->with(['keys', 'tags'])->find($item->getKey());
+
+            if ($person) {
+                app(\App\Observers\KeyObserver::class)->reconcilePersonKeys($person);
+                app(\App\Observers\PersonObserver::class)->reconcilePersonFace($person);
+                app(\App\Observers\PersonObserver::class)->scheduleCommands($person);
+            }
+        }
+
+        $this->oldTagIds = [];
+
+        return $item;
     }
 
     protected string $model = Person::class;
