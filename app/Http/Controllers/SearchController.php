@@ -56,7 +56,7 @@ class SearchController extends Controller
                 ->map(fn (Car $c) => [
                     'title' => $c->license_plate,
                     'subtitle' => 'Автомобиль · ' . ($c->brand?->name ?: '—'),
-                    'url' => $this->resourceUrl(CarResource::class, $c->id),
+                    'url' => $this->indexUrl(CarResource::class, (string) $c->license_plate),
                 ])
                 ->all();
         } catch (\Throwable) {
@@ -77,7 +77,7 @@ class SearchController extends Controller
                 ->map(fn (Guest $g) => [
                     'title' => $g->full_name,
                     'subtitle' => 'Гость · ' . ($g->phone ?: '—'),
-                    'url' => $this->resourceUrl(GuestResource::class, $g->id),
+                    'url' => $this->indexUrl(GuestResource::class, (string) $g->full_name),
                 ])
                 ->all();
         } catch (\Throwable) {
@@ -98,7 +98,7 @@ class SearchController extends Controller
                 ->map(fn (User $u) => [
                     'title' => $u->name ?: $u->email,
                     'subtitle' => 'Пользователь · ' . ($u->email ?: '—'),
-                    'url' => $this->resourceUrl(MoonShineUserResource::class, $u->id),
+                    'url' => $this->indexUrl(MoonShineUserResource::class, (string) ($u->name ?: $u->email)),
                 ])
                 ->all();
         } catch (\Throwable) {
@@ -119,7 +119,7 @@ class SearchController extends Controller
                 ->map(fn (Organization $o) => [
                     'title' => $o->short_name ?: $o->full_name,
                     'subtitle' => 'Организация · ' . ($o->full_name ?: '—'),
-                    'url' => $this->resourceUrl(OrganizationResource::class, $o->id),
+                    'url' => $this->indexUrl(OrganizationResource::class, (string) ($o->short_name ?: $o->full_name)),
                 ])
                 ->all();
         } catch (\Throwable) {
@@ -143,7 +143,7 @@ class SearchController extends Controller
                     'title' => $p->getFullName(),
                     'subtitle' => 'Персона · ' . ($p->organization?->short_name ?: $p->organization?->full_name ?: '—'),
                     'avatar' => $this->personAvatar($p),
-                    'url' => $this->resourceUrl(PersonResource::class, $p->id),
+                    'url' => $this->indexUrl(PersonResource::class, (string) ($p->last_name ?: $p->getFullName())),
                 ])
                 ->all();
         } catch (\Throwable) {
@@ -168,7 +168,7 @@ class SearchController extends Controller
                 ->map(fn (Stream $s) => [
                     'title' => $s->name,
                     'subtitle' => 'Камера · ' . ($s->location ?: '—'),
-                    'url' => $this->resourceUrl(VideoStreamResource::class, $s->id),
+                    'url' => $this->indexUrl(VideoStreamResource::class, (string) $s->name),
                 ])
                 ->all();
         } catch (\Throwable) {
@@ -189,11 +189,11 @@ class SearchController extends Controller
         return rescue(fn (): string => Storage::disk('public')->url($path), null, report: false);
     }
 
-    private function resourceUrl(string $resource, int|string $id): string
+    private function indexUrl(string $resource, string $search): string
     {
         return rescue(
-            fn (): string => app($resource)->getDetailPageUrl($id),
-            rescue(fn (): string => app($resource)->getFormPageUrl($id), '#', report: false),
+            fn (): string => app($resource)->getIndexPageUrl(['search' => $search]),
+            rescue(fn (): string => app($resource)->getUrl(), '#', report: false),
             report: false,
         );
     }
