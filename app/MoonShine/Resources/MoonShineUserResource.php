@@ -198,13 +198,9 @@ class MoonShineUserResource extends BaseModelResource
     protected function filters(): iterable
     {
         return [
-            BelongsTo::make('Роль',
-                'moonshineUserRole',
-                formatted: static fn ($model) => $model->name,
-                resource: MoonShineUserRoleResource::class,
-            )->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
-
-            Text::make('E-mail', 'email')
+            SelectField::make('Роль', 'moonshine_user_role_id')
+                ->options(MoonshineUserRole::all()->pluck('name', 'id')->toArray()),
+            CustomText::make('E-mail', 'email')
                 ->onApply(function (Builder $query, string $value, Field $field) {
                     if ($value) {
                         $query->where('email', 'ilike', '%' . $value . '%');

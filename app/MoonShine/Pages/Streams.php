@@ -31,15 +31,6 @@ class Streams extends CustomIndexPage
         return $this->title ?: 'Видеопотоки';
     }
 
-    public function assets(): array
-    {
-        return [
-            Js::make('https://cdn.jsdelivr.net/npm/hls.js@latest'),
-            Css::make(asset('css/streams.css')),
-            Js::make(asset('js/streams.js')),
-        ];
-    }
-
     /**
      * @return list<ComponentContract>
      */

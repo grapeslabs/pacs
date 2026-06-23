@@ -74,6 +74,9 @@ class DemoDatabaseSeeder extends Seeder
         $this->command->info('📋 Создание событий аналитики лиц...');
         $this->callWith(VideoAnalyticReportSeeder::class, ['command' => $this->command]);
 
+        $this->command->info('📋 Создание уведомлений...');
+        $this->callWith(NotificationSeeder::class, ['command' => $this->command]);
+
         $this->command->info('✅ Все демо-данные успешно созданы!');
 
         // Показываем статистику
@@ -105,6 +108,7 @@ class DemoDatabaseSeeder extends Seeder
             'События СКУД' => \GrapesLabs\PinvideoSkud\Models\SkudEvent::count(),
             'События автомобилей' => CarPassageEvent::count(),
             'События аналитики лиц' => VideoAnalyticReport::count(),
+            'Уведомления' => \DB::table('notifications')->count(),
         ];
 
         foreach ($tables as $name => $count) {

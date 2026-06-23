@@ -7,7 +7,6 @@ use App\Models\Stream;
 use App\Models\Tag;
 use App\Models\Trigger;
 use App\MoonShine\Fields\CustomText;
-use App\MoonShine\Fields\Select2Field;
 use App\MoonShine\Fields\SelectField;
 use Closure;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
