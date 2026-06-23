@@ -8,20 +8,23 @@ final class WelcomeHero extends MoonShineComponent
 {
     protected string $view = 'components.dashboard.welcome-hero';
 
+    protected string $userName;
+
     public function __construct(
         public string $greeting = '',
-        public string $name = '',
+        string $name = '',
         public string $today = '',
         public ?string $streamsUrl = null,
     ) {
         parent::__construct();
+        $this->userName = $name;
     }
 
     protected function viewData(): array
     {
         return [
             'greeting' => $this->greeting,
-            'name' => $this->name,
+            'userName' => $this->userName,
             'today' => $this->today,
             'streamsUrl' => $this->streamsUrl,
         ];

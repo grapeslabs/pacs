@@ -5,7 +5,7 @@
     <svg class="spark" viewBox="0 0 100 100" fill="none" style="position:absolute;right:56px;top:50%;transform:translateY(-50%);width:150px;height:150px;pointer-events:none;"><path d="M50 4c3 26 16 39 42 46-26 7-39 20-42 46-3-26-16-39-42-46 26-7 39-20 42-46z" fill="rgba(255,255,255,.5)"></path><path d="M84 12c1 9 5 13 14 15-9 2-13 6-14 15-1-9-5-13-14-15 9-2 13-6 14-15z" fill="rgba(255,255,255,.32)"></path></svg>
     <div style="position:relative;">
         <h1 style="margin:0;font-size:1.4rem;font-weight:600;letter-spacing:-0.01em;">
-            {{ $greeting }}@if($name), {{ $name }}@endif
+            {{ $greeting }}@if($userName), {{ $userName }}@endif
         </h1>
         <p style="margin:10px 0 0;max-width:460px;font-size:0.9rem;line-height:1.5;color:rgba(255,255,255,0.82);">
             Сегодня {{ $today }}. Система контроля доступа работает в штатном режиме — нарушений не зафиксировано.
