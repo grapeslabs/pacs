@@ -1,9 +1,8 @@
-#!/bin/sh
-set -eu
+#!/bin/bash
+set -euo pipefail
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 log()  { printf '%b[INSTALL]%b %s\n' "$GREEN" "$NC" "$1"; }
-info() { printf '%b[INSTALL]%b %s\n' "$BLUE" "$NC" "$1"; }
 warn() { printf '%b[INSTALL] ВНИМАНИЕ:%b %s\n' "$YELLOW" "$NC" "$1"; }
 err()  { printf '%b[INSTALL] ОШИБКА:%b %s\n' "$RED" "$NC" "$1" >&2; exit 1; }
 
@@ -23,8 +22,6 @@ LPR_ENABLED=""
 ADMIN_EMAIL=""
 ADMIN_PASSWORD=""
 NONINTERACTIVE="false"
-DOMAIN_SET="false"
-VERSION_SET="false"
 MODE=""
 TARBALL_URL_TEMPLATE="https://github.com/grapeslabs/pacs/releases/download/%s/pacs.tar.gz"
 gen_pass() {
@@ -41,9 +38,6 @@ to_bool() {
         *)               echo "false" ;;
     esac
 }
-
-onoff() { [ "$1" = "true" ] && echo "включён" || echo "выключен"; }
-yn()    { [ "$1" = "true" ] && echo "yes"     || echo "no"; }
 
 TTY="/dev/tty"
 have_tty() { [ "$NONINTERACTIVE" = "false" ] && [ -e "$TTY" ] && [ -r "$TTY" ]; }
@@ -82,8 +76,6 @@ parse_args() {
         case "$key" in
             -y|--non-interactive|--non_interactive)
                 NONINTERACTIVE="true"; shift; continue ;;
-            --reconfigure|--reconfig|--update)
-                MODE="reconfigure"; shift; continue ;;
             --fresh|--reinstall)
                 MODE="fresh"; shift; continue ;;
             --*=*)
@@ -95,9 +87,9 @@ parse_args() {
         esac
         key="$(echo "$key" | tr '_' '-')"
         case "$key" in
-            --version)         VERSION="$val"; VERSION_SET="true" ;;
+            --version)         VERSION="$val" ;;
             --dir)             INSTALL_DIR="$val" ;;
-            --domain)          DOMAIN="$val"; DOMAIN_SET="true" ;;
+            --domain)          DOMAIN="$val" ;;
             --db-password)     DB_PASS="$val" ;;
             --adb-password)    ADB_PASS="$val" ;;
             --lpr-db-password) LPR_DB_PASS="$val" ;;
@@ -193,8 +185,15 @@ collect_params() {
     [ -n "$ADB_PASS" ]    || ADB_PASS="$(gen_pass)"
     [ -n "$LPR_DB_PASS" ] || LPR_DB_PASS="$(gen_pass)"
 
-    if [ -z "$DOMAIN" ] && have_tty; then
-        DOMAIN="$(ask "Домен проекта (Enter - пропустить, тогда http://<IP>:8888)" "")"
+    if have_tty; then
+        while :; do
+            [ -n "$DOMAIN" ] || DOMAIN="$(ask "Домен проекта (Enter - пропустить, тогда http://<IP>:8888)" "")"
+            { [ -z "$DOMAIN" ] || validate_domain "$DOMAIN"; } && break
+            warn "Некорректный домен: $DOMAIN (пример: pacs.example.com)"
+            DOMAIN=""
+        done
+    elif [ -n "$DOMAIN" ] && ! validate_domain "$DOMAIN"; then
+        err "Некорректный домен: $DOMAIN (пример: pacs.example.com)"
     fi
 
     ask_bool_or MEDIA_ENABLED    "Включить модуль работы с камерами (медиа-сервер)?" "no" "false"
@@ -214,18 +213,24 @@ warn_media_requirement() {
     fi
 }
 
-get_env() {
-    grep -E "^$1=" "$INSTALL_DIR/.env" 2>/dev/null | head -n1 | cut -d= -f2-
+env_quote() {
+    case "$1" in
+        ''|*[!A-Za-z0-9._/:@%+-]*)
+            printf '"%s"' "$(printf '%s' "$1" | sed -e 's/[\\"$`]/\\&/g')" ;;
+        *)
+            printf '%s' "$1" ;;
+    esac
 }
 
 set_env() {
-    local k="$1" v="$2" f="$INSTALL_DIR/.env"
-    if grep -qE "^${k}=" "$f"; then
-        local esc; esc="$(printf '%s' "$v" | sed -e 's/[\/&|]/\\&/g')"
-        sed -i "s|^${k}=.*|${k}=${esc}|" "$f"
-    else
-        printf '%s=%s\n' "$k" "$v" >> "$f"
-    fi
+    local k="$1" v="$2" f="$INSTALL_DIR/.env" q
+    q="$(env_quote "$v")"
+    grep -qE "^${k}=" "$f" && sed -i "/^${k}=/d" "$f"
+    printf '%s=%s\n' "$k" "$q" >> "$f"
+}
+
+validate_domain() {
+    printf '%s' "$1" | grep -qE '^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
 }
 
 apply_domain_env() {
@@ -267,19 +272,27 @@ configure_env() {
     apply_domain_env "admin@$DOMAIN"
 }
 
+purge_install() {
+    [ -d "$INSTALL_DIR" ] || return 0
+    log "Очистка предыдущей установки в $INSTALL_DIR..."
+    cd /
+    if [ -f "$INSTALL_DIR/docker-compose.production.yml" ] || [ -f "$INSTALL_DIR/.env" ]; then
+        local dc="docker compose"
+        docker compose version >/dev/null 2>&1 || dc="docker-compose"
+        ( cd "$INSTALL_DIR" && $dc down -v --remove-orphans 2>/dev/null ) || true
+    fi
+    rm -rf "$INSTALL_DIR"
+}
+
 start_stack() {
     log "Запуск контейнеров (start.sh)..."
     cd "$INSTALL_DIR"
     chmod +x start.sh
-    ./start.sh
-}
-
-compose_down() {
-    log "Остановка текущих контейнеров..."
-    cd "$INSTALL_DIR"
-    local dc="docker compose"
-    docker compose version >/dev/null 2>&1 || dc="docker-compose"
-    $dc down --remove-orphans 2>/dev/null || true
+    if ! ./start.sh; then
+        warn "start.sh завершился с ошибкой - выполняю очистку установки."
+        purge_install
+        err "Установка прервана: контейнеры не поднялись. Каталог $INSTALL_DIR удалён."
+    fi
 }
 
 create_admin() {
@@ -318,11 +331,12 @@ setup_cron() {
     fi
     local marker="# grapespacs-monitor"
     ( crontab -l 2>/dev/null | grep -v "$marker" || true
-      echo "@reboot ${INSTALL_DIR}/monitor.sh logs ${marker}"
+      echo "@reboot sleep 60 && ${INSTALL_DIR}/monitor.sh logs ${marker}"
       echo "*/5 * * * * ${INSTALL_DIR}/monitor.sh metrics ${marker}"
+      echo "@daily ${INSTALL_DIR}/monitor.sh rotate ${marker}"
     ) | crontab -
     "$INSTALL_DIR/monitor.sh" logs >/dev/null 2>&1 || true
-    log "Мониторинг пишет в ${INSTALL_DIR}/logs.log (метрики каждые 5 минут)."
+    log "Мониторинг: логи → logs.log, метрики → metrics.log (каждые 5 мин), ротация раз в сутки, хранение 7 дней."
 }
 
 print_summary() {
@@ -334,86 +348,12 @@ print_summary() {
     echo " Учётные данные администратора:"
     echo " E-mail:               ${ADMIN_EMAIL}"
     echo " Пароль:               ${ADMIN_PASSWORD}"
-    echo "--------------------------------------------------------"
-    echo " Учётные данные БД (внутренние):"
-    echo " Пользователь БД:      ${DB_USER}"
-    echo " Пароль БД:            ${DB_PASS}"
-    echo " БД видеоаналитики:    postgres / ${ADB_PASS}"
-    echo " БД ГРЗ:               postgres / ${LPR_DB_PASS}"
-    echo "--------------------------------------------------------"
-    echo " Модули:"
-    echo " Камеры (медиа-сервер):  $(onoff "$MEDIA_ENABLED")"
-    echo " Видеоаналитика лиц:     $(onoff "$ANALYTIC_ENABLED")"
-    echo " Видеоаналитика ГРЗ:     $(onoff "$LPR_ENABLED")"
     echo "========================================================"
     warn "Сохраните пароли в надёжном месте - повторно они не показываются."
 }
 
-collect_reconfig_params() {
-    local cur_domain cur_media cur_analytic cur_lpr
-    cur_domain="$(get_env DOCKER_DOMAIN)"
-    cur_media="$(get_env MEDIA_SERVER_ENABLED)"
-    cur_analytic="$(get_env ANALYTIC_ENABLED)"
-    cur_lpr="$(get_env LPR_ENABLED)"
-
-    if [ "$DOMAIN_SET" != "true" ]; then
-        if have_tty; then
-            DOMAIN="$(ask "Домен проекта (Enter - оставить текущий, '-' - убрать домен)" "$cur_domain")"
-            [ "$DOMAIN" = "-" ] && DOMAIN=""
-        else
-            DOMAIN="$cur_domain"
-        fi
-    fi
-
-    ask_bool_or MEDIA_ENABLED    "Модуль работы с камерами (медиа-сервер)?" "$(yn "$cur_media")"    "${cur_media:-false}"
-    ask_bool_or ANALYTIC_ENABLED "Модуль видеоаналитики лиц?"               "$(yn "$cur_analytic")" "${cur_analytic:-false}"
-    ask_bool_or LPR_ENABLED      "Модуль видеоаналитики ГРЗ?"               "$(yn "$cur_lpr")"      "${cur_lpr:-false}"
-
-    warn_media_requirement
-}
-
-apply_reconfig_env() {
-    log "Обновление .env..."
-    set_env MEDIA_SERVER_ENABLED "$MEDIA_ENABLED"
-    set_env ANALYTIC_ENABLED     "$ANALYTIC_ENABLED"
-    set_env LPR_ENABLED          "$LPR_ENABLED"
-
-    apply_domain_env ""
-
-    if [ "$VERSION_SET" = "true" ]; then
-        set_env APP_VERSION "${VERSION#v}"
-    fi
-}
-
-print_reconfig_summary() {
-    echo
-    echo "========================================================"
-    echo " Конфигурация обновлена!"
-    echo " Адрес проекта:        ${URL}"
-    echo "--------------------------------------------------------"
-    echo " Модули:"
-    echo " Камеры (медиа-сервер):  $(onoff "$MEDIA_ENABLED")"
-    echo " Видеоаналитика лиц:     $(onoff "$ANALYTIC_ENABLED")"
-    echo " Видеоаналитика ГРЗ:     $(onoff "$LPR_ENABLED")"
-    echo "========================================================"
-}
-
-reconfigure_instance() {
-    log "Обнаружена установка в $INSTALL_DIR - режим изменения конфигурации."
-    log "(пароли БД и администратор не затрагиваются)"
-    if [ "$VERSION_SET" = "true" ]; then
-        ensure_docker
-        download_project
-    fi
-    collect_reconfig_params
-    apply_reconfig_env
-    compose_down
-    start_stack
-    setup_cron
-    print_reconfig_summary
-}
-
 fresh_install() {
+    purge_install
     pkg_update_upgrade
     ensure_docker
     download_project
@@ -430,17 +370,15 @@ main() {
     ensure_root
     detect_os
 
-    if [ -z "$MODE" ]; then
-        if [ -f "$INSTALL_DIR/.env" ]; then MODE="reconfigure"; else MODE="fresh"; fi
-    fi
-    if [ "$MODE" = "reconfigure" ] && [ ! -f "$INSTALL_DIR/.env" ]; then
-        err "В $INSTALL_DIR нет установки (.env не найден) - нечего реконфигурировать."
+    if [ "$MODE" != "fresh" ] && [ -f "$INSTALL_DIR/.env" ]; then
+        warn "В $INSTALL_DIR уже есть установка."
+        warn "Переустановка УДАЛИТ контейнеры с данными (docker compose down -v) и каталог $INSTALL_DIR."
+        if [ "$(ask_yesno "Выполнить полную переустановку?" "no")" != "true" ]; then
+            err "Отменено пользователем."
+        fi
     fi
 
-    case "$MODE" in
-        reconfigure) reconfigure_instance ;;
-        fresh)       fresh_install ;;
-    esac
+    fresh_install
 }
 
 main "$@"

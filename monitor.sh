@@ -3,8 +3,10 @@ set -u
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_FILE="${PROJECT_DIR}/logs.log"
-LOG_MAX_BYTES="${LOG_MAX_BYTES:-52428800}"
-LOG_KEEP="${LOG_KEEP:-5}"
+METRICS_FILE="${PROJECT_DIR}/metrics.log"
+LOG_KEEP_DAYS="${LOG_KEEP_DAYS:-7}"
+HTTP_CHECK_URL="${HTTP_CHECK_URL:-http://127.0.0.1:8888}"
+HTTP_CHECK_TIMEOUT="${HTTP_CHECK_TIMEOUT:-10}"
 SEP="================================================================"
 PROJECT_NAME="$(basename "$PROJECT_DIR")"
 DOCKER_VOLUMES="/var/lib/docker/volumes"
@@ -18,21 +20,24 @@ docker compose version >/dev/null 2>&1 || DC="docker-compose"
 
 ts() { date '+%Y-%m-%d %H:%M:%S'; }
 
-rotate_log() {
-    [ -f "$LOG_FILE" ] || return 0
-    local size
-    size="$(stat -c%s "$LOG_FILE" 2>/dev/null || echo 0)"
-    [ "$size" -gt "$LOG_MAX_BYTES" ] || return 0
+rotate_file() {
+    local file="$1" stamp base
+    stamp="$(date -d 'yesterday' +%F 2>/dev/null || date +%F)"
+    base="$(basename "$file")"
 
-    local i
-    for ((i = LOG_KEEP - 1; i >= 1; i--)); do
-        [ -f "${LOG_FILE}.${i}" ] && mv -f "${LOG_FILE}.${i}" "${LOG_FILE}.$((i + 1))"
-    done
-    cp -f "$LOG_FILE" "${LOG_FILE}.1"
-    : > "$LOG_FILE"
-    rm -f "${LOG_FILE}.$((LOG_KEEP + 1))"
+    if [ -s "$file" ]; then
+        cp -f "$file" "${file}.${stamp}"
+        : > "$file"
+        echo "$(ts) [rotate] ${base} повёрнут в ${base}.${stamp}" >> "$file"
+    fi
 
-    echo "$(ts) [rotate] logs.log повёрнут (был ${size} Б, лимит ${LOG_MAX_BYTES} Б)" >> "$LOG_FILE"
+    find "$PROJECT_DIR" -maxdepth 1 -name "${base}.*-*-*" \
+        -mtime "+$((LOG_KEEP_DAYS - 1))" -type f -delete 2>/dev/null
+}
+
+mode_rotate() {
+    rotate_file "$LOG_FILE"
+    rotate_file "$METRICS_FILE"
 }
 
 start_stream() {
@@ -114,8 +119,63 @@ collect_metrics() {
         echo "Интернет: НЕТ (ping 8.8.8.8 не прошёл)"
     fi
 
+    section "HTTP проверка приложения"
+    http_check
+
+    section "PostgreSQL (pg_isready)"
+    pg_check
+
+    section "Ядро: OOM / ошибки (journalctl -k, за 5 мин)"
+    if command -v journalctl >/dev/null 2>&1; then
+        journalctl -k --since '-5min' --no-pager 2>/dev/null \
+            | grep -iE 'out of memory|oom-kill|killed process|i/o error|ext4-fs error|hung_task|segfault' \
+            | tail -n 20 \
+            || true
+        echo "(если выше пусто — критичных событий ядра за 5 мин нет)"
+    else
+        echo "journalctl недоступен"
+    fi
+
     echo "$SEP"
     echo
+}
+
+http_check() {
+    local tmp code rc cpid wpid
+    tmp="$(mktemp)"
+
+    curl -s -o /dev/null -w '%{http_code}' "$HTTP_CHECK_URL" > "$tmp" 2>/dev/null &
+    cpid=$!
+    ( sleep "$HTTP_CHECK_TIMEOUT"; kill -9 "$cpid" 2>/dev/null ) &
+    wpid=$!
+
+    wait "$cpid" 2>/dev/null; rc=$?
+    kill "$wpid" 2>/dev/null; wait "$wpid" 2>/dev/null
+
+    code="$(cat "$tmp" 2>/dev/null)"; rm -f "$tmp"
+
+    if [ "$rc" -ge 128 ]; then
+        echo "Приложение (${HTTP_CHECK_URL}): НЕТ ОТВЕТА (таймаут ${HTTP_CHECK_TIMEOUT}с, curl убит)"
+        return
+    fi
+    case "$code" in
+        2??|3??) echo "Приложение (${HTTP_CHECK_URL}): ОК (HTTP ${code})" ;;
+        000|"")  echo "Приложение (${HTTP_CHECK_URL}): НЕТ СОЕДИНЕНИЯ" ;;
+        *)       echo "Приложение (${HTTP_CHECK_URL}): ПРОБЛЕМА (HTTP ${code})" ;;
+    esac
+}
+
+pg_check() {
+    local svc found="false"
+    for svc in app-database analytic-database lpr-database; do
+        if cd "$PROJECT_DIR" && $DC ps --services --filter status=running 2>/dev/null | grep -qx "$svc"; then
+            found="true"
+            printf '  %-18s ' "$svc:"
+            $DC exec -T "$svc" pg_isready 2>/dev/null | sed 's/^.*- //' \
+                || echo "не отвечает"
+        fi
+    done
+    [ "$found" = "true" ] || echo "  запущенных БД-контейнеров не найдено"
 }
 
 cpu_per_core_fallback() {
@@ -134,14 +194,15 @@ cpu_per_core_fallback() {
 }
 
 mode_metrics() {
-    collect_metrics >> "$LOG_FILE" 2>&1
+    collect_metrics >> "$METRICS_FILE" 2>&1
 }
 
 case "${1:-}" in
-    logs)    rotate_log; mode_logs ;;
-    metrics) rotate_log; mode_metrics ;;
+    logs)    mode_logs ;;
+    metrics) mode_metrics ;;
+    rotate)  mode_rotate ;;
     *)
-        echo "Использование: $0 {logs|metrics}" >&2
+        echo "Использование: $0 {logs|metrics|rotate}" >&2
         exit 1
         ;;
 esac
