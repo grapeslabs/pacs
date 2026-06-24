@@ -3,6 +3,8 @@ set -u
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_FILE="${PROJECT_DIR}/logs.log"
+LOG_MAX_BYTES="${LOG_MAX_BYTES:-52428800}"
+LOG_KEEP="${LOG_KEEP:-5}"
 SEP="================================================================"
 PROJECT_NAME="$(basename "$PROJECT_DIR")"
 DOCKER_VOLUMES="/var/lib/docker/volumes"
@@ -15,6 +17,23 @@ DC="docker compose"
 docker compose version >/dev/null 2>&1 || DC="docker-compose"
 
 ts() { date '+%Y-%m-%d %H:%M:%S'; }
+
+rotate_log() {
+    [ -f "$LOG_FILE" ] || return 0
+    local size
+    size="$(stat -c%s "$LOG_FILE" 2>/dev/null || echo 0)"
+    [ "$size" -gt "$LOG_MAX_BYTES" ] || return 0
+
+    local i
+    for ((i = LOG_KEEP - 1; i >= 1; i--)); do
+        [ -f "${LOG_FILE}.${i}" ] && mv -f "${LOG_FILE}.${i}" "${LOG_FILE}.$((i + 1))"
+    done
+    cp -f "$LOG_FILE" "${LOG_FILE}.1"
+    : > "$LOG_FILE"
+    rm -f "${LOG_FILE}.$((LOG_KEEP + 1))"
+
+    echo "$(ts) [rotate] logs.log повёрнут (был ${size} Б, лимит ${LOG_MAX_BYTES} Б)" >> "$LOG_FILE"
+}
 
 start_stream() {
     local pidfile="$1"; shift
@@ -119,8 +138,8 @@ mode_metrics() {
 }
 
 case "${1:-}" in
-    logs)    mode_logs ;;
-    metrics) mode_metrics ;;
+    logs)    rotate_log; mode_logs ;;
+    metrics) rotate_log; mode_metrics ;;
     *)
         echo "Использование: $0 {logs|metrics}" >&2
         exit 1
