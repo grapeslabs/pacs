@@ -60,8 +60,20 @@ ask() {
 }
 
 ask_yesno() {
-    local prompt="$1" default="$2"
-    to_bool "$(ask "$prompt (да/нет)" "$default")"
+    local prompt="$1" default="$2" answer
+    answer="$(ask "$prompt (да/нет)" "$default")"
+    to_bool "$answer"
+}
+
+ask_bool_or() {
+    local var="$1" prompt="$2" default="$3" fallback="$4" answer
+    eval "[ -n \"\$$var\" ]" && return 0
+    if have_tty; then
+        answer="$(ask "$prompt (да/нет)" "$default")"
+        eval "$var=\"\$(to_bool \"\$answer\")\""
+    else
+        eval "$var=\"\$fallback\""
+    fi
 }
 
 parse_args() {
@@ -185,9 +197,9 @@ collect_params() {
         DOMAIN="$(ask "Домен проекта (Enter - пропустить, тогда http://<IP>:8888)" "")"
     fi
 
-    [ -n "$MEDIA_ENABLED" ]    || MEDIA_ENABLED="$(have_tty && ask_yesno "Включить модуль работы с камерами (медиа-сервер)?" "no" || echo false)"
-    [ -n "$ANALYTIC_ENABLED" ] || ANALYTIC_ENABLED="$(have_tty && ask_yesno "Включить модуль видеоаналитики лиц?" "no" || echo false)"
-    [ -n "$LPR_ENABLED" ]      || LPR_ENABLED="$(have_tty && ask_yesno "Включить модуль видеоаналитики ГРЗ?" "no" || echo false)"
+    ask_bool_or MEDIA_ENABLED    "Включить модуль работы с камерами (медиа-сервер)?" "no" "false"
+    ask_bool_or ANALYTIC_ENABLED "Включить модуль видеоаналитики лиц?"              "no" "false"
+    ask_bool_or LPR_ENABLED      "Включить модуль видеоаналитики ГРЗ?"              "no" "false"
 
     warn_media_requirement
 }
@@ -346,15 +358,16 @@ collect_reconfig_params() {
 
     if [ "$DOMAIN_SET" != "true" ]; then
         if have_tty; then
-            DOMAIN="$(ask "Домен проекта (Enter - оставить, пусто - http://<IP>:8888)" "$cur_domain")"
+            DOMAIN="$(ask "Домен проекта (Enter - оставить текущий, '-' - убрать домен)" "$cur_domain")"
+            [ "$DOMAIN" = "-" ] && DOMAIN=""
         else
             DOMAIN="$cur_domain"
         fi
     fi
 
-    [ -n "$MEDIA_ENABLED" ]    || MEDIA_ENABLED="$(have_tty && ask_yesno "Модуль работы с камерами (медиа-сервер)?" "$(yn "$cur_media")"    || echo "${cur_media:-false}")"
-    [ -n "$ANALYTIC_ENABLED" ] || ANALYTIC_ENABLED="$(have_tty && ask_yesno "Модуль видеоаналитики лиц?"        "$(yn "$cur_analytic")" || echo "${cur_analytic:-false}")"
-    [ -n "$LPR_ENABLED" ]      || LPR_ENABLED="$(have_tty && ask_yesno "Модуль видеоаналитики ГРЗ?"             "$(yn "$cur_lpr")"      || echo "${cur_lpr:-false}")"
+    ask_bool_or MEDIA_ENABLED    "Модуль работы с камерами (медиа-сервер)?" "$(yn "$cur_media")"    "${cur_media:-false}"
+    ask_bool_or ANALYTIC_ENABLED "Модуль видеоаналитики лиц?"               "$(yn "$cur_analytic")" "${cur_analytic:-false}"
+    ask_bool_or LPR_ENABLED      "Модуль видеоаналитики ГРЗ?"               "$(yn "$cur_lpr")"      "${cur_lpr:-false}"
 
     warn_media_requirement
 }
