@@ -17,6 +17,7 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        width: 100%;
     }
 
     .ad-capsule {
@@ -24,11 +25,14 @@
         align-items: stretch;
         height: 38px;
         position: relative;
+        width: 100%;
     }
 
     .ad-half-left {
         display: flex;
         align-items: center;
+        flex: 1 1 auto;
+        min-width: 0;
         background: #f4f5f8;
         border: 1px solid transparent;
         border-radius: 8px 0 0 8px;
@@ -43,16 +47,16 @@
     }
 
     .ad-input {
-        width: 50px;
+        width: 100%;
         height: 100%;
         background: transparent !important;
         border: none !important;
         outline: none !important;
         box-shadow: none !important;
-        text-align: center;
+        text-align: left;
         font-size: 15px;
         color: #111827;
-        padding: 0;
+        padding: 0 12px;
         margin: 0;
         transition: color 0.2s ease;
     }
@@ -114,7 +118,8 @@
     .ad-dropdown-menu {
         position: absolute;
         top: calc(100% + 6px);
-        left: 0;
+        right: 0;
+        left: auto;
         width: 140px;
         background: #ffffff;
         border-radius: 8px;
@@ -242,6 +247,5 @@
                 </div>
             </div>
         </div>
-        <div class="ad-hint" x-text="getHintText()"></div>
     </div>
 </div>

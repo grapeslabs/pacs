@@ -18,6 +18,11 @@
 
 @if ($has_pages || $total > 0)
     <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; width:100%; padding:0; background:transparent; border-radius:0; font-size:13px; font-weight:500; color:#9da5b6;">
+        <div style="display:flex; align-items:center; white-space:nowrap;">
+            @if(isset($total) && $total > 0)
+                <span>{{ $from }}–{{ $to }} из {{ $total }}</span>
+            @endif
+        </div>
         @if ($has_pages)
         <div style="display:flex; align-items:center; gap:24px;">
             <div style="display:flex; align-items:center; gap:8px;">
@@ -132,34 +137,92 @@
         @else
             <div></div>
         @endif
-        <div style="display:flex; align-items:center; gap:10px; margin-top:0;">
+
+        {{-- Справа: строк на странице --}}
+        <style>
+            .pp-select { display:flex !important; align-items:center; gap:10px; flex-shrink:0; white-space:nowrap; }
+            .pp-select__wrap { position:relative; flex-shrink:0; }
+            .pp-select__btn {
+                display:flex !important; align-items:center; justify-content:space-between; gap:10px;
+                box-sizing:border-box; min-width:72px; height:32px; padding:0 12px;
+                background:#fff !important; border:1px solid #E2E6F0 !important; border-radius:8px !important;
+                color:#1E1E1E !important; font-weight:600; font-size:13px; line-height:1; cursor:pointer;
+                font-family:inherit; transition:border-color .15s, box-shadow .15s;
+            }
+            .pp-select__btn.is-open { border-color:#7A88F7 !important; box-shadow:0 0 0 3px rgba(122,136,247,.25) !important; }
+            .pp-select__chevron { width:14px; height:14px; flex-shrink:0; color:#9da5b6; transition:transform .15s; }
+            .pp-select__btn.is-open .pp-select__chevron { transform:rotate(180deg); }
+            .pp-select__menu-pos {
+                position:absolute; left:50%; right:auto; transform:translateX(-50%); bottom:calc(100% + 6px);
+                min-width:100%; z-index:50;
+            }
+            .pp-select__menu {
+                display:flex; flex-direction:column !important; gap:2px;
+                background:#fff !important; border:1px solid #E2E6F0 !important; border-radius:12px !important;
+                box-shadow:0 8px 24px rgba(30,30,30,.12); padding:6px;
+            }
+            .pp-select__option {
+                display:block !important; width:100% !important; box-sizing:border-box; text-align:center;
+                border:none !important; border-radius:8px !important; padding:8px 22px;
+                background:transparent; color:#1E1E1E; font-size:13px; font-weight:600; line-height:1.2;
+                cursor:pointer; font-family:inherit; transition:background .12s, color .12s;
+            }
+            .pp-select__option:hover { background:#F4F5FA; }
+            .pp-select__option.is-active { background:#EEF0FE !important; color:#7A88F7 !important; }
+        </style>
+
+        @php $perPageOptions = [10, 25, 50, 100]; @endphp
+        <div
+            class="pp-select"
+            x-data="{
+                open: false,
+                current: {{ (int) $per_page }},
+                options: @js($perPageOptions),
+                select(value) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('per_page', value);
+                    url.searchParams.delete('page');
+                    window.location.href = url.toString();
+                }
+            }"
+            @click.outside="open = false"
+            @keydown.escape="open = false"
+        >
             <span>Строк на странице:</span>
 
-            <div style="position:relative; display:flex; align-items:center; background:#e1e5f1; border-radius:8px; height:28px;">
-                <select
-                    style="appearance:none; -webkit-appearance:none; background:transparent; border:none; outline:none; box-shadow:none; color:#374151; font-weight:500; font-size:13px; padding:0 28px 0 12px; height:100%; cursor:pointer; font-family:inherit;"
-                    @change="
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('per_page', $event.target.value);
-                        url.searchParams.delete('page');
-                        window.location.href = url.toString();
-                    "
-                >
-                    <option value="10" @selected($per_page == 10)>10</option>
-                    <option value="25" @selected($per_page == 25)>25</option>
-                    <option value="50" @selected($per_page == 50)>50</option>
-                    <option value="100" @selected($per_page == 100)>100</option>
-                </select>
-                <div style="pointer-events:none; position:absolute; right:8px; display:flex; align-items:center; color:#9da5b6;">
-                    <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="pp-select__wrap">
+                <button type="button" class="pp-select__btn" :class="{ 'is-open': open }" @click="open = !open">
+                    <span x-text="current"></span>
+                    <svg class="pp-select__chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
+                </button>
+
+                <div class="pp-select__menu-pos">
+                  <div
+                    class="pp-select__menu"
+                    x-show="open"
+                    x-cloak
+                    x-transition:enter="transition ease-out duration-150"
+                    x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    x-transition:leave="transition ease-in duration-100"
+                    x-transition:leave-start="opacity-100 scale-100"
+                    x-transition:leave-end="opacity-0 scale-95"
+                    style="transform-origin:bottom center;"
+                  >
+                    <template x-for="option in options" :key="option">
+                        <button
+                            type="button"
+                            class="pp-select__option"
+                            :class="{ 'is-active': option === current }"
+                            @click="select(option)"
+                            x-text="option"
+                        ></button>
+                    </template>
+                  </div>
                 </div>
             </div>
-
-            @if(isset($total) && $total > 0)
-                <span>из {{ $total }}</span>
-            @endif
         </div>
     </div>
 @endif

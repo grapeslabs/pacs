@@ -20,6 +20,23 @@
         outline: none;
     }
 
+    .ctf-input.ctf-has-icon { padding-left: 2.5rem !important; }
+
+    .ctf-leading-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9A9AAC;
+        pointer-events: none;
+        width: 1.1rem;
+        height: 1.1rem;
+    }
+    .ctf-leading-icon svg { width: 100%; height: 100%; }
+
     .ctf-input:focus {
         border-color: #3b82f6;
         box-shadow: 0 0 0 1px #3b82f6;
@@ -175,7 +192,10 @@
     }
 }" class="ctf-wrapper" x-cloak>
     <div class="ctf-input-container">
-        <input {!! $element->getAttributes()->merge(['class' => 'ctf-input form-input']) !!}
+        @if($element->getLeadingIcon())
+            <span class="ctf-leading-icon">{!! $element->getLeadingIcon() !!}</span>
+        @endif
+        <input {!! $element->getAttributes()->merge(['class' => 'ctf-input form-input' . ($element->getLeadingIcon() ? ' ctf-has-icon' : '')]) !!}
                type="text"
                name="{{ $element->getName() }}"
                x-model="value"

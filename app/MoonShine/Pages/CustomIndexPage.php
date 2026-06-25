@@ -36,16 +36,6 @@ class CustomIndexPage extends IndexPage
                 Flex::make([
                     Heading::make($this->getTitle())
                         ->class('truncate text-md font-medium pl-20')->style("padding-top: 10px"),
-                    ActionGroup::make()
-                        ->when(
-                            $resource instanceof VideoStreamResource,
-                            fn (ActionGroup $group): ActionGroup => $group->add(
-                                ActionButton::make(
-                                    'Сетка потоков',
-                                    app(VideoStreamResource::class)->getPageUrl('streams')
-                                )->primary()
-                            )
-                        ),
                 ]),
 
                 Flex::make([

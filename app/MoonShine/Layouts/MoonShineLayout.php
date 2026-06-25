@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\MoonShine\Layouts;
 
 use App\MoonShine\Components\CustomDeleteModal;
-use App\MoonShine\Components\SafeModal;
+use App\MoonShine\Components\FormSidebar;
+use App\MoonShine\Components\UnsavedChangesModal;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Pages\Dashboard;
 use App\MoonShine\Resources\ActuatorDeviceResource;
@@ -264,7 +265,7 @@ final class MoonShineLayout extends AppLayout
             Breadcrumbs::make($this->getPage()->getBreadcrumbs())->prepend($this->getHomeUrl(), icon: 'home'),
             Div::make()->customView('components.error-notification'),
             '<img src="/images/logo.svg" style="width: 10vh; height: 7vh; object-fit: contain;">',
-            SafeModal::make(
+            FormSidebar::make(
                 title: fn() => 'Редактирование',
                 async: true
             )->name($this->safeModalName),
@@ -289,6 +290,7 @@ final class MoonShineLayout extends AppLayout
                 $this->getHeadComponent(),
                 Body::make([
                     CustomDeleteModal::make(),
+                    UnsavedChangesModal::make(),
                     Wrapper::make([
                         $this->getSidebarComponent(),
                         Div::make([

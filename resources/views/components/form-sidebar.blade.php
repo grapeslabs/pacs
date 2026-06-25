@@ -1,15 +1,16 @@
 @props([
-    'name' => 'safe-modal',
+    'name' => 'form-sidebar',
     'title' => '',
+    'subtitle' => '',
 ])
 
 <div
     x-data="{
         open: false,
         isDirty: false,
-        showConfirm: false,
         modalId: '{{ $name }}',
         modalTitle: '{{ is_callable($title) ? $title() : $title }}',
+        modalSubtitle: '{{ is_callable($subtitle) ? $subtitle() : $subtitle }}',
 
         registerInStack() { Alpine.store('overlays')?.register(this.modalId, () => this.tryClose()); },
         unregisterFromStack() { Alpine.store('overlays')?.unregister(this.modalId); },
@@ -20,11 +21,16 @@
             this.toggleBodyScroll();
         },
 
-        tryClose() { this.isDirty ? (this.showConfirm = true) : this.closeModal(); },
+        tryClose() {
+            if (this.isDirty) {
+                window.dispatchEvent(new CustomEvent('open-unsaved-modal', { detail: { id: this.modalId } }));
+            } else {
+                this.closeModal();
+            }
+        },
 
         closeModal() {
             this.open = false;
-            this.showConfirm = false;
             setTimeout(() => (this.isDirty = false), 300);
             this.unregisterFromStack();
             this.toggleBodyScroll();
@@ -32,7 +38,6 @@
 
         forceClose() {
             this.isDirty = false;
-            this.showConfirm = false;
             this.closeModal();
         },
 
@@ -49,6 +54,25 @@
             } else {
                 document.body.style.overflow = '';
             }
+        },
+
+        init() {
+            const c = document.getElementById(this.modalId + '_content');
+            if (c) {
+                this.observer = new MutationObserver(() => this.syncTitleFromContent());
+                this.observer.observe(c, { childList: true, subtree: true });
+            }
+        },
+
+        syncTitleFromContent() {
+            const c = document.getElementById(this.modalId + '_content');
+            const el = c && c.querySelector('[data-sidebar-title]');
+            if (el) {
+                this.modalTitle = el.getAttribute('data-sidebar-title') || this.modalTitle;
+                if (el.hasAttribute('data-sidebar-subtitle')) {
+                    this.modalSubtitle = el.getAttribute('data-sidebar-subtitle');
+                }
+            }
         }
     }"
     @modal-toggled.window="
@@ -57,10 +81,14 @@
             modalTitle = (typeof $event.detail === 'object' && $event.detail.title)
                 ? $event.detail.title
                 : '{{ is_callable($title) ? $title() : $title }}';
+            modalSubtitle = (typeof $event.detail === 'object' && typeof $event.detail.subtitle !== 'undefined')
+                ? $event.detail.subtitle
+                : '{{ is_callable($subtitle) ? $subtitle() : $subtitle }}';
             toggleModal();
         }
     "
     @toast.window="if(open && (event.detail.type === 'success' || event.detail.type === 'warning')) { forceClose(); }"
+    @unsaved-discard.window="if($event.detail && $event.detail.id === modalId) { forceClose(); }"
 >
     <template x-teleport="body">
 
@@ -82,13 +110,16 @@
                  x-transition:leave="transition ease-in-out duration-300 transform"
                  x-transition:leave-start="translate-x-0"
                  x-transition:leave-end="translate-x-full"
-                 style="position: absolute; top: 0; right: 0; bottom: 0; width: 45vw; min-width: 320px; background-color: #ffffff; box-shadow: -10px 0 25px -5px rgba(0, 0, 0, 0.1); pointer-events: auto;"
+                 style="position: absolute; top: 0; right: 0; bottom: 0; width: 29vw; min-width: 320px; background-color: #ffffff; box-shadow: -10px 0 25px -5px rgba(0, 0, 0, 0.1); pointer-events: auto;"
                  class="dark:bg-moonshine-dark">
 
                 <div style="display: flex; flex-direction: column; height: 100vh; max-height: 100vh; width: 100%;">
 
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; flex-shrink: 0;">
-                        <h3 style="font-size: 1.125rem; font-weight: 500; margin: 0;" class="text-gray-900 dark:text-gray-100" x-text="modalTitle"></h3>
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; padding: 1.25rem 1.5rem; flex-shrink: 0; border-bottom: 1px solid #EAEDFB;">
+                        <div style="min-width: 0;">
+                            <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0; line-height: 1.4;" class="text-gray-900 dark:text-gray-100" x-text="modalTitle"></h3>
+                            <p x-show="modalSubtitle" x-cloak style="font-size: 0.8125rem; color: #7F7F9D; margin: 0.125rem 0 0;" x-text="modalSubtitle"></p>
+                        </div>
                         <button @click="tryClose()" type="button" style="background: transparent; border: none; cursor: pointer; padding: 0.25rem;" class="text-gray-400 hover:text-gray-500">
                             <x-moonshine::icon icon="x-mark" size="6" />
                         </button>
@@ -98,45 +129,26 @@
                         <div id="{{ $name }}_content" style="padding: 1.5rem;" @input="isDirty = true" @change="isDirty = true">
                             {{ $slot ?? '' }}
                         </div>
+                        <style>#{{ $name }}_content .js-form-sidebar-submit { display: none !important; }</style>
+                    </div>
+
+                    <div style="flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid #EAEDFB;">
+                        <button @click="tryClose()"
+                                type="button"
+                                style="padding: 0.625rem 1.5rem; border-radius: 9999px; background-color: #ffffff; color: #4E4E61; cursor: pointer; font-weight: 600; border: 1px solid #D7D0EF; font-size: 0.875rem;">
+                            Отмена
+                        </button>
+                        <button @click="saveAndClose()"
+                                type="button"
+                                style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.5rem; border-radius: 9999px; background-color: #6972F0; color: #ffffff; cursor: pointer; font-weight: 700; border: none; font-size: 0.875rem;">
+                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16.6673 5L7.50065 14.1667L3.33398 10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Сохранить
+                        </button>
                     </div>
 
                 </div>
-
-                <div x-show="showConfirm"
-                     x-transition.opacity.duration.200ms
-                     style="display: none; position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 50;">
-
-                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: rgba(17, 24, 39, 0.75);" class="dark:bg-moonshine-dark/75">
-                        <div style="background-color: #ffffff; border-radius: 16px; padding: 24px; width: 90%; max-width: 340px; position: relative; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);" class="dark:bg-moonshine-dark">
-
-                            <button @click="showConfirm = false" type="button" style="position: absolute; top: 12px; right: 12px; background: transparent; border: none; cursor: pointer; padding: 0.25rem;" class="text-gray-400 hover:text-gray-500">
-                                <x-moonshine::icon icon="x-mark" size="5" />
-                            </button>
-
-                            <h3 style="font-size: 1.125rem; font-weight: 500; margin-top: 0; margin-bottom: 0.5rem; text-align: left;" class="text-gray-900 dark:text-gray-100">Несохраненные изменения</h3>
-
-                            <p style="margin-top: 0; margin-bottom: 1.5rem; font-size: 0.875rem; color: #6b7280; text-align: left; line-height: 1.25rem;" class="dark:text-gray-400">
-                                Если закроете окно, изменения не будут сохранены.
-                            </p>
-
-                            <div style="display: flex; gap: 0.75rem; justify-content: space-between; width: 100%;">
-                                <button @click="saveAndClose()"
-                                        type="button"
-                                        style="flex: 1; padding: 0.625rem 0; border-radius: 9999px; background-color: #F1F3FB; color: #6972F0; cursor: pointer; font-weight: 500; border: none; font-size: 0.875rem; text-align: center;">
-                                    Сохранить
-                                </button>
-                                <button @click="forceClose()"
-                                        type="button"
-                                        style="flex: 1; padding: 0.625rem 0; border-radius: 9999px; background-color: #6972F0; color: #ffffff; cursor: pointer; font-weight: 500; border: none; font-size: 0.875rem; text-align: center;">
-                                    Не сохранять
-                                </button>
-                            </div>
-
-                        </div>
-                    </div>
-
-                </div>
-
             </div>
         </div>
     </template>

@@ -10,6 +10,19 @@ class CustomText extends Text
 
     protected array $customClientRules =[];
 
+    protected string $leadingIcon = '';
+
+    public function icon(string $svg): static
+    {
+        $this->leadingIcon = $svg;
+        return $this;
+    }
+
+    public function getLeadingIcon(): string
+    {
+        return $this->leadingIcon;
+    }
+
     public function required(\Closure|bool|string|null $condition = null, string $message = 'Обязательное поле'): static
     {
         if (is_string($condition)) {
