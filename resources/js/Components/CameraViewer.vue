@@ -381,9 +381,18 @@ const centerTimeline = () => {
     panX.value = Math.max(minPan, Math.min(0, newPanX));
 };
 
+const enterArchiveMode = () => {
+    if (!isLive.value) return;
+    isLive.value = false;
+    selectedDate.value = new Date().toISOString().split('T')[0];
+};
+
 const onTrackMouseDown = (e) => {
-    if (isLive.value || e.button !== 0) return;
-    if (e.target.closest('.playhead') || e.target.closest('.download-anchor')) return;
+    if (e.button !== 0) return;
+    if (e.target.closest('.download-anchor')) return;
+    if (e.target.closest('.playhead')) return;
+
+    enterArchiveMode();
 
     isDraggingTrack.value = true;
     startDragX.value = e.clientX;
@@ -419,8 +428,9 @@ const onTrackMouseUp = (e) => {
 };
 
 const onPlayheadMouseDown = (e) => {
-    if (isLive.value || e.button !== 0 || showDownloadModal.value) return;
+    if (e.button !== 0 || showDownloadModal.value) return;
     e.stopPropagation();
+    enterArchiveMode();
     isDraggingPlayhead.value = true;
 
     window.addEventListener('mousemove', onPlayheadMouseMove);
