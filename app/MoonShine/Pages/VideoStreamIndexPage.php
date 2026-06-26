@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\MoonShine\Pages;
 
 use App\Models\Stream;
+use App\MoonShine\Components\SearchField;
 use App\MoonShine\Components\StreamGridComponent;
-use MoonShine\Laravel\Buttons\FiltersButton;
-use MoonShine\Laravel\Components\Layout\Search;
 use MoonShine\Laravel\Enums\Ability;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\UI\Components\ActionButton;
@@ -42,7 +41,14 @@ class VideoStreamIndexPage extends CustomIndexPage
             ])
                 ->justifyAlign('between')
                 ->itemsAlign('center')
-                ->class('mb-6'),
+                ->class('mb-4'),
+
+            Div::make([
+                SearchField::make(placeholder: $this->buildSearchPlaceholder()),
+            ])->class('mb-6')->customAttributes([
+                'x-show' => "\$store.streamView && \$store.streamView.mode === 'table'",
+                'x-cloak' => true,
+            ]),
         ];
     }
 

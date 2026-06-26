@@ -119,6 +119,15 @@ class VideoStreamResource extends BaseModelResource
         ];
     }
 
+    public function search(): array
+    {
+        return [
+            'uid',
+            'name',
+            'location',
+        ];
+    }
+
     private function renderAiChips($item): string
     {
         $o = $item->va_options ?? [];

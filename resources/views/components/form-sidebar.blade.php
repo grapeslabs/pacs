@@ -110,7 +110,7 @@
                  x-transition:leave="transition ease-in-out duration-300 transform"
                  x-transition:leave-start="translate-x-0"
                  x-transition:leave-end="translate-x-full"
-                 style="position: absolute; top: 0; right: 0; bottom: 0; width: 29vw; min-width: 320px; background-color: #ffffff; box-shadow: -10px 0 25px -5px rgba(0, 0, 0, 0.1); pointer-events: auto;"
+                 style="position: absolute; top: 0; right: 0; bottom: 0; width: 32vw; min-width: 352px; background-color: #ffffff; box-shadow: -10px 0 25px -5px rgba(0, 0, 0, 0.1); pointer-events: auto;"
                  class="dark:bg-moonshine-dark">
 
                 <div style="display: flex; flex-direction: column; height: 100vh; max-height: 100vh; width: 100%;">
