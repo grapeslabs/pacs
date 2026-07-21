@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Pages;
 
+use App\MoonShine\Components\FilterSidebar;
+use App\MoonShine\Components\SearchField;
 use App\MoonShine\Resources\PersonResource;
 use App\MoonShine\Resources\VideoStreamResource;
-use MoonShine\Contracts\UI\ActionButtonContract;
-use MoonShine\Laravel\Buttons\FiltersButton;
-use MoonShine\Laravel\Components\Layout\Search;
+use MoonShine\Laravel\Forms\FiltersForm;
 use MoonShine\Laravel\Enums\Ability;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Components\ActionGroup;
 use MoonShine\UI\Components\Heading;
+use MoonShine\UI\Components\Layout\Div;
 use MoonShine\UI\Components\Layout\Flex;
-use MoonShine\UI\Components\Modal;
 use MoonShine\UI\Fields\File;
 use MoonShine\UI\Components\FormBuilder;
 use MoonShine\Support\Enums\FormMethod;
@@ -31,49 +31,85 @@ class CustomIndexPage extends IndexPage
         $importButton = $this->getImportButtonIfNeeded($resource);
         $exportButton = $this->getExportButtonIfNeeded($resource);
 
-        return [
-            Flex::make([
-                Flex::make([
-                    Heading::make($this->getTitle())
-                        ->class('truncate text-md font-medium pl-20')->style("padding-top: 10px"),
-                    ActionGroup::make()
-                        ->when(
-                            $resource instanceof VideoStreamResource,
-                            fn (ActionGroup $group): ActionGroup => $group->add(
-                                ActionButton::make(
-                                    'Сетка потоков',
-                                    app(VideoStreamResource::class)->getPageUrl('streams')
-                                )->primary()
-                            )
-                        ),
-                ]),
+        $filterSidebar = null;
+        $filtersButton = null;
 
-                Flex::make([
-                    Search::make(placeholder: $this->buildSearchPlaceholder())->render(),
-                    ActionGroup::make()
-                        ->when(
-                            $resource->hasFilters(),
-                            fn (ActionGroup $group): ActionGroup => $group->addMany([
-                                FiltersButton::for($resource)
-                                    ->icon(file_get_contents(public_path('/icons/btn-filter.svg')), true),
-                            ])
+        if ($resource->hasFilters()) {
+            $form = moonshineConfig()->getForm('filters', FiltersForm::class, resource: $resource);
+
+            $count = collect($resource->getFilterParams())
+                ->filter(fn ($value): bool => ! blank($value) && $value !== '0')
+                ->count();
+
+            $filterSidebar = FilterSidebar::make(
+                subtitle: $this->getTitle(),
+                form: $form,
+                count: $count,
+            )->name('filters-sidebar');
+
+            $filtersLabel = 'Фильтры'
+                . '<span x-data x-show="$store.filters && $store.filters.count > 0" x-cloak '
+                . 'style="display:inline-flex;align-items:center;">'
+                . '<span class="badge" '
+                . 'style="display:inline-flex;align-items:center;justify-content:center;margin-left:0.5rem;background:#6972F0;color:#ffffff;border-radius:9999px;min-width:20px;text-align:center;padding:1px 7px;font-size:12px;font-weight:700;line-height:1.5;" '
+                . 'x-text="$store.filters ? $store.filters.count : 0">' . $count . '</span>'
+                . '</span>';
+
+            $filterIconPath = public_path('/icons/btn-filter.svg');
+            $hasFilterIcon = is_file($filterIconPath);
+            $filterIcon = $hasFilterIcon ? file_get_contents($filterIconPath) : 'adjustments-horizontal';
+
+            $filtersButton = ActionButton::make($filtersLabel, '#')
+                ->class('js-filter-button')
+                ->icon($filterIcon, $hasFilterIcon)
+                ->customAttributes([
+                    '@click.prevent' => "\$dispatch('modal-toggled', { id: 'filters-sidebar' })",
+                    'style' => 'display: inline-flex; align-items: center; gap: 0.5rem; line-height: 1; padding: 0.625rem 1rem; border-radius: 0.5rem; background-color: #ffffff; color: #7F7F9D; border: 1px solid #EAEDFB;',
+                ]);
+        }
+
+        $components = [
+            Heading::make($this->getTitle())
+                ->class('truncate')
+                ->style('font-size: 26px; font-weight: 700; line-height: 1.15; color: #1a1a2e; margin: 0 0 20px;'),
+
+            Flex::make([
+                SearchField::make(placeholder: $this->buildSearchPlaceholder()),
+                ActionGroup::make()
+                    ->when(
+                        $filtersButton !== null,
+                        fn (ActionGroup $group): ActionGroup => $group->add($filtersButton)
+                    )
+                    ->when(
+                        $resource instanceof VideoStreamResource,
+                        fn (ActionGroup $group): ActionGroup => $group->add(
+                            ActionButton::make(
+                                'Сетка потоков',
+                                app(VideoStreamResource::class)->getPageUrl('streams')
+                            )->primary()
                         )
-                        ->when(
-                            $resource->getHandlers()->isNotEmpty(),
-                            fn (ActionGroup $group): ActionGroup => $group->addMany(
-                                $this->getResource()->getHandlers()->getButtons()
-                            )
+                    )
+                    ->when(
+                        $resource->getHandlers()->isNotEmpty(),
+                        fn (ActionGroup $group): ActionGroup => $group->addMany(
+                            $this->getResource()->getHandlers()->getButtons()
                         )
-                        ->class('gap-4'),
-                    $importButton,
-                    $exportButton,
-                    $this->getCustomCreateButton(),
-                ])
+                    )
+                    ->class('gap-4'),
+                Div::make()->style('flex: 1 1 auto;'),
+                $importButton,
+                $exportButton,
+                $this->getCustomCreateButton(),
             ])
-                ->justifyAlign('between')
                 ->itemsAlign('center')
-                ->class('mb-6'),
+                ->class('mb-6 gap-3 flex-wrap'),
         ];
+
+        if ($filterSidebar !== null) {
+            $components[] = $filterSidebar;
+        }
+
+        return $components;
     }
 
     private function buildSearchPlaceholder(): string
