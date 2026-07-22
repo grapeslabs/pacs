@@ -3,6 +3,8 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Guest;
+use Illuminate\Database\Eloquent\Model;
+use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
@@ -29,12 +31,80 @@ class GuestResource extends BaseModelResource
     protected string $model = Guest::class;
     protected string $title = 'Гости';
     protected string $column = 'full_name';
+    protected bool $detailSidebar = true;
+    protected ?string $createLabel = 'Добавить гостя';
+
     protected function pages(): array
     {
         return [
             CustomIndexPage::class,
             DetailPage::class,
             FormPage::class,
+        ];
+    }
+
+    public function detailSidebarData(Model $item): array
+    {
+        $icPerson = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+        $icCheck = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6z" stroke="currentColor" stroke-width="1.6"/><path d="m9 11.5 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+        $photos = is_array($item->photo) ? $item->photo : [];
+        $avatar = ! empty($photos[0]) ? Storage::disk('public')->url($photos[0]) : null;
+        $initials = collect(preg_split('/\s+/u', trim($item->full_name ?? '')) ?: [])
+            ->take(2)
+            ->map(fn($p) => mb_strtoupper(mb_substr($p, 0, 1)))
+            ->join('');
+
+        $now = now();
+        $start = $item->entry_start;
+        $end = $item->entry_end;
+        if ($start && $now->lt($start)) {
+            $badge = ['text' => 'Ожидает', 'tone' => 'muted', 'icon' => $icCheck];
+        } elseif ($end && $now->gt($end)) {
+            $badge = ['text' => 'Истёк', 'tone' => 'danger', 'icon' => $icCheck];
+        } else {
+            $badge = ['text' => 'Действует', 'icon' => $icCheck];
+        }
+
+        $period = collect([$start?->format('d.m.Y'), $end?->format('d.m.Y')])->filter()->join(' — ');
+
+        $sections = [
+            [
+                'icon' => $icPerson,
+                'title' => 'Данные гостя',
+                'fields' => [
+                    ['label' => 'Телефон', 'value' => $item->phone],
+                    ['label' => 'Документ', 'value' => $item->document],
+                    ['label' => 'Действует', 'value' => $period],
+                ],
+            ],
+        ];
+
+        if (! blank($item->comment)) {
+            $sections[] = [
+                'icon' => $icPerson,
+                'title' => 'Комментарий',
+                'text' => $item->comment,
+            ];
+        }
+
+        $sub = collect(['Гостевой пропуск', $item->external_id])->filter()->join(' · ');
+
+        return [
+            'title' => 'Карточка гостя',
+            'subtitle' => $sub,
+            'hero' => [
+                'title' => $item->full_name,
+                'subtitle' => $sub,
+                'avatar' => $avatar,
+                'initials' => $avatar ? null : $initials,
+                'badges' => [$badge],
+            ],
+            'sections' => $sections,
+            'footer' => [
+                ['spacer' => true],
+                ['html' => $this->detailEditButtonHtml($item)],
+            ],
         ];
     }
 
@@ -47,9 +117,10 @@ class GuestResource extends BaseModelResource
     public function indexFields(): iterable
     {
         return [
-            Text::make('Внешний ID', 'external_id')
-                ->sortable(),
-            Text::make('ФИО', 'full_name')
+            AvatarField::make('ФИО', 'full_name')
+                ->text('full_name')
+                ->subtext('external_id')
+                ->photo(fn ($item) => is_array($item->photo) ? ($item->photo[0] ?? null) : $item->photo)
                 ->sortable(),
             Text::make('Телефон', 'phone')
                 ->sortable(),

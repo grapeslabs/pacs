@@ -32,6 +32,91 @@ class BotResource extends BaseModelResource
 {
     protected string $model = Bot::class;
     protected string $title = 'Боты';
+    protected bool $detailSidebar = true;
+    protected ?string $createLabel = 'Добавить бота';
+
+    public function detailSidebarData(Model $item): array
+    {
+        $item->loadMissing('chats');
+
+        $icBot = '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="8" width="16" height="11" rx="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 8V4.5M9.5 13h.01M14.5 13h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M2.5 12.5v3M21.5 12.5v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+        $icPlug = '<svg viewBox="0 0 24 24" fill="none"><path d="M9 3v5M15 3v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M6 8h12v3a6 6 0 0 1-12 0z" stroke="currentColor" stroke-width="1.6"/><path d="M12 17v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+        $icUsers = '<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16 5.2a3.2 3.2 0 0 1 0 5.6M17 13.5a5.5 5.5 0 0 1 3.5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+        $icBolt = '<svg viewBox="0 0 24 24" fill="none"><path d="M13 3 4 14h7l-1 7 9-11h-7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+
+        $service = Bot::SERVICES[$item->service] ?? $item->service;
+
+        $sections = [
+            [
+                'icon' => $icPlug,
+                'title' => 'Параметры подключения',
+                'single' => true,
+                'fields' => [
+                    ['label' => 'Сервис', 'value' => $service],
+                    ['label' => 'Токен', 'value' => $this->maskToken((string) $item->token)],
+                    ['label' => 'API URL', 'value' => blank($item->api_url) ? 'Стандартный' : $item->api_url],
+                ],
+            ],
+        ];
+
+        $recipients = $item->chats
+            ->map(fn($c) => trim(($c->name ?: 'Чат') . ' · ' . $c->chat_id))
+            ->all();
+        if (! empty($recipients)) {
+            $sections[] = ['icon' => $icUsers, 'title' => 'Получатели', 'tags' => $recipients];
+        }
+
+        $triggers = \App\Models\Trigger::query()->where('bot_id', $item->getKey())->get();
+        if ($triggers->isNotEmpty()) {
+            $triggerRes = app(TriggerResource::class);
+            $sections[] = [
+                'icon' => $icBolt,
+                'title' => 'Связанные триггеры · ' . $triggers->count(),
+                'items' => $triggers->map(fn($t) => [
+                    'title' => $t->name,
+                    'subtitle' => $this->eventLabel($t->event_type),
+                    'actions' => [$this->detailChevronTo($triggerRes, $t->getKey())],
+                ])->all(),
+            ];
+        }
+
+        return [
+            'title' => 'Карточка бота',
+            'subtitle' => 'Бот · ' . $service,
+            'hero' => [
+                'title' => $item->name,
+                'subtitle' => 'Бот · ' . $service,
+                'icon' => $icBot,
+            ],
+            'sections' => $sections,
+            'footer' => [
+                ['spacer' => true],
+                ['html' => $this->detailEditButtonHtml($item)],
+            ],
+        ];
+    }
+
+    private function maskToken(string $token): string
+    {
+        if (mb_strlen($token) <= 12) {
+            return $token;
+        }
+
+        return mb_substr($token, 0, 6) . '••••••' . mb_substr($token, -4);
+    }
+
+    private function eventLabel(?string $type): string
+    {
+        return [
+            'knowed' => 'Появление известного лица',
+            'unknowed' => 'Появление неизвестного лица',
+            'income' => 'Вход',
+            'outcome' => 'Выход',
+            'manual' => 'Открыто вручную',
+            'denied' => 'Отказано',
+        ][$type] ?? (string) $type;
+    }
+
     protected function pages(): array
     {
         return [
@@ -72,10 +157,9 @@ class BotResource extends BaseModelResource
             Select::make('Сервис', 'service')
                 ->options(Bot::SERVICES)
                 ->sortable(),
-            Text::make('Токен', 'token')
-                ->sortable(),
-            Url::make('API URL', 'api_url')
-                ->sortable(),
+            \App\MoonShine\Fields\ApiKeyField::make('Токен', 'token'),
+            \App\MoonShine\Fields\RecipientsField::make('Получатели', 'chats', fn($item) => $item->chats->pluck('name')->all()),
+            \App\MoonShine\Fields\CountField::make('Триггеры', 'id', fn($item) => \App\Models\Trigger::query()->where('bot_id', $item->id)->count()),
         ];
     }
 

@@ -6,16 +6,18 @@ use App\Models\Key;
 use App\Models\Person;
 use App\Models\Organization;
 use App\Models\VideoAnalyticReport;
+use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
 use App\Models\Tag;
 use App\MoonShine\Fields\SelectField;
+use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Pages\CustomIndexPage;
+use App\MoonShine\Resources\OrganizationResource;
 use Carbon\Carbon;
 use Closure;
 use Illuminate\Support\Facades\Storage;
-use App\MoonShine\Resources\OrganizationResource;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Fields\Relationships\BelongsToMany;
 use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
@@ -41,6 +43,7 @@ use MoonShine\UI\Fields\Select;
 use App\MoonShine\Fields\CustomTextarea;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class PersonResource extends BaseModelResource
 {
@@ -54,6 +57,8 @@ class PersonResource extends BaseModelResource
     protected string $model = Person::class;
     protected string $title = 'Персоны';
     protected string $ex_type = 'pingate';
+    protected bool $detailSidebar = true;
+    protected ?string $createLabel = 'Добавить персону';
 
     protected function pages(): array
     {
@@ -62,6 +67,150 @@ class PersonResource extends BaseModelResource
             DetailPage::class,
             FormPage::class,
         ];
+    }
+
+    public function detailSidebarData(Model $item): array
+    {
+        $item->loadMissing(['organization', 'tags', 'keys']);
+
+        $org = $item->organization?->short_name;
+        $cert = $item->certificate_number;
+
+        $heroSub = collect([$org, $cert ? '№ ' . $cert : null])->filter()->join(' · ');
+
+        $photo = $item->first_photo;
+        $avatar = $photo ? Storage::disk('public')->url($photo) : null;
+        $initials = mb_strtoupper(mb_substr($item->last_name ?? '', 0, 1) . mb_substr($item->first_name ?? '', 0, 1));
+
+        $now = now();
+        $frozen = $item->frozen_start
+            && $item->frozen_start <= $now
+            && (is_null($item->frozen_end) || $item->frozen_end >= $now);
+
+        $keys = $item->keys;
+        $keysCount = $keys->count();
+
+        $keyRes = app(KeyResource::class);
+        $keysUrl = $this->filteredIndexUrl($keyRes, ['person_id' => $item->getKey()]);
+
+        $icPerson = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+        $icTag = '<svg viewBox="0 0 24 24" fill="none"><path d="M3 11.5 11.5 3H20v8.5L11.5 20z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="15.5" cy="8.5" r="1.4" fill="currentColor"/></svg>';
+        $icKey = '<svg viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="m11 11 8 8M16 16l2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+        $icCheck = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6z" stroke="currentColor" stroke-width="1.6"/><path d="m9 11.5 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        $icSnow = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M4.5 6l15 12M19.5 6l-15 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 6.5 9.5 5m2.5 1.5L14.5 5M12 17.5 9.5 19m2.5-1.5L14.5 19M5.5 8.8 5 6m.5 2.8L3 9.4M18.5 8.8 19 6m-.5 2.8L21 9.4M5.5 15.2 5 18m.5-2.8L3 14.6M18.5 15.2 19 18m-.5-2.8L21 14.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+        $badges = [
+            $frozen
+                ? ['text' => 'Доступ заморожен', 'tone' => 'danger', 'icon' => $icSnow]
+                : ['text' => 'Доступ активен', 'icon' => $icCheck],
+        ];
+        if ($keysCount > 0) {
+            $badges[] = ['text' => $keysCount . ' ' . $this->pluralKeys($keysCount), 'icon' => $icKey, 'url' => $keysUrl];
+        }
+
+        $sections = [
+            [
+                'icon' => $icPerson,
+                'title' => 'Личные данные',
+                'fields' => [
+                    ['label' => 'Фамилия', 'value' => $item->last_name],
+                    ['label' => 'Имя', 'value' => $item->first_name],
+                    ['label' => 'Отчество', 'value' => $item->middle_name],
+                    ['label' => 'Дата рождения', 'value' => $item->birth_date?->format('d.m.Y')],
+                    ['label' => 'Номер удостоверения', 'value' => $cert],
+                    ['label' => 'Организация', 'value' => $org],
+                ],
+            ],
+        ];
+
+        if ($item->tags->isNotEmpty()) {
+            $sections[] = [
+                'icon' => $icTag,
+                'title' => 'Теги',
+                'tags' => $item->tags->pluck('name')->all(),
+            ];
+        }
+
+        if ($keysCount > 0) {
+            $sections[] = [
+                'icon' => $icKey,
+                'title' => 'Ключи доступа · ' . $keysCount,
+                'items' => $keys->map(fn($k) => [
+                    'title' => $k->key,
+                    'subtitle' => $k->type,
+                    'badge' => $k->is_active
+                        ? ['text' => 'Активен', 'tone' => 'ok']
+                        : ['text' => 'Заблокирован', 'tone' => 'danger'],
+                    'actions' => [
+                        $keyRes->detailEditIconButton($k, 'Редактирование ключа'),
+                        $this->detailChevronTo($keyRes, $k->getKey()),
+                    ],
+                ])->all(),
+            ];
+        }
+
+        if (! blank($item->comment)) {
+            $sections[] = [
+                'icon' => $this->commentIcon(),
+                'title' => 'Комментарий',
+                'text' => $item->comment,
+            ];
+        }
+
+        $keyUrl = $this->getAsyncMethodUrl('getKeyForm', page: $this->getIndexPage(), params: [
+            'item_id' => $item->getKey(),
+            '_component_name' => $this->getListComponentName(),
+            '_async_form' => true,
+        ]);
+        $issueKeyHtml = (string) ActionButton::make('Выдать ключ', $keyUrl)
+            ->icon(file_get_contents(public_path('icons/btn-addkey.svg')), true)
+            ->async(selector: "#{$this->safeModalName}_content")
+            ->customAttributes([
+                'class' => 'ds-btn ds-btn--secondary',
+                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Выдача ключа' }); \$dispatch('modal-toggled', { id: 'detail-sidebar' })",
+            ]);
+
+        $editHtml = $this->detailEditButtonHtml($item);
+
+        $icWarn = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3 2.5 20h19z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>';
+
+        return [
+            'title' => 'Карточка персоны',
+            'subtitle' => 'ID ' . $item->getKey(),
+            'banner' => $frozen ? [
+                'tone' => 'warn',
+                'icon' => $icWarn,
+                'text' => 'Доступ персоны временно заморожен — карты и распознавание лица не пропускают через СКУД.',
+            ] : null,
+            'hero' => [
+                'title' => $item->getFullName(),
+                'subtitle' => $heroSub,
+                'avatar' => $avatar,
+                'initials' => $avatar ? null : $initials,
+                'badges' => $badges,
+            ],
+            'sections' => $sections,
+            'footer' => [
+                ['html' => $issueKeyHtml],
+                ['spacer' => true],
+                ['html' => $editHtml],
+            ],
+        ];
+    }
+
+    private function pluralKeys(int $n): string
+    {
+        $mod10 = $n % 10;
+        $mod100 = $n % 100;
+
+        if ($mod10 === 1 && $mod100 !== 11) {
+            return 'ключ';
+        }
+        if ($mod10 >= 2 && $mod10 <= 4 && ! ($mod100 >= 12 && $mod100 <= 14)) {
+            return 'ключа';
+        }
+
+        return 'ключей';
     }
 
     protected function indexButtons(): ListOf
@@ -104,33 +253,30 @@ class PersonResource extends BaseModelResource
     {
         return [
             ID::make()->sortable(),
-            Text::make('ФИО', 'last_name', fn($item)=>($item->last_name??'') . " " . ($item->first_name??'') . " " . ($item->middle_name??''))
+            AvatarField::make('ФИО', 'last_name')
+                ->text(fn($item) => trim(($item->last_name ?? '') . ' ' . ($item->first_name ?? '') . ' ' . ($item->middle_name ?? '')))
+                ->subtext(fn($item) => '№' . $item->certificate_number)
+                ->photo(fn($item) => is_array($item->photo) ? ($item->photo[0] ?? null) : $item->photo)
+                ->indicator(fn($item) => $item && $item->isFrozen()
+                    ? '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M4.5 6l15 12M19.5 6l-15 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 6.5 9.5 5m2.5 1.5L14.5 5M12 17.5 9.5 19m2.5-1.5L14.5 19M5.5 8.8 5 6m.5 2.8L3 9.4M18.5 8.8 19 6m-.5 2.8L21 9.4M5.5 15.2 5 18m.5-2.8L3 14.6M18.5 15.2 19 18m-.5-2.8L21 14.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                    : null)
                 ->sortable(),
             Date::make('Дата рождения', 'birth_date')
                 ->withTime(false)
                 ->format('d.m.Y')
                 ->sortable(),
-            Text::make('Номер удостоверения', 'certificate_number')->sortable(),
-            BelongsToMany::make('Теги', 'tags', 'name', resource: TagResource::class)
-                ->inLine(' ',  fn($model, $value) => Badge::make((string) $value, 'primary'))
-                ->sortable(function (
-                    Builder $query,
-                    string $column,
-                    string $direction,
-                ) {
-                    return $query->orderBy(
-                        DB::raw("(SELECT name FROM tags WHERE tags.id IN (SELECT tag_id FROM person_tag WHERE person_tag.person_id = person.id) ORDER BY name {$direction} LIMIT 1)"),
-                        $direction,
-                    );
-                }),
-            Image::make('Фото', 'photo')
-                ->multiple()
-                ->setLabel('Фото'),
             BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
                 ->sortable(),
-            Text::make('Комментарий', 'comment')->sortable(),
-            Date::make('Заморожен с', 'frozen_start'),
-            Date::make('Заморожен до', 'frozen_end'),
+            \App\MoonShine\Fields\CountField::make('Ключи', 'id', fn($item) => $item->keys()->count()),
+            \App\MoonShine\Fields\TagsField::make('Теги', 'tags', fn($item) => $item->tags->pluck('name')->all()),
+            Image::make('Фотобанк', 'photo')
+                ->multiple()
+                ->setLabel('Фотобанк'),
+            ColoredSelectField::make('Статус', 'frozen_start', fn($item) => $item && $item->isFrozen() ? 'frozen' : 'active')
+                ->options([
+                    'active' => ['label' => 'Активен', 'color' => 'green'],
+                    'frozen' => ['label' => 'Заморожен', 'color' => 'orange'],
+                ]),
         ];
     }
 
@@ -189,7 +335,13 @@ class PersonResource extends BaseModelResource
                 Column::make([
                     SelectField::make('Организация', 'organization_id')
                         ->placeholder('Выберите организацию')
-                        ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
+                        ->icon('search')
+                        ->optionsIcon('organization')
+                        ->options(Organization::query()->get()->map(fn($o) => [
+                            'id'      => $o->id,
+                            'name'    => $o->short_name,
+                            'subtext' => $o->inn ? 'ИНН ' . $o->inn : null,
+                        ])->toArray())
                         ->nullable(),
                 ])->columnSpan(6),
             ]),
@@ -200,22 +352,13 @@ class PersonResource extends BaseModelResource
                 ->dir('person/photos')
                 ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
             SelectField::make('Теги', 'tags')
+                ->icon('tag')
+                ->optionsIcon('tag')
                 ->options(Tag::select('id', 'name')->get())
                 ->multiple(true)
                 ->creatable(true, route('tags.store')),
             CustomTextarea::make('Комментарий', 'comment'),
-            Grid::make([
-                Column::make([
-                    CustomDate::make('Заморозить с', 'frozen_start')
-                        ->withTime()
-                        ->nullable(),
-                ])->columnSpan(6),
-                Column::make([
-                    CustomDate::make('Заморозить до', 'frozen_end')
-                        ->withTime()
-                        ->nullable()
-                ])->columnSpan(6)
-            ])
+            \App\MoonShine\Fields\FreezeField::make('Заморозка доступа', 'frozen_start'),
         ];
     }
 
@@ -253,10 +396,18 @@ class PersonResource extends BaseModelResource
 
             SelectField::make('Организация', 'organization_id')
                 ->placeholder('Фильтрация по организации')
-                ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
+                ->icon('search')
+                ->optionsIcon('organization')
+                ->options(Organization::query()->get()->map(fn($o) => [
+                    'id'      => $o->id,
+                    'name'    => $o->short_name,
+                    'subtext' => $o->inn ? 'ИНН ' . $o->inn : null,
+                ])->toArray())
                 ->nullable(),
 
             SelectField::make('Теги', 'tags')
+                ->icon('tag')
+                ->optionsIcon('tag')
                 ->options(Tag::select('id', 'name')->get())
                 ->multiple(true)
         ];
@@ -300,10 +451,10 @@ class PersonResource extends BaseModelResource
                 ]
             )
         )
-            ->icon('key')
+            ->icon(file_get_contents(public_path('icons/btn-addkey.svg')), true)
             ->class('js-key-button')
             ->customAttributes([
-                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' })",
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Выдача ключа' })",
             ])
             ->async(selector: "#{$this->safeModalName}_content");
     }

@@ -45,7 +45,7 @@ class PersonObserver
             $faceKey = $this->createFaceKey($person, $person->photo);
             $this->syncWithControllers($this->getFaceControllers(), [$faceKey], [], "add person face {$person->id}");
 
-            $rfidCardsAdd = $person->keys->map(fn($k) => ['card' => (string)$k->key, 'flags' => 0, 'tz' => 255])->values()->toArray();
+            $rfidCardsAdd = $person->keys->where('is_active', true)->map(fn($k) => ['card' => (string)$k->key, 'flags' => 0, 'tz' => 255])->values()->toArray();
             if (!empty($rfidCardsAdd)) {
                 foreach ($this->getRfidControllers() as $controller) {
                     $this->createSkudCommand($controller->id, Carbon::now(), 'add_cards', ['cards' => $rfidCardsAdd]);
@@ -91,7 +91,7 @@ class PersonObserver
                     ]);
                 }
 
-                $rfidCardsAdd = $person->keys->map(fn($k) => ['card' => (string)$k->key, 'flags' => 0, 'tz' => 255])->values()->toArray();
+                $rfidCardsAdd = $person->keys->where('is_active', true)->map(fn($k) => ['card' => (string)$k->key, 'flags' => 0, 'tz' => 255])->values()->toArray();
                 if (!empty($rfidCardsAdd)) {
                     foreach ($rfidControllers as $controller) {
                         $this->createSkudCommand($controller->id, Carbon::now(), 'add_cards', ['cards' => $rfidCardsAdd]);
@@ -168,7 +168,7 @@ class PersonObserver
         $faceControllers = $this->getFaceControllers();
         $rfidControllers = $this->getRfidControllers();
 
-        $rfidCardsAdd = $person->keys->map(fn($key) => ['card' => (string)$key->key, 'flags' => 0, 'tz' => 255])->values()->toArray();
+        $rfidCardsAdd = $person->keys->where('is_active', true)->map(fn($key) => ['card' => (string)$key->key, 'flags' => 0, 'tz' => 255])->values()->toArray();
         $rfidCardsDel = $person->keys->map(fn($key) => ['card' => (string)$key->key])->values()->toArray();
         $imagesBase64 = $this->getImagesData($person->photo, true);
 

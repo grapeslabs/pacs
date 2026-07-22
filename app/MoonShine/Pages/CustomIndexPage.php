@@ -139,9 +139,10 @@ class CustomIndexPage extends IndexPage
     protected function getCustomCreateButton()
     {
         $resource = $this->getResource();
+        $createLabel = method_exists($resource, 'createButtonLabel') ? $resource->createButtonLabel() : 'Добавить';
         if($resource->isCreateInModal()) {
             return ActionButton::make(
-                'Добавить',
+                $createLabel,
                 fn($item) => $resource->getFormPageUrl(params: [
                     '_component_name' => $this->getListComponentName(),
                     '_async_form' => true,
@@ -162,7 +163,7 @@ class CustomIndexPage extends IndexPage
                     return $checkAction->call($resource) && $resource->can(Ability::CREATE);
                 });
         }
-        return ActionButton::make('Добавить', $resource->getFormPageUrl())
+        return ActionButton::make($createLabel, $resource->getFormPageUrl())
             ->canSee(static fn(): bool => $resource->hasAction(Action::CREATE) && $resource->can(Ability::CREATE))
             ->primary()
             ->icon('plus');

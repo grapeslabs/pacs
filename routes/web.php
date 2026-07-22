@@ -9,7 +9,15 @@ use App\Http\Controllers\ChatsController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\CustomFieldController;
+use App\Http\Controllers\DetailCardController;
 use App\Http\Controllers\PersonPhotoArchiveController;
+
+Route::prefix(config('moonshine.prefix', 'admin'))
+    ->middleware(\MoonShine\Laravel\Http\Middleware\Authenticate::class)
+    ->group(function () {
+        Route::get('detail-card/{resource}/{id}', [DetailCardController::class, 'show'])
+            ->name('detail-card');
+    });
 
 
 Route::prefix('tags')->group(function() {

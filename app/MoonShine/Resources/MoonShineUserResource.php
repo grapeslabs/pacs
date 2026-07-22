@@ -1,6 +1,7 @@
 <?php
 namespace App\MoonShine\Resources;
 
+use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomPassword;
 use App\MoonShine\Fields\CustomText;
@@ -74,11 +75,10 @@ class MoonShineUserResource extends BaseModelResource
                 resource: MoonShineUserRoleResource::class,
             )->badge(Color::PURPLE),
 
-            Text::make('Имя', 'name'),
-
-            Image::make('Аватар', 'avatar')->modifyRawValue(fn (
-                ?string $raw
-            ): string => $raw ?? ''),
+            AvatarField::make('Имя', 'name')
+                ->text('name')
+                ->subtext(fn ($item) => '№' . $item->id)
+                ->photo('avatar'),
 
             Date::make('Дата создания', 'created_at')
                 ->format("d.m.Y")

@@ -15,6 +15,8 @@ use App\MoonShine\Resources\CarColorResource;
 use App\MoonShine\Resources\OrganizationResource;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Fields\Relationships\BelongsToMany;
+use MoonShine\UI\Components\Layout\Column;
+use MoonShine\UI\Components\Layout\Grid;
 use MoonShine\UI\Components\Badge;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
@@ -23,8 +25,10 @@ use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Select;
+use App\MoonShine\Fields\ColorSwatchField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\CustomTextarea;
+use App\MoonShine\Fields\LicensePlateField;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -35,6 +39,9 @@ class CarResource extends BaseModelResource
 {
     protected string $model = Car::class;
     protected string $title = 'Автомобили';
+    protected bool $detailSidebar = true;
+    protected ?string $createLabel = 'Добавить автомобиль';
+
     protected function pages(): array
     {
         return [
@@ -42,6 +49,77 @@ class CarResource extends BaseModelResource
             DetailPage::class,
             FormPage::class,
         ];
+    }
+
+    public function detailSidebarData(Model $item): array
+    {
+        $item->loadMissing(['brand', 'color', 'organization', 'people', 'tags']);
+
+        $icData = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 3h9l3 3v15H6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12h6M9 16h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+        $icPerson = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+        $icCar = @file_get_contents(public_path('icons/car.svg')) ?: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="13" width="18" height="5" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>';
+
+        $sections = [
+            [
+                'icon' => $icData,
+                'title' => 'Данные',
+                'fields' => [
+                    ['label' => 'Марка', 'value' => $item->brand?->name],
+                    ['label' => 'Цвет', 'value_html' => ColorSwatchField::swatchHtml($item->color?->name)],
+                    ['label' => 'Организация', 'value' => $item->organization?->short_name],
+                ],
+            ],
+        ];
+
+        if ($item->people->isNotEmpty()) {
+            $personRes = app(PersonResource::class);
+            $sections[] = [
+                'icon' => $icPerson,
+                'title' => 'Персоны',
+                'items' => $item->people->map(fn($p) => [
+                    'title' => trim($p->last_name . ' ' . $p->first_name . ' ' . ($p->middle_name ?? '')),
+                    'actions' => [$this->detailChevronTo($personRes, $p->getKey())],
+                ])->all(),
+            ];
+        }
+
+        if (! blank($item->comment)) {
+            $sections[] = [
+                'icon' => $this->commentIcon(),
+                'title' => 'Комментарий',
+                'text' => $item->comment,
+            ];
+        }
+
+        return [
+            'title' => 'Карточка автомобиля',
+            'subtitle' => $item->brand?->name,
+            'hero' => [
+                'title' => $item->brand?->name ?: $item->license_plate,
+                'plate' => $this->parsePlate((string) $item->license_plate),
+                'icon' => $icCar,
+                'tags' => $item->tags->pluck('name')->all(),
+            ],
+            'sections' => $sections,
+            'footer' => [
+                ['spacer' => true],
+                ['html' => $this->detailEditButtonHtml($item)],
+            ],
+        ];
+    }
+
+    private function parsePlate(string $plate): ?array
+    {
+        if (trim($plate) === '') {
+            return null;
+        }
+        $normalized = mb_strtoupper(preg_replace('/\s+/u', '', $plate) ?? '');
+        $letters = 'АВЕКМНОРСТУХABEKMHOPCTYX';
+        if (preg_match('/^([' . $letters . '])(\d{3})([' . $letters . ']{2})(\d{2,3})$/u', $normalized, $m)) {
+            return ['main' => $m[1] . ' ' . $m[2] . ' ' . $m[3], 'region' => $m[4]];
+        }
+
+        return ['main' => trim($plate), 'region' => ''];
     }
 
     /**
@@ -227,11 +305,10 @@ class CarResource extends BaseModelResource
     public function indexFields(): iterable
     {
         return [
-            Text::make('ГРЗ', 'license_plate')->sortable(),
+            LicensePlateField::make('ГРЗ', 'license_plate')->sortable(),
             BelongsTo::make('Марка', 'brand', 'name', resource: CarBrandResource::class)
                 ->sortable(),
-            BelongsTo::make('Цвет', 'color', 'name', resource: CarColorResource::class)
-                ->sortable(),
+            ColorSwatchField::make('Цвет', 'color', fn($item) => $item->color?->name),
             Text::make('Персоны', 'people_names')->sortable(function (
                 Builder $query,
                 string $column,
@@ -242,8 +319,7 @@ class CarResource extends BaseModelResource
                     $direction,
                 );
             }),
-            BelongsToMany::make('Теги', 'tags', 'name', resource: CarTagResource::class)
-                ->inLine(' ', fn($model, $value) => Badge::make((string) $value, 'primary')),
+            \App\MoonShine\Fields\TagsField::make('Теги', 'tags', fn($item) => $item->tags->pluck('name')->all()),
             BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
                 ->nullable()
                 ->sortable(),
@@ -260,7 +336,7 @@ class CarResource extends BaseModelResource
         }
 
         return [
-            CustomText::make('ГРЗ', 'license_plate')
+            CustomText::make('Госномер (ГРЗ)', 'license_plate')
                 ->required()
                 ->customAttributes([
                     'x-on:input' => '
@@ -285,24 +361,43 @@ class CarResource extends BaseModelResource
                     'maxlength' => '15',
                 ])
                 ->placeholder('А 000 АА 777')
-                ->hint('Используйте только: А, В, Е, К, М, Н, О, Р, С, Т, У, Х')
+                ->hint('Буквы А, В, Е, К, М, Н, О, Р, С, Т, У, Х и цифры')
                 ->unique('cars', 'license_plate', 'Данный ГРЗ уже зарегистрирован в системе', 'license_plate', 8),
-            SelectField::make('Марка', 'brand_id')
-                ->required()
-                ->options(CarBrand::query()->pluck('name', 'id')->toArray()),
-            SelectField::make('Цвет', 'color_id')
-                ->required()
-                ->options(CarColor::query()->pluck('name', 'id')->toArray()),
+            Grid::make([
+                Column::make([
+                    SelectField::make('Марка', 'brand_id')
+                        ->required()
+                        ->options(CarBrand::query()->pluck('name', 'id')->toArray()),
+                ])->columnSpan(6),
+                Column::make([
+                    SelectField::make('Цвет', 'color_id')
+                        ->required()
+                        ->options(CarColor::query()->pluck('name', 'id')->toArray()),
+                ])->columnSpan(6),
+            ]),
             SelectField::make('Персоны', 'people_ids')
-                ->options(Person::query()->pluck('last_name', 'id')->toArray())
+                ->icon('search')
+                ->optionsIcon('icon-person')
+                ->options(Person::query()->get()->map(fn($p) => [
+                    'id'   => $p->id,
+                    'name' => trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '') . ' ' . ($p->middle_name ?? '')),
+                ])->toArray())
                 ->multiple()
                 ->default($personIds),
             SelectField::make('Теги авто', 'tags')
+                ->icon('tag')
+                ->optionsIcon('tag')
                 ->options(CarTag::select('id', 'name')->get())
                 ->multiple(true)
                 ->creatable(true, route('car-tags.store')),
             SelectField::make('Организация', 'organization_id')
-                ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
+                ->icon('search')
+                ->optionsIcon('organization')
+                ->options(Organization::query()->get()->map(fn($o) => [
+                    'id'      => $o->id,
+                    'name'    => $o->short_name,
+                    'subtext' => $o->inn ? 'ИНН ' . $o->inn : null,
+                ])->toArray())
                 ->nullable(),
             CustomTextarea::make('Комментарий', 'comment')->nullable(),
         ];
@@ -383,7 +478,13 @@ class CarResource extends BaseModelResource
                 ->options(CarColor::query()->pluck('name', 'id')->toArray())
                 ->nullable(),
             SelectField::make('Организация', 'organization_id')
-                ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
+                ->icon('search')
+                ->optionsIcon('organization')
+                ->options(Organization::query()->get()->map(fn($o) => [
+                    'id'      => $o->id,
+                    'name'    => $o->short_name,
+                    'subtext' => $o->inn ? 'ИНН ' . $o->inn : null,
+                ])->toArray())
                 ->nullable(),
             SelectField::make('Персоны', 'people_filter')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray())
@@ -399,6 +500,8 @@ class CarResource extends BaseModelResource
                     });
                 }),
             SelectField::make('Теги авто', 'tags_filter')
+                ->icon('tag')
+                ->optionsIcon('tag')
                 ->options(CarTag::query()->pluck('name', 'id')->toArray())
                 ->multiple()
                 ->nullable()

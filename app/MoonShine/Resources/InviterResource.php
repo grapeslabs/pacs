@@ -231,10 +231,16 @@ class InviterResource extends BaseModelResource
                 ->nullable()
                 ->placeholder('Фильтрация по персоне'),
             SelectField::make('Организация', 'person.organization_id')
+                ->icon('search')
+                ->optionsIcon('organization')
                 ->options(
                     Organization::query()
                         ->get()
-                        ->pluck('short_name', 'id')
+                        ->map(fn($o) => [
+                            'id'      => $o->id,
+                            'name'    => $o->short_name,
+                            'subtext' => $o->inn ? 'ИНН ' . $o->inn : null,
+                        ])
                         ->toArray()
                 )
                 ->nullable()
@@ -245,6 +251,8 @@ class InviterResource extends BaseModelResource
                     });
                 }),
             SelectField::make('Теги', 'person.tags')
+                ->icon('tag')
+                ->optionsIcon('tag')
                 ->multiple()
                 ->options(
                     Tag::query()

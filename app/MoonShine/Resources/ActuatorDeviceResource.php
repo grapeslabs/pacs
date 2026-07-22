@@ -5,6 +5,7 @@ namespace App\MoonShine\Resources;
 use App\Actuators\ActuatorDriverManager;
 use App\Actuators\ActuatorService;
 use App\Models\ActuatorDevice;
+use Illuminate\Database\Eloquent\Model;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
@@ -22,6 +23,93 @@ class ActuatorDeviceResource extends BaseModelResource
     protected string $model = ActuatorDevice::class;
     protected string $title = 'Исполнительные устройства';
     protected string $column = 'name';
+    protected bool $detailSidebar = true;
+    protected ?string $createLabel = 'Добавить устройство';
+
+    public function detailSidebarData(Model $item): array
+    {
+        $icPlug = '<svg viewBox="0 0 24 24" fill="none"><path d="M9 3v5M15 3v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M6 8h12v3a6 6 0 0 1-12 0z" stroke="currentColor" stroke-width="1.6"/><path d="M12 17v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+        $icGear = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.5 5.5l2 2M16.5 16.5l2 2M18.5 5.5l-2 2M7.5 16.5l-2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+        $active = $item->status === ActuatorDevice::STATUS_ACTIVE;
+
+        $settingLabels = [
+            'modbus_tcp_host' => 'Modbus TCP · Хост',
+            'modbus_tcp_port' => 'Modbus TCP · Порт',
+            'modbus_tcp_unit_id' => 'Modbus TCP · Unit ID',
+            'modbus_tcp_function' => 'Modbus TCP · Функция',
+            'modbus_tcp_address' => 'Modbus TCP · Адрес',
+            'modbus_tcp_on_value' => 'Modbus TCP · Значение «вкл»',
+            'modbus_tcp_off_value' => 'Modbus TCP · Значение «выкл»',
+            'dingtian_dt_r002_host' => 'Dingtian · Хост',
+            'dingtian_dt_r002_port' => 'Dingtian · Порт',
+            'dingtian_dt_r002_unit_id' => 'Dingtian · Unit ID',
+            'dingtian_dt_r002_relay' => 'Dingtian · Реле',
+            'dingtian_dt_r002_duration' => 'Dingtian · Длительность, с',
+            'http_base_url' => 'HTTP · Базовый URL',
+            'http_channel' => 'HTTP · Канал',
+            'http_open_url' => 'HTTP · URL открытия',
+            'http_close_url' => 'HTTP · URL закрытия',
+            'http_method' => 'HTTP · Метод',
+        ];
+
+        $fields = [['label' => 'Драйвер', 'value' => $item->driver_label]];
+        foreach (($item->settings ?? []) as $key => $value) {
+            if (is_array($value)) {
+                continue;
+            }
+            if (is_bool($value)) {
+                $display = $value ? 'Да' : 'Нет';
+            } else {
+                $display = blank($value) ? 'Нет' : (string) $value;
+            }
+            $fields[] = [
+                'label' => $settingLabels[$key] ?? $key,
+                'value' => $display,
+            ];
+        }
+
+        $footer = [];
+        foreach ([
+            ['open', 'doOpen', 'lock-open', 'Открыть'],
+            ['close', 'doClose', 'lock-closed', 'Закрыть'],
+            ['test', 'doTest', 'signal', 'Проверка связи'],
+        ] as [$capability, $method, $icon, $label]) {
+            if (! $this->supports($item, $capability)) {
+                continue;
+            }
+            $url = $this->getAsyncMethodUrl($method, page: $this->getIndexPage(), params: ['item_id' => $item->getKey()]);
+            $footer[] = ['html' => (string) ActionButton::make('', $url)
+                ->icon($icon)
+                ->async()
+                ->customAttributes(['class' => 'ds-fbtn', 'title' => $label])];
+        }
+        $footer[] = ['spacer' => true];
+        $footer[] = ['html' => $this->detailEditButtonHtml($item)];
+
+        return [
+            'title' => 'Карточка устройства',
+            'subtitle' => $item->driver_label,
+            'hero' => [
+                'title' => $item->name,
+                'subtitle' => $item->driver_label,
+                'icon' => $icPlug,
+                'badges' => [
+                    $active
+                        ? ['text' => $item->status_label]
+                        : ['text' => $item->status_label, 'tone' => 'muted'],
+                ],
+            ],
+            'sections' => [
+                [
+                    'icon' => $icGear,
+                    'title' => 'Параметры',
+                    'fields' => $fields,
+                ],
+            ],
+            'footer' => $footer,
+        ];
+    }
 
     public function menuGroup(): string
     {

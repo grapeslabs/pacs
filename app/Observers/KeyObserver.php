@@ -16,6 +16,11 @@ class KeyObserver
 
     public function created(Key $key): void
     {
+        if (! $key->is_active) {
+            $this->reschedulePersonCommands($key->person);
+            return;
+        }
+
         if ($this->shouldSkipImmediateSync($key->person)) {
             $this->reschedulePersonCommands($key->person);
             return;
@@ -27,7 +32,24 @@ class KeyObserver
 
     public function updated(Key $key): void
     {
+        if ($key->wasChanged('is_active')) {
+            if ($key->is_active) {
+                if (! $this->shouldSkipImmediateSync($key->person)) {
+                    $this->addKey($key);
+                }
+            } else {
+                $this->delKey($key);
+            }
+
+            $this->reschedulePersonCommands($key->person);
+            return;
+        }
+
         if ($key->wasChanged(['key', 'type'])) {
+            if (! $key->is_active) {
+                return;
+            }
+
             if ($this->shouldSkipImmediateSync($key->person)) {
                 $this->reschedulePersonCommands($key->person);
                 return;

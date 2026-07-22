@@ -3,6 +3,11 @@
     'title' => '',
 ])
 
+<style>
+    #{{ $name }}_content form button[type="submit"] { display: none !important; }
+    #{{ $name }}_content .mt-4:has(> button[type="submit"]:only-child) { display: none !important; }
+</style>
+
 <div
     x-data="{
         open: false,
@@ -82,22 +87,34 @@
                  x-transition:leave="transition ease-in-out duration-300 transform"
                  x-transition:leave-start="translate-x-0"
                  x-transition:leave-end="translate-x-full"
-                 style="position: absolute; top: 0; right: 0; bottom: 0; width: 45vw; min-width: 320px; background-color: #ffffff; box-shadow: -10px 0 25px -5px rgba(0, 0, 0, 0.1); pointer-events: auto;"
-                 class="dark:bg-moonshine-dark">
+                 style="position: absolute; top: 0; right: 0; bottom: 0; width: 33vw; min-width: 420px; max-width: 560px; background-color: #ffffff; box-shadow: -10px 0 25px -5px rgba(0, 0, 0, 0.15); pointer-events: auto;"
+                 class="safe-modal-panel dark:bg-moonshine-dark">
 
                 <div style="display: flex; flex-direction: column; height: 100vh; max-height: 100vh; width: 100%;">
 
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; flex-shrink: 0;">
-                        <h3 style="font-size: 1.125rem; font-weight: 500; margin: 0;" class="text-gray-900 dark:text-gray-100" x-text="modalTitle"></h3>
-                        <button @click="tryClose()" type="button" style="background: transparent; border: none; cursor: pointer; padding: 0.25rem;" class="text-gray-400 hover:text-gray-500">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1.5rem 1.75rem 1.25rem; flex-shrink: 0; border-bottom: 1px solid #EEF0F6;">
+                        <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; color: #1F2430;" class="dark:text-gray-100" x-text="modalTitle"></h3>
+                        <button @click="tryClose()" type="button" style="background: transparent; border: none; cursor: pointer; padding: 0.25rem; color: #A1A5B7;" class="hover:text-gray-500">
                             <x-moonshine::icon icon="x-mark" size="6" />
                         </button>
                     </div>
 
                     <div style="flex: 1 1 0%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; position: relative;">
-                        <div id="{{ $name }}_content" style="padding: 1.5rem;" @input="isDirty = true" @change="isDirty = true">
+                        <div id="{{ $name }}_content" style="padding: 1.75rem;" @input="isDirty = true" @change="isDirty = true">
                             {{ $slot ?? '' }}
                         </div>
+                    </div>
+
+                    <div class="safe-modal-footer" style="flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.75rem; border-top: 1px solid #EEF0F6; background: #fff;">
+                        <button @click="tryClose()" type="button"
+                                style="padding: 0.7rem 1.5rem; border-radius: 9999px; background: #fff; color: #4E4E61; border: 1px solid #E1E4F3; cursor: pointer; font-weight: 600; font-size: 0.9rem;">
+                            Отмена
+                        </button>
+                        <button @click="saveAndClose()" type="button"
+                                style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1.6rem; border-radius: 9999px; background: #6972F0; color: #fff; border: none; cursor: pointer; font-weight: 600; font-size: 0.9rem;">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            Сохранить
+                        </button>
                     </div>
 
                 </div>

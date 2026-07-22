@@ -3,11 +3,11 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\ApiKey;
+use App\MoonShine\Fields\ApiKeyField;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
 use MoonShine\Laravel\Resources\ModelResource;
-use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Date;
 use MoonShine\UI\Fields\Checkbox;
@@ -26,19 +26,6 @@ class ApiKeyResource extends BaseModelResource
     protected string $title = 'Ключи API';
 
 
-    public function indexButtons(): ListOf
-    {
-        return parent::indexButtons()
-            ->prepend(
-                ActionButton::make(
-                    '',
-                    fn($item) => "javascript:navigator.clipboard.writeText('{$item->key}').then(() => dispatchEvent(new CustomEvent('toast', {detail: {type: 'success', text: 'Ключ скопирован'}})))"
-                )
-                    ->class('js-copy-button')
-                    ->icon('clipboard')
-                    ->showInLine()
-            );
-    }
     public function indexFields(): iterable
     {
         return [
@@ -62,7 +49,7 @@ class ApiKeyResource extends BaseModelResource
                 ->setLabel('')
                 ->sortable(),
 
-            Text::make('Ключ', 'key'),
+            ApiKeyField::make('Ключ', 'key'),
 
         ];
     }

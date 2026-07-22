@@ -14,9 +14,15 @@ class Organization extends Model
 
     protected $fillable = [
         'inn',
+        'kpp',
+        'ogrn',
         'full_name',
         'short_name',
         'address',
+        'actual_address',
+        'contact_position',
+        'contact_name',
+        'phone',
         'contact_data',
         'comment'
     ];

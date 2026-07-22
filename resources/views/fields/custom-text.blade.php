@@ -37,6 +37,13 @@
         display: block;
     }
 
+    .ctf-hint {
+        color: #A1A5B7;
+        font-size: 0.75rem;
+        margin-top: 0.375rem;
+        display: block;
+    }
+
     .ctf-icon-wrapper {
         position: absolute;
         right: 0.75rem;
@@ -198,4 +205,7 @@
         </div>
     </div>
     <span class="ctf-error-msg" x-show="error !== null" x-text="error ?? ''"></span>
+    @if(method_exists($element, 'getHint') && $element->getHint())
+        <span class="ctf-hint" x-show="error === null">{{ $element->getHint() }}</span>
+    @endif
 </div>

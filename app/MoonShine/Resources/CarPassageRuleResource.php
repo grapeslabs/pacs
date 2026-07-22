@@ -80,6 +80,8 @@ class CarPassageRuleResource extends BaseModelResource
                 ->required(),
 
             SelectField::make('Теги авто', 'carTags')
+                ->icon('tag')
+                ->optionsIcon('tag')
                 ->multiple()
                 ->options(CarTag::query()->pluck('name', 'id')->toArray()),
 
@@ -233,6 +235,8 @@ class CarPassageRuleResource extends BaseModelResource
             CustomText::make('Наименование', 'name'),
 
             SelectField::make('Теги авто', 'car_tags_filter')
+                ->icon('tag')
+                ->optionsIcon('tag')
                 ->multiple()->nullable()
                 ->options(CarTag::query()->pluck('name', 'id')->toArray())
                 ->onApply($this->relationFilter('carTags', 'car_tags.id')),

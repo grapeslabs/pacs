@@ -289,6 +289,7 @@ final class MoonShineLayout extends AppLayout
                 $this->getHeadComponent(),
                 Body::make([
                     CustomDeleteModal::make(),
+                    Div::make()->customView('components.detail-sidebar'),
                     Wrapper::make([
                         $this->getSidebarComponent(),
                         Div::make([

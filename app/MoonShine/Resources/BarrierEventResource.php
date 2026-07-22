@@ -393,13 +393,18 @@ class BarrierEventResource extends BaseModelResource
 
             // Фильтр по организации
             SelectField::make('Организация', 'organization')
+                ->icon('search')
+                ->optionsIcon('organization')
                 ->options(
                     Organization::query()
                         ->orderBy('short_name')
                         ->get()
-                        ->mapWithKeys(function ($org) {
-                            $name = $org->short_name ?? $org->full_name;
-                            return [$org->id => $name];
+                        ->map(function ($org) {
+                            return [
+                                'id'      => $org->id,
+                                'name'    => $org->short_name ?? $org->full_name,
+                                'subtext' => $org->inn ? 'ИНН ' . $org->inn : null,
+                            ];
                         })
                         ->toArray()
                 )

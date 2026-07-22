@@ -17,7 +17,16 @@ class Key extends Model
     protected $fillable = [
         'key',
         'type',
-        'person_id'
+        'person_id',
+        'is_active',
+        'issued_at',
+        'expires_at',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'issued_at' => 'date',
+        'expires_at' => 'date',
     ];
 
     public function person(): BelongsTo

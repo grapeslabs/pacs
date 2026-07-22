@@ -12,6 +12,11 @@ use App\MoonShine\Fields\SelectField;
 use Closure;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use MoonShine\UI\Components\ActionButton;
+use MoonShine\Laravel\MoonShineRequest;
+use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
+use MoonShine\Support\Enums\ToastType;
 use MoonShine\Contracts\UI\ActionButtonContract;
 use MoonShine\Contracts\UI\Collection\TableRowsContract;
 use MoonShine\Laravel\Enums\Action;
@@ -32,10 +37,150 @@ class TriggerResource extends BaseModelResource
     protected string $model = Trigger::class;
     protected string $title = 'Триггеры';
     protected string $column = 'name';
+    protected bool $detailSidebar = true;
+    protected ?string $createLabel = 'Добавить триггер';
 
     protected function activeActions(): ListOf
     {
         return parent::activeActions()->except(Action::VIEW);
+    }
+
+    protected function indexButtons(): ListOf
+    {
+        return parent::indexButtons()->prepend($this->testMessageButton());
+    }
+
+    /** Кнопка-иконка «Отправить тестовое сообщение» через бота триггера. */
+    protected function testMessageButton(): \MoonShine\Contracts\UI\ActionButtonContract
+    {
+        $plane = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 4 3 11l6 2 2 6 4-6 6-9z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+
+        return ActionButton::make('', fn($item) => $this->getAsyncMethodUrl('sendTest', params: ['item_id' => $item->getKey()]))
+            ->icon($plane, true)
+            ->class('js-test-button')
+            ->customAttributes([
+                'title' => 'Отправить тестовое сообщение',
+                '@click.stop' => '',
+            ])
+            ->async()
+            ->canSee(fn($item) => (bool) $item->bot_id);
+    }
+
+    public function sendTest(MoonShineRequest $request): MoonShineJsonResponse
+    {
+        $trigger = Trigger::query()->with('bot')->find($request->get('item_id'));
+
+        if (! $trigger || ! $trigger->bot) {
+            return MoonShineJsonResponse::make()->toast('Бот не привязан к триггеру', ToastType::ERROR);
+        }
+
+        try {
+            $trigger->bot->sendBroadcast('Тестовое сообщение от триггера «' . $trigger->name . '»');
+
+            return MoonShineJsonResponse::make()->toast('Тестовое сообщение отправлено', ToastType::SUCCESS);
+        } catch (\Throwable $e) {
+            return MoonShineJsonResponse::make()->toast('Ошибка отправки: ' . $e->getMessage(), ToastType::ERROR);
+        }
+    }
+
+    public function detailSidebarData(Model $item): array
+    {
+        $item->loadMissing('bot');
+
+        $icBolt = '<svg viewBox="0 0 24 24" fill="none"><path d="M13 3 4 14h7l-1 7 9-11h-7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+        $icGear = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.5 5.5l2 2M16.5 16.5l2 2M18.5 5.5l-2 2M7.5 16.5l-2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+        $icDevice = '<svg viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="1.6" stroke="currentColor" stroke-width="1.6"/><path d="M9 6V3.5M15 6V3.5M9 20.5V18M15 20.5V18M6 9H3.5M20.5 9H18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+        $icBot = '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="8" width="16" height="11" rx="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 8V4.5M9.5 13h.01M14.5 13h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+
+        $deviceLabel = $this->deviceTypeLabel($item->device_type);
+        $deviceExists = $item->device_type === Trigger::DEVICE_CAMERA
+            ? (bool) Stream::find($item->device_id)
+            : (bool) SkudController::find($item->device_id);
+        $deviceName = match ($item->device_type) {
+            Trigger::DEVICE_CAMERA => Stream::find($item->device_id)?->name,
+            default => SkudController::find($item->device_id)?->serial_number,
+        } ?? 'Устройство удалено';
+
+        $deviceRes = match ($item->device_type) {
+            Trigger::DEVICE_TERMINAL => app(TerminalResource::class),
+            Trigger::DEVICE_CONTROLLER => app(ControllerResource::class),
+            default => null,
+        };
+
+        $active = (bool) $item->is_active;
+
+        $deviceItem = ['title' => $deviceName, 'subtitle' => $deviceLabel];
+        if ($deviceRes !== null && $deviceExists) {
+            $deviceItem['actions'] = [$this->detailChevronTo($deviceRes, $item->device_id)];
+        }
+
+        $sections = [
+            [
+                'icon' => $icGear,
+                'title' => 'Конфигурация',
+                'fields' => [
+                    ['label' => 'Событие', 'value' => $this->eventLabel($item->event_type)],
+                ],
+            ],
+            [
+                'icon' => $icDevice,
+                'title' => 'Устройство',
+                'items' => [$deviceItem],
+            ],
+        ];
+
+        if ($item->bot) {
+            $sections[] = [
+                'icon' => $icBot,
+                'title' => 'Бот',
+                'items' => [[
+                    'title' => $item->bot->name,
+                    'actions' => [$this->detailChevronTo(app(BotResource::class), $item->bot->getKey())],
+                ]],
+            ];
+        }
+
+        return [
+            'title' => 'Карточка триггера',
+            'subtitle' => 'Триггер · ' . $deviceLabel,
+            'hero' => [
+                'title' => $item->name,
+                'subtitle' => 'Триггер · ' . $deviceLabel,
+                'icon' => $icBolt,
+                'badges' => [
+                    $active
+                        ? ['text' => 'Включён']
+                        : ['text' => 'Выключен', 'tone' => 'muted'],
+                ],
+            ],
+            'sections' => $sections,
+            'footer' => [
+                ['spacer' => true],
+                ['html' => $this->detailEditButtonHtml($item)],
+            ],
+        ];
+    }
+
+    private function deviceTypeLabel(?string $type): string
+    {
+        return [
+            Trigger::DEVICE_CAMERA => 'Камера',
+            Trigger::DEVICE_TERMINAL => 'Терминал доступа',
+            Trigger::DEVICE_BARIER => 'Шлагбаум',
+            Trigger::DEVICE_CONTROLLER => 'Контроллер СКУД',
+        ][$type] ?? (string) $type;
+    }
+
+    private function eventLabel(?string $type): string
+    {
+        return [
+            Trigger::EVENT_KNOWED => 'Появление известного лица',
+            Trigger::EVENT_UNKNOWED => 'Появление неизвестного лица',
+            Trigger::EVENT_INCOME => 'Вход',
+            Trigger::EVENT_OUTCOME => 'Выход',
+            Trigger::EVENT_MANUAL => 'Открыто вручную',
+            Trigger::EVENT_DENIED => 'Отказано',
+        ][$type] ?? (string) $type;
     }
 
     public function indexFields(): iterable
@@ -64,12 +209,11 @@ class TriggerResource extends BaseModelResource
                     END $direction
                 ")),
 
-            Text::make('Устройство', 'device_id', function ($item) {
-                return match($item->device_type) {
-                    Trigger::DEVICE_CAMERA => Stream::find($item->device_id)->name??'Устройство удалено',
-                    default => SkudController::find($item->device_id)?->serial_number,
-                };
-            }),
+            \App\MoonShine\Fields\DeviceField::make('Устройство', 'device_id')
+                ->deviceIcon(fn($item) => $this->deviceIconSvg($item->device_type))
+                ->text(fn($item) => $this->resolveDevice($item)['name'] ?: ('Устройство #' . $item->device_id))
+                ->subtext(fn($item) => $this->resolveDevice($item)['exists'] ? $this->deviceTypeLabel($item->device_type) : 'Устройство удалено')
+                ->deleted(fn($item) => ! $this->resolveDevice($item)['exists']),
 
             Select::make('Событие', 'event_type')
                 ->options([
@@ -96,16 +240,39 @@ class TriggerResource extends BaseModelResource
                 ->updateOnPreview()
                 ->sortable(),
 
-            BelongsTo::make('Бот', 'bot', 'name', resource: BotResource::class)
-                ->sortable(function (Builder $query, string $column, string $direction) {
-                    return $query->orderBy(
-                        Bot::select('name')
-                            ->whereColumn('bots.id', 'triggers.bot_id')
-                            ->limit(1),
-                        $direction
-                    );
-                })
+            \App\MoonShine\Fields\DeviceField::make('Бот', 'bot_id')
+                ->deviceIcon(@file_get_contents(public_path('icons/menu-bot.svg')) ?: '')
+                ->text(fn($item) => $item->bot?->name ?? '—'),
         ];
+    }
+
+    private array $deviceCache = [];
+
+    private function resolveDevice($item): array
+    {
+        $key = $item->device_type . ':' . $item->device_id;
+        if (! isset($this->deviceCache[$key])) {
+            if ($item->device_type === Trigger::DEVICE_CAMERA) {
+                $model = Stream::find($item->device_id);
+                $name = $model?->name;
+            } else {
+                $model = SkudController::find($item->device_id);
+                $name = $model?->serial_number;
+            }
+            $this->deviceCache[$key] = ['exists' => (bool) $model, 'name' => $name];
+        }
+
+        return $this->deviceCache[$key];
+    }
+
+    private function deviceIconSvg(?string $type): string
+    {
+        return match ($type) {
+            Trigger::DEVICE_CAMERA => '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="6.5" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="m15 10.5 6-3.5v10l-6-3.5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+            Trigger::DEVICE_TERMINAL => '<svg viewBox="0 0 24 24" fill="none"><rect x="7" y="3" width="10" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 18h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+            Trigger::DEVICE_BARIER => '<svg viewBox="0 0 24 24" fill="none"><path d="M5 20V9a2 2 0 0 1 2-2l11 2v3L7 10" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 20h4M7 20V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+            default => '<svg viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="1.6" stroke="currentColor" stroke-width="1.6"/><rect x="9.5" y="9.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M9 6V3.5M15 6V3.5M9 20.5V18M15 20.5V18M6 9H3.5M6 15H3.5M20.5 9H18M20.5 15H18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+        };
     }
 
     public function formFields(): iterable
@@ -250,6 +417,8 @@ class TriggerResource extends BaseModelResource
                 ->showWhen('device_type', '=', Trigger::DEVICE_CAMERA),
 
             SelectField::make('Теги', 'tags')
+                ->icon('tag')
+                ->optionsIcon('tag')
                 ->options(Tag::select('id', 'name')->get())
                 ->multiple(true)
         ];
@@ -309,6 +478,8 @@ class TriggerResource extends BaseModelResource
                 ->nullable(),
 
             SelectField::make('Теги', 'tags')
+                ->icon('tag')
+                ->optionsIcon('tag')
                 ->options(Tag::select('id', 'name')->get())
                 ->multiple(true)
         ];

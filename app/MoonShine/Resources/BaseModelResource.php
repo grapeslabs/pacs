@@ -38,6 +38,150 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
     protected bool $usePagination=true;
     protected string $safeModalName = 'universal-safe-modal';
 
+    protected bool $detailSidebar = false;
+
+    protected ?string $createLabel = null;
+
+    public function createButtonLabel(): string
+    {
+        return $this->createLabel ?? 'Добавить';
+    }
+
+    public function usesDetailSidebar(): bool
+    {
+        return $this->detailSidebar;
+    }
+
+    public function detailSidebarData(Model $item): array
+    {
+        return [];
+    }
+
+    public function findItemForDetail(int|string $id): Model
+    {
+        /** @var class-string<Model> $class */
+        $class = $this->model;
+
+        return $class::query()->findOrFail($id);
+    }
+
+    protected function commentIcon(): string
+    {
+        return '<svg viewBox="0 0 24 24" fill="none"><path d="M4 5.5h16v11H9.5L5 20.5v-4H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 9.5h8M8 13h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+    }
+
+    protected function detailEditButtonHtml(Model $item, string $label = 'Редактировать'): string
+    {
+        $url = $this->getFormPageUrl($item->getKey(), params: [
+            '_component_name' => $this->getListComponentName(),
+            '_async_form' => true,
+        ], fragment: 'crud-form');
+
+        return (string) ActionButton::make($label, $url)
+            ->icon('pencil')
+            ->async(selector: "#{$this->safeModalName}_content")
+            ->customAttributes([
+                'class' => 'ds-btn ds-btn--primary',
+                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Редактирование' }); \$dispatch('modal-toggled', { id: 'detail-sidebar' })",
+            ]);
+    }
+
+    public function detailEditIconButton(Model $item, string $title = 'Редактирование'): string
+    {
+        $url = $this->getFormPageUrl($item->getKey(), params: [
+            '_component_name' => $this->getListComponentName(),
+            '_async_form' => true,
+        ], fragment: 'crud-form');
+
+        return (string) ActionButton::make('', $url)
+            ->icon('pencil')
+            ->async(selector: "#{$this->safeModalName}_content")
+            ->class('ds-iconbtn')
+            ->customAttributes([
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: '{$title}' })",
+            ]);
+    }
+
+    protected function buildEventsSection(\Illuminate\Support\Collection $events): array
+    {
+        $icOk = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="m8.5 12.5 2.5 2.5 4.5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        $icNo = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+        $icSys = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 0 1 13.5-5.5L20 8M20 4v4h-4M20 12a8 8 0 0 1-13.5 5.5L4 16M4 20v-4h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        $icPulse = '<svg viewBox="0 0 24 24" fill="none"><path d="M3 12h4l2 6 4-14 2 8h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+        $granted = [0, 1, 4, 5, 8, 9, 16, 17];
+        $denied = [2, 3, 6, 7, 10, 11, 12, 13];
+
+        $items = $events->map(function ($e) use ($icOk, $icNo, $icSys, $granted, $denied) {
+            $ev = is_array($e->event) ? $e->event : (json_decode($e->event ?? '{}', true) ?: []);
+            $card = $ev['card_number'] ?? null;
+
+            $person = null;
+            if ($card) {
+                $person = \App\Models\Person::query()->where('key_uid', $card)->first();
+                if (! $person && str_starts_with((string) $card, 'person_')) {
+                    $person = \App\Models\Person::query()->find((int) substr((string) $card, 7));
+                }
+            }
+
+            $code = (int) $e->type;
+            if (in_array($code, $granted, true)) {
+                $tone = 'ok';
+                $icon = $icOk;
+                $title = 'Доступ разрешён' . ($person ? ' · ' . $person->getFullName() : '');
+                $subtitle = 'по карте';
+            } elseif (in_array($code, $denied, true)) {
+                $tone = 'danger';
+                $icon = $icNo;
+                $title = 'Доступ запрещён' . ($person ? ' · ' . $person->getFullName() : ' · неизвестный ключ');
+                $subtitle = 'по карте';
+            } else {
+                $tone = 'info';
+                $icon = $icSys;
+                $title = $ev['event'] ?? 'Системное событие';
+                $subtitle = null;
+            }
+
+            return [
+                'icon' => $icon,
+                'iconTone' => $tone,
+                'title' => $title,
+                'subtitle' => $subtitle,
+                'meta' => $e->datetime ? \Illuminate\Support\Carbon::parse($e->datetime)->format('H:i:s') : null,
+            ];
+        })->all();
+
+        return [
+            'icon' => $icPulse,
+            'title' => 'Последние события · ' . $events->count(),
+            'collapsible' => true,
+            'items' => $items,
+        ];
+    }
+
+    /** URL списка ресурса с применённым фильтром (для переходов из карточки). */
+    public function filteredIndexUrl(self $resource, array $filters): string
+    {
+        $url = $resource->getIndexPageUrl();
+        $query = http_build_query(['filter' => $filters]);
+
+        return $url . (str_contains($url, '?') ? '&' : '?') . $query;
+    }
+
+    public function detailChevronTo(self $resource, int|string $id): string
+    {
+        return (string) ActionButton::make(
+            '',
+            route('detail-card', ['resource' => $resource->getUriKey(), 'id' => $id])
+        )
+            ->icon('chevron-right')
+            ->async(selector: '#detail-sidebar_content')
+            ->class('ds-iconbtn')
+            ->customAttributes([
+                '@click' => "window.dispatchEvent(new CustomEvent('ds-push'))",
+            ]);
+    }
+
     protected function indexButtons(): ListOf
     {
         $buttons = parent::indexButtons();
@@ -45,11 +189,26 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             return $buttons;
         }
         return (new ListOf(ActionButton::class, [
-            $this->getDetailButton(),
+            $this->detailSidebar ? $this->getDetailSidebarButton() : $this->getDetailButton(),
             $this->getSafeEditButton(),
             $this->getDeleteButton(),
             $this->getMassDeleteButton()
         ]));
+    }
+
+    protected function getDetailSidebarButton(): ActionButtonContract
+    {
+        return ActionButton::make(
+            '',
+            fn($item) => route('detail-card', ['resource' => $this->getUriKey(), 'id' => $item->getKey()])
+        )
+            ->class('js-detail-button')
+            ->customAttributes([
+                'style' => 'display: none !important;',
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: 'detail-sidebar' })",
+            ])
+            ->async(selector: '#detail-sidebar_content')
+            ->canSee(fn() => $this->can(Ability::VIEW_ANY));
     }
 
     protected function getSafeEditButton(): ActionButton
@@ -134,7 +293,7 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
 
     public function trAttributes(): ?Closure
     {
-        if (! $this->hasDetailView()) {
+        if (! $this->detailSidebar && ! $this->hasDetailView()) {
             return null;
         }
         return function (mixed $item, int $index): array {

@@ -19,6 +19,38 @@ class SelectField extends Field
     protected string $placeholder = '';
     protected mixed $defaultValue = null;
     protected array $customClientRules = [];
+    protected ?string $iconSvg = null;
+    protected ?string $optionIconSvg = null;
+
+    /**
+     * Иконка-префикс самого поля (внутри инпута слева).
+     * Принимает имя файла из public/icons (без расширения) либо готовый <svg> markup.
+     */
+    public function icon(string $icon): static
+    {
+        $this->iconSvg = $this->resolveIconSvg($icon);
+        return $this;
+    }
+
+    /**
+     * Иконка, применяемая ко всем опциям (и выбранным чипам), если у опции нет своей.
+     */
+    public function optionsIcon(string $icon): static
+    {
+        $this->optionIconSvg = $this->resolveIconSvg($icon);
+        return $this;
+    }
+
+    protected function resolveIconSvg(string $icon): string
+    {
+        if (str_contains($icon, '<svg')) {
+            return $icon;
+        }
+
+        $path = public_path('icons/' . $icon . '.svg');
+
+        return is_file($path) ? trim((string) file_get_contents($path)) : '';
+    }
 
     public function required(\Closure|bool|string|null $condition = null, string $message = 'Обязательное поле'): static
     {
@@ -219,6 +251,8 @@ class SelectField extends Field
             'isMultiple'        => $this->isMultiple,
             'placeholder'       => $this->placeholder,
             'customClientRules' => $this->customClientRules,
+            'iconSvg'           => $this->iconSvg,
+            'optionIconSvg'     => $this->optionIconSvg,
         ];
     }
 }

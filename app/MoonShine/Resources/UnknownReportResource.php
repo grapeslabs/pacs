@@ -177,7 +177,13 @@ class UnknownReportResource extends BaseModelResource
                     Column::make([
                         SelectField::make('Организация', 'organization_id')
                             ->placeholder('Выберите организацию')
-                            ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
+                            ->icon('search')
+                            ->optionsIcon('organization')
+                            ->options(Organization::query()->get()->map(fn($o) => [
+                                'id'      => $o->id,
+                                'name'    => $o->short_name,
+                                'subtext' => $o->inn ? 'ИНН ' . $o->inn : null,
+                            ])->toArray())
                             ->nullable(),
                     ])->columnSpan(6),
                 ]),
@@ -188,6 +194,8 @@ class UnknownReportResource extends BaseModelResource
                     ->dir('thumbnails')
                     ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
                 SelectField::make('Теги', 'tags')
+                    ->icon('tag')
+                    ->optionsIcon('tag')
                     ->options(Tag::select('id', 'name')->get())
                     ->multiple(true)
                     ->creatable(true, route('tags.store')),

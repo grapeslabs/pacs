@@ -1468,23 +1468,23 @@ textarea {
         border: none !important;
     }
 
-    .btn-key div {
-        width: 30px !important;
-        height: 30px !important;
-        background-color: transparent !important;
-    }
+    /*.btn-key div {*/
+/*        width: 30px !important;*/
+/*        height: 30px !important;*/
+/*        background-color: transparent !important;*/
+/*    }*/
 
 
-    .btn-error {
-        div {
-            content: url('/icons/btn-delete.svg');
-            width: 30px !important;
-            height: 30px !important;
-            background-color: transparent !important;
-        }
-        width: 54px;
-        height: 42px;
-    }
+/*    .btn-error {*/
+/*        div {*/
+/*            content: url('/icons/btn-delete.svg');*/
+/*            width: 30px !important;*/
+/*            height: 30px !important;*/
+/*            background-color: transparent !important;*/
+/*        }*/
+/*        width: 54px;*/
+/*        height: 42px;*/
+/*    }*/
     display: flex;
     align-items: center;
     gap: 0;
@@ -1503,131 +1503,131 @@ textarea {
     z-index: auto;
 }
 
-.js-filter-button {
-    div {
-        padding-bottom: 20px;
-    }
-    .badge {
-        border-color: var(--gray-300);
-    }
-    background-color: var(--white-200) !important;
-    color: var(--gray-600) !important;
-    border-color: var(--gray-300) !important;
-}
+/*.js-filter-button {*/
+/*    div {*/
+/*        padding-bottom: 20px;*/
+/*    }*/
+/*    .badge {*/
+/*        border-color: var(--gray-300);*/
+/*    }*/
+/*    background-color: var(--white-main) !important;*/
+/*    color: var(--gray-600) !important;*/
+/*    border-color: var(--gray-300) !important;*/
+/*}*/
 
-.js-async-reset-button{
-    background-color: var(--white-200) !important;
-    color: var(--gray-600) !important;
-    border-color: var(--gray-300) !important;
-    border-radius: 24px !important;
-}
+/*.js-async-reset-button{*/
+/*    background-color: var(--white-200) !important;*/
+/*    color: var(--gray-600) !important;*/
+/*    border-color: var(--gray-300) !important;*/
+/*    border-radius: 24px !important;*/
+/*}*/
 
-.js-detail-button {
-    div:last-child {
-        width: 30px !important;
-        height: 30px !important;
-    }
-    font-weight: 700;
-    width: 54px !important;
-    height: 42px !important;
-    border: none !important;
-    background-color: transparent !important;
-}
+/*.js-detail-button {*/
+/*    div:last-child {*/
+/*        width: 30px !important;*/
+/*        height: 30px !important;*/
+/*    }*/
+/*    font-weight: 700;*/
+/*    width: 54px !important;*/
+/*    height: 42px !important;*/
+/*    border: none !important;*/
+/*    background-color: transparent !important;*/
+/*}*/
 
-.js-edit-button {
-    div:last-child {
-        content: url('/icons/btn-edit.svg') !important;
-        width: 30px !important;
-        height: 30px !important;
-    }
-    font-weight: 700;
-    width:  54px !important;
-    height: 42px !important;
-    border: none !important;
-    background-color: transparent !important;
-}
+/*.js-edit-button {*/
+/*    div:last-child {*/
+/*        content: url('/icons/btn-edit.svg') !important;*/
+/*        width: 30px !important;*/
+/*        height: 30px !important;*/
+/*    }*/
+/*    font-weight: 700;*/
+/*    width:  54px !important;*/
+/*    height: 42px !important;*/
+/*    border: none !important;*/
+/*    background-color: transparent !important;*/
+/*}*/
 
-.js-player-button {
-    div:last-child {
-        content: url('/icons/btn-fullscreen.svg') !important;
-        filter: invert(89%) sepia(10%) saturate(464%) hue-rotate(216deg) brightness(92%) contrast(88%);
-        width: 20px !important;
-        height: 20px !important;
-    }
-    font-weight: 700;
-    width:  54px !important;
-    height: 42px !important;
-    border: none !important;
-    background-color: transparent !important;
-}
+/*.js-player-button {*/
+/*    div:last-child {*/
+/*        content: url('/icons/btn-fullscreen.svg') !important;*/
+/*        filter: invert(89%) sepia(10%) saturate(464%) hue-rotate(216deg) brightness(92%) contrast(88%);*/
+/*        width: 20px !important;*/
+/*        height: 20px !important;*/
+/*    }*/
+/*    font-weight: 700;*/
+/*    width:  54px !important;*/
+/*    height: 42px !important;*/
+/*    border: none !important;*/
+/*    background-color: transparent !important;*/
+/*}*/
 
-.js-copy-button {
-    div:last-child {
-        filter: invert(89%) sepia(10%) saturate(464%) hue-rotate(216deg) brightness(92%) contrast(88%);
-        width: 20px !important;
-        height: 20px !important;
-    }
-    font-weight: 700;
-    width:  54px !important;
-    height: 42px !important;
-    border: none !important;
-    background-color: transparent !important;
-}
+/*.js-copy-button {*/
+/*    div:last-child {*/
+/*        filter: invert(89%) sepia(10%) saturate(464%) hue-rotate(216deg) brightness(92%) contrast(88%);*/
+/*        width: 20px !important;*/
+/*        height: 20px !important;*/
+/*    }*/
+/*    font-weight: 700;*/
+/*    width:  54px !important;*/
+/*    height: 42px !important;*/
+/*    border: none !important;*/
+/*    background-color: transparent !important;*/
+/*}*/
 
-.js-identify-button {
-    div:last-child {
-        content: url('/icons/btn-identify.svg') !important;
-        filter: invert(89%) sepia(10%) saturate(464%) hue-rotate(216deg) brightness(92%) contrast(88%);
-        width: 30px !important;
-        height: 30px !important;
-    }
-    font-weight: 700;
-    width:  54px !important;
-    height: 42px !important;
-    border: none !important;
-    background-color: transparent !important;
-}
+/*.js-identify-button {*/
+/*    div:last-child {*/
+/*        content: url('/icons/btn-identify.svg') !important;*/
+/*        filter: invert(89%) sepia(10%) saturate(464%) hue-rotate(216deg) brightness(92%) contrast(88%);*/
+/*        width: 30px !important;*/
+/*        height: 30px !important;*/
+/*    }*/
+/*    font-weight: 700;*/
+/*    width:  54px !important;*/
+/*    height: 42px !important;*/
+/*    border: none !important;*/
+/*    background-color: transparent !important;*/
+/*}*/
 
-.js-key-button {
-    div:last-child {
-        content: url('/icons/menu-apikeys.svg') !important;
-        filter: invert(89%) sepia(10%) saturate(464%) hue-rotate(216deg) brightness(92%) contrast(88%);
-        width: 30px !important;
-        height: 30px !important;
-    }
-    font-weight: 700;
-    width:  54px !important;
-    height: 42px !important;
-    border: none !important;
-    background-color: transparent !important;
-}
+/*.js-key-button {*/
+/*    div:last-child {*/
+/*        content: url('/icons/menu-apikeys.svg') !important;*/
+/*        filter: invert(89%) sepia(10%) saturate(464%) hue-rotate(216deg) brightness(92%) contrast(88%);*/
+/*        width: 30px !important;*/
+/*        height: 30px !important;*/
+/*    }*/
+/*    font-weight: 700;*/
+/*    width:  54px !important;*/
+/*    height: 42px !important;*/
+/*    border: none !important;*/
+/*    background-color: transparent !important;*/
+/*}*/
 
-.js-actuator-button {
-    font-weight: 700;
-    width: 54px !important;
-    height: 42px !important;
-    border: none !important;
-    background-color: transparent !important;
+/*.js-actuator-button {*/
+/*    font-weight: 700;*/
+/*    width: 54px !important;*/
+/*    height: 42px !important;*/
+/*    border: none !important;*/
+/*    background-color: transparent !important;*/
 
-    > div:not(.spinner) {
-        width: 30px !important;
-        height: 30px !important;
+/*    > div:not(.spinner) {*/
+/*        width: 30px !important;*/
+/*        height: 30px !important;*/
 
-        svg {
-            width: 30px !important;
-            height: 30px !important;
-        }
-    }
+/*        svg {*/
+/*            width: 30px !important;*/
+/*            height: 30px !important;*/
+/*        }*/
+/*    }*/
 
-    .spinner {
-        flex-shrink: 0 !important;
-        aspect-ratio: 1 / 1 !important;
-    }
+/*    .spinner {*/
+/*        flex-shrink: 0 !important;*/
+/*        aspect-ratio: 1 / 1 !important;*/
+/*    }*/
 
-    .spinner ~ div {
-        display: none !important;
-    }
-}
+/*    .spinner ~ div {*/
+/*        display: none !important;*/
+/*    }*/
+/*}*/
 
 .heading div {
     font-weight: 700 !important;

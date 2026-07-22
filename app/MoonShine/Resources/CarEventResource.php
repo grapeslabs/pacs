@@ -5,6 +5,7 @@ namespace App\MoonShine\Resources;
 use App\Models\CarPassageEvent;
 use App\Models\Stream;
 use App\MoonShine\Fields\ColoredSelectField;
+use App\MoonShine\Fields\LicensePlateField;
 use App\MoonShine\Fields\SelectField;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
@@ -53,7 +54,7 @@ class CarEventResource extends BaseModelResource
             Text::make('Камера', 'camera_id')
                 ->changeFill(fn($item) => $this->streamNameByUid($item->camera_id)),
 
-            Text::make('Номер', 'plate_text'),
+            LicensePlateField::make('Номер', 'plate_text'),
 
             ColoredSelectField::make('Статус', 'car_id', fn($item) => match (true) {
                 empty($item->plate_text) => 'not_recognized',
