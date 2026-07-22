@@ -42,7 +42,7 @@ class OrganizationResource extends BaseModelResource
 
         $icDoc = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 3h9l3 3v15H6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12h6M9 16h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
         $icPhone = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 3h3l1.6 5-2 1.4a11 11 0 0 0 5 5l1.4-2 5 1.6V21a17 17 0 0 1-19-18z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
-        $icPerson = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+        $icPerson = file_get_contents(public_path('icons/person.svg'));
         $orgIcon = @file_get_contents(public_path('icons/organization.svg')) ?: $icDoc;
 
         $personsUrl = $this->filteredIndexUrl(app(PersonResource::class), ['organization_id' => $item->getKey()]);
@@ -129,6 +129,7 @@ class OrganizationResource extends BaseModelResource
     public function formFields(): iterable
     {
         $locationIcon = file_get_contents(public_path('icons/location.svg'));
+        $phoneIcon = file_get_contents(public_path('icons/phone.svg'));
 
         return [
             OrganizationField::make('Поиск организации', 'search_query')
@@ -165,7 +166,9 @@ class OrganizationResource extends BaseModelResource
                     CustomText::make('ФИО', 'contact_name'),
                 ])->columnSpan(6),
             ]),
-            CustomText::make('Телефон', 'phone'),
+            CustomText::make('Телефон', 'phone')
+                ->phone()
+                ->leadingIcon($phoneIcon),
             CustomTextarea::make('Комментарий', 'comment'),
         ];
     }

@@ -232,7 +232,7 @@ class InviterResource extends BaseModelResource
                 ->nullable()
                 ->placeholder('Фильтрация по персоне'),
             SelectField::make('Организация', 'person.organization_id')
-                ->icon('search')
+                ->icon('magnifier')
                 ->optionsIcon('organization')
                 ->options(
                     Organization::query()

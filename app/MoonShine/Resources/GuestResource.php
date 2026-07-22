@@ -3,8 +3,11 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Guest;
+use App\Models\Organization;
+use App\MoonShine\Fields\SelectField;
 use Illuminate\Database\Eloquent\Model;
 use App\MoonShine\Fields\AvatarField;
+use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
@@ -17,6 +20,7 @@ use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
+use MoonShine\UI\Components\Layout\Column;
 use MoonShine\UI\Fields\Date;
 use MoonShine\UI\Fields\DateRange;
 use MoonShine\UI\Fields\ID;
@@ -25,6 +29,7 @@ use MoonShine\UI\Fields\Phone;
 use MoonShine\UI\Fields\Image;
 use App\MoonShine\Fields\CustomTextarea;
 use Illuminate\Support\Facades\Storage;
+use MoonShine\UI\Components\Layout\Grid;
 
 class GuestResource extends BaseModelResource
 {
@@ -46,7 +51,7 @@ class GuestResource extends BaseModelResource
 
     public function detailSidebarData(Model $item): array
     {
-        $icPerson = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+        $icPerson = file_get_contents(public_path('icons/person.svg'));
         $icCheck = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6z" stroke="currentColor" stroke-width="1.6"/><path d="m9 11.5 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
         $photos = is_array($item->photo) ? $item->photo : [];
@@ -59,9 +64,9 @@ class GuestResource extends BaseModelResource
         $now = now();
         $start = $item->entry_start;
         $end = $item->entry_end;
-        if ($start && $now->lt($start)) {
+        if ($start && $now->lt($start->copy()->startOfDay())) {
             $badge = ['text' => 'Ожидает', 'tone' => 'muted', 'icon' => $icCheck];
-        } elseif ($end && $now->gt($end)) {
+        } elseif ($end && $now->gt($end->copy()->endOfDay())) {
             $badge = ['text' => 'Истёк', 'tone' => 'danger', 'icon' => $icCheck];
         } else {
             $badge = ['text' => 'Действует', 'icon' => $icCheck];
@@ -125,31 +130,53 @@ class GuestResource extends BaseModelResource
                 ->sortable(),
             Text::make('Телефон', 'phone')
                 ->sortable(),
-            Image::make('Фото', 'photo')
-                ->multiple(),
             Text::make('Документ', 'document')
                 ->sortable(),
             Text::make('Комментарий', 'comment')
                 ->sortable(),
-            Date::make('Действует с', 'entry_start')
-                ->sortable(),
             Date::make('Действует до', 'entry_end')
                 ->sortable(),
+            ColoredSelectField::make('Статус', 'entry_end', function ($item) {
+                $now = now();
+                if ($item->entry_start && $now->lt($item->entry_start->copy()->startOfDay())) {
+                    return 'waiting';
+                }
+                if ($item->entry_end && $now->gt($item->entry_end->copy()->endOfDay())) {
+                    return 'expired';
+                }
+                return 'active';
+            })->options([
+                'waiting' => ['label' => 'Ждёт', 'color' => 'yellow'],
+                'active'  => ['label' => 'Действует', 'color' => 'green'],
+                'expired' => ['label' => 'Истёк', 'color' => 'gray'],
+            ]),
         ];
     }
 
     public function formFields(): iterable
     {
+        $phonIcon = file_get_contents(public_path('icons/phone.svg'));
+        $documentIcon = file_get_contents(public_path('icons/document.svg'));
         return [
+            Grid::make([
+                Column::make([
+                    CustomText::make('ФИО', 'full_name')
+                        ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                        ->required(),
+                ])->columnSpan(6),
+                Column::make([
+                    CustomText::make('Телефон', 'phone')
+                        ->nullable()
+                        ->phone()
+                        ->leadingIcon($phonIcon),
+                    ])->columnSpan(6),
+            ]),
             CustomText::make('Внешний ID', 'external_id')
                 ->unique('guests','external_id')
                 ->nullable(),
-            CustomText::make('ФИО', 'full_name')
-                ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
-                ->required(),
-            CustomText::make('Телефон', 'phone')
+            CustomText::make('Документ', 'document')
                 ->nullable()
-                ->phone(),
+                ->leadingIcon($documentIcon),
             PhotoField::make('Фото', 'photo')
                 ->multiple()
                 ->removable()
@@ -185,14 +212,25 @@ class GuestResource extends BaseModelResource
                     }
                     return $data;
                 }),
-            CustomText::make('Документ', 'document')
-                ->nullable(),
+            Grid::make([
+                Column::make([
+                    CustomDate::make('Действует с', 'entry_start')
+                        ->onApply(function ($item, $value) {
+                            $item->entry_start = ! empty($value) ? Carbon::parse($value)->startOfDay() : null;
+                            return $item;
+                        }),
+                    ])->columnSpan(6),
+                Column::make([
+                    CustomDate::make('Действует до', 'entry_end')
+                        ->afterField('entry_start', 'Конец действия не может быть раньше его начала')
+                        ->onApply(function ($item, $value) {
+                            $item->entry_end = ! empty($value) ? Carbon::parse($value)->endOfDay() : null;
+                            return $item;
+                        }),
+                ])->columnSpan(6),
+            ]),
             CustomTextarea::make('Комментарий', 'comment')
                 ->nullable(),
-            CustomDate::make('Действует с', 'entry_start')
-                ->after(Carbon::now(), 'Начало действия не может в прошлом'),
-            CustomDate::make('Действует до', 'entry_end')
-                ->afterField('entry_start', 'Конец действия не может быть раньше его начала'),
         ];
     }
 

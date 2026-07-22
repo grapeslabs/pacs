@@ -49,7 +49,7 @@ class KeyResource extends BaseModelResource
 
         $icKey = file_get_contents(public_path('icons/btn-addkey.svg'));
         $icGear = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.5 5.5l2 2M16.5 16.5l2 2M18.5 5.5l-2 2M7.5 16.5l-2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-        $icPerson = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+        $icPerson = file_get_contents(public_path('icons/person.svg'));
 
         $type = $item->type ?: '—';
         $active = (bool) $item->is_active;
@@ -196,6 +196,7 @@ class KeyResource extends BaseModelResource
     {
         return [
             CustomText::make('Ключ', 'key')
+                ->leadingIcon(file_get_contents(public_path('icons/btn-addkey.svg')))
                 ->max(255, 'Ключ не может содержать более 255 символов')
                 ->unique('keys', 'key', 'Ключ должен быть уникальным')
                 ->required(),
@@ -204,8 +205,8 @@ class KeyResource extends BaseModelResource
                 ->required()
                 ->default('Mifare'),
             SelectField::make('Персона', 'person_id')
-                ->icon('search')
-                ->optionsIcon('icon-person')
+                ->icon('magnifier')
+                ->optionsIcon('person')
                 ->options(Person::query()->get()->map(fn($p) => [
                     'id'      => $p->id,
                     'name'    => trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '') . ' ' . ($p->middle_name ?? '')),

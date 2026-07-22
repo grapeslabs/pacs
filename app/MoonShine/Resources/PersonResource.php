@@ -7,12 +7,14 @@ use App\Models\Person;
 use App\Models\Organization;
 use App\Models\VideoAnalyticReport;
 use App\MoonShine\Fields\AvatarField;
+use App\MoonShine\Fields\CountField;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
 use App\Models\Tag;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Fields\ColoredSelectField;
+use App\MoonShine\Fields\TagsField;
 use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Resources\OrganizationResource;
 use Carbon\Carbon;
@@ -94,7 +96,7 @@ class PersonResource extends BaseModelResource
         $keyRes = app(KeyResource::class);
         $keysUrl = $this->filteredIndexUrl($keyRes, ['person_id' => $item->getKey()]);
 
-        $icPerson = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+        $icPerson = file_get_contents(public_path('icons/person.svg'));
         $icTag = '<svg viewBox="0 0 24 24" fill="none"><path d="M3 11.5 11.5 3H20v8.5L11.5 20z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="15.5" cy="8.5" r="1.4" fill="currentColor"/></svg>';
         $icKey = '<svg viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="m11 11 8 8M16 16l2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
         $icCheck = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6z" stroke="currentColor" stroke-width="1.6"/><path d="m9 11.5 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -269,11 +271,8 @@ class PersonResource extends BaseModelResource
                 ->sortable(),
             BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
                 ->sortable(),
-            \App\MoonShine\Fields\CountField::make('Ключи', 'id', fn($item) => $item->keys()->count()),
-            \App\MoonShine\Fields\TagsField::make('Теги', 'tags', fn($item) => $item->tags->pluck('name')->all()),
-            Image::make('Фотобанк', 'photo')
-                ->multiple()
-                ->setLabel('Фотобанк'),
+            CountField::make('Ключи', 'id', fn($item) => $item->keys()->count()),
+            TagsField::make('Теги', 'tags', fn($item) => $item->tags->pluck('name')->all()),
             ColoredSelectField::make('Статус', 'frozen_start', fn($item) => $item && $item->isFrozen() ? 'frozen' : 'active')
                 ->options([
                     'active' => ['label' => 'Активен', 'color' => 'green'],
@@ -337,7 +336,7 @@ class PersonResource extends BaseModelResource
                 Column::make([
                     SelectField::make('Организация', 'organization_id')
                         ->placeholder('Выберите организацию')
-                        ->icon('search')
+                        ->icon('magnifier')
                         ->optionsIcon('organization')
                         ->options(Organization::query()->get()->map(fn($o) => [
                             'id'      => $o->id,
@@ -398,7 +397,7 @@ class PersonResource extends BaseModelResource
 
             SelectField::make('Организация', 'organization_id')
                 ->placeholder('Фильтрация по организации')
-                ->icon('search')
+                ->icon('magnifier')
                 ->optionsIcon('organization')
                 ->options(Organization::query()->get()->map(fn($o) => [
                     'id'      => $o->id,
@@ -464,12 +463,25 @@ class PersonResource extends BaseModelResource
     public function getKeyForm(MoonShineRequest $request): string
     {
         $itemId = $request->get('item_id');
+        $person = Person::find($itemId);
+        $personName = $person
+            ? trim(($person->last_name ?? '') . ' ' . ($person->first_name ?? '') . ' ' . ($person->middle_name ?? ''))
+            : ('Персона #' . $itemId);
+        $personPhoto = $person && $person->first_photo
+            ? Storage::disk('public')->url($person->first_photo)
+            : null;
+
         return FormBuilder::make()
             ->action($this->getAsyncMethodUrl('saveKey', null, ['item_id' => $itemId]))
             ->async()
             ->fields([
-                    Hidden::make('person_id')->default($itemId),
+                    \App\MoonShine\Fields\PersonBindingField::make('', 'person_card')
+                        ->person($personName, $personPhoto, 'Ключ привяжется к этой персоне')
+                        ->withoutWrapper(),
+                    Hidden::make('person_id')->default((int) $itemId),
                     CustomText::make('Ключ', 'key')
+                        ->leadingIcon(file_get_contents(public_path('icons/btn-addkey.svg')))
+                        ->hint('12 символов: UID карты / чипа или мобильный идентификатор')
                         ->max(255)
                         ->unique('keys', 'key', 'Ключ должен быть уникальным')
                         ->required(),

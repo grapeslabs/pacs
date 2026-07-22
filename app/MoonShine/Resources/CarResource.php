@@ -9,6 +9,7 @@ use App\Models\Organization;
 use App\Models\Person;
 use App\Models\CarTag;
 use App\MoonShine\Fields\SelectField;
+use App\MoonShine\Fields\TagsField;
 use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Resources\CarBrandResource;
 use App\MoonShine\Resources\CarColorResource;
@@ -57,7 +58,7 @@ class CarResource extends BaseModelResource
         $item->loadMissing(['brand', 'color', 'organization', 'people', 'tags']);
 
         $icData = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 3h9l3 3v15H6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12h6M9 16h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-        $icPerson = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+        $icPerson = file_get_contents(public_path('icons/person.svg'));
         $icCar = @file_get_contents(public_path('icons/car.svg')) ?: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="13" width="18" height="5" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>';
 
         $sections = [
@@ -320,10 +321,7 @@ class CarResource extends BaseModelResource
                     $direction,
                 );
             }),
-            \App\MoonShine\Fields\TagsField::make('Теги', 'tags', fn($item) => $item->tags->pluck('name')->all()),
-            BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
-                ->nullable()
-                ->sortable(),
+            TagsField::make('Теги', 'tags', fn($item) => $item->tags->pluck('name')->all()),
             Text::make('Комментарий', 'comment')
                 ->sortable(),
         ];
@@ -377,22 +375,17 @@ class CarResource extends BaseModelResource
                 ])->columnSpan(6),
             ]),
             SelectField::make('Персоны', 'people_ids')
-                ->icon('search')
-                ->optionsIcon('icon-person')
+                ->icon('magnifier')
+                ->optionsIcon('person')
                 ->options(Person::query()->get()->map(fn($p) => [
                     'id'   => $p->id,
                     'name' => trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '') . ' ' . ($p->middle_name ?? '')),
                 ])->toArray())
                 ->multiple()
                 ->default($personIds),
-            SelectField::make('Теги авто', 'tags')
-                ->icon('tag')
-                ->optionsIcon('tag')
-                ->options(CarTag::select('id', 'name')->get())
-                ->multiple(true)
-                ->creatable(true, route('car-tags.store')),
+
             SelectField::make('Организация', 'organization_id')
-                ->icon('search')
+                ->icon('magnifier')
                 ->optionsIcon('organization')
                 ->options(Organization::query()->get()->map(fn($o) => [
                     'id'      => $o->id,
@@ -400,6 +393,13 @@ class CarResource extends BaseModelResource
                     'subtext' => $o->inn ? 'ИНН ' . $o->inn : null,
                 ])->toArray())
                 ->nullable(),
+
+            SelectField::make('Теги авто', 'tags')
+                ->icon('tag')
+                ->optionsIcon('tag')
+                ->options(CarTag::select('id', 'name')->get())
+                ->multiple(true)
+                ->creatable(true, route('car-tags.store')),
             CustomTextarea::make('Комментарий', 'comment')->nullable(),
         ];
     }
@@ -479,7 +479,7 @@ class CarResource extends BaseModelResource
                 ->options(CarColor::query()->pluck('name', 'id')->toArray())
                 ->nullable(),
             SelectField::make('Организация', 'organization_id')
-                ->icon('search')
+                ->icon('magnifier')
                 ->optionsIcon('organization')
                 ->options(Organization::query()->get()->map(fn($o) => [
                     'id'      => $o->id,

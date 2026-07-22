@@ -116,17 +116,20 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             ]);
     }
 
-    protected function buildEventsSection(\Illuminate\Support\Collection $events): array
+    protected function buildEventsSection(\Illuminate\Support\Collection $events, bool $byFace = false): array
     {
-        $icOk = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="m8.5 12.5 2.5 2.5 4.5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        $icNo = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+        $icOk = @file_get_contents(public_path('icons/accept.svg'))
+            ?: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="m8.5 12.5 2.5 2.5 4.5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        $icNo = @file_get_contents(public_path('icons/deny.svg'))
+            ?: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
         $icSys = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 0 1 13.5-5.5L20 8M20 4v4h-4M20 12a8 8 0 0 1-13.5 5.5L4 16M4 20v-4h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         $icPulse = '<svg viewBox="0 0 24 24" fill="none"><path d="M3 12h4l2 6 4-14 2 8h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
         $granted = [0, 1, 4, 5, 8, 9, 16, 17];
         $denied = [2, 3, 6, 7, 10, 11, 12, 13];
+        $byLabel = $byFace ? 'по лицу' : 'по карте';
 
-        $items = $events->map(function ($e) use ($icOk, $icNo, $icSys, $granted, $denied) {
+        $items = $events->map(function ($e) use ($icOk, $icNo, $icSys, $granted, $denied, $byLabel) {
             $ev = is_array($e->event) ? $e->event : (json_decode($e->event ?? '{}', true) ?: []);
             $card = $ev['card_number'] ?? null;
 
@@ -143,12 +146,12 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
                 $tone = 'ok';
                 $icon = $icOk;
                 $title = 'Доступ разрешён' . ($person ? ' · ' . $person->getFullName() : '');
-                $subtitle = 'по карте';
+                $subtitle = $byLabel;
             } elseif (in_array($code, $denied, true)) {
                 $tone = 'danger';
                 $icon = $icNo;
                 $title = 'Доступ запрещён' . ($person ? ' · ' . $person->getFullName() : ' · неизвестный ключ');
-                $subtitle = 'по карте';
+                $subtitle = $byLabel;
             } else {
                 $tone = 'info';
                 $icon = $icSys;
@@ -169,6 +172,7 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             'icon' => $icPulse,
             'title' => 'Последние события · ' . $events->count(),
             'collapsible' => true,
+            'collapsed' => true,
             'itemsTight' => true,
             'items' => $items,
         ];

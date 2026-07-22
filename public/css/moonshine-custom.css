@@ -77,6 +77,12 @@ body *,
 
 /* Фон - используем серо-голубой из палитры */
 /* Единый фон для всей страницы */
+/* Резервируем место под вертикальный скроллбар, чтобы открытие панелей
+   (detail/filter sidebar) с блокировкой прокрутки body не сдвигало таблицу и inline-кнопки */
+html {
+    scrollbar-gutter: stable;
+}
+
 body {
     background: var(--page-background) !important;
     margin: 0 !important;
@@ -1651,6 +1657,7 @@ textarea {
     background-color: #F1F3FB !important;
     #_moonshine-content {
         background-color: #F1F3FB !important;
+        scrollbar-gutter: stable;
         .layout-page {
             padding-top: 0 !important;
             background-color: #F1F3FB !important;
@@ -1659,9 +1666,9 @@ textarea {
             }
             .layout-content {
                 padding-top: 1.2rem !important;
-                padding-bottom: 1.5rem !important;
-                padding-left: 1.5rem !important;
-                padding-right: 1.5rem !important;
+                padding-bottom: unset !important;
+                padding-left: unset !important;
+                padding-right: unset !important;
             }
         }
     }

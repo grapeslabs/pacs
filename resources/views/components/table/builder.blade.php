@@ -305,7 +305,7 @@
 .custom-table-card {
     border: 1px solid #D7D0EF; border-radius: 16px; overflow: hidden; background: #fff;
     display: flex; flex-direction: column;
-    height: calc(100vh - 265px);
+    height: auto;
 }
 .custom-table-card .table-responsive {
     flex: 1 1 auto;

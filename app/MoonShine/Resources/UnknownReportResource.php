@@ -177,7 +177,7 @@ class UnknownReportResource extends BaseModelResource
                     Column::make([
                         SelectField::make('Организация', 'organization_id')
                             ->placeholder('Выберите организацию')
-                            ->icon('search')
+                            ->icon('magnifier')
                             ->optionsIcon('organization')
                             ->options(Organization::query()->get()->map(fn($o) => [
                                 'id'      => $o->id,

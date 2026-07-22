@@ -113,7 +113,7 @@
         {{-- SECTIONS --}}
         @foreach($sections as $sec)
             @php $collapsible = ! empty($sec['collapsible']); @endphp
-            <div class="ds-sec" @if($collapsible) x-data="{ open: true }" @endif>
+            <div class="ds-sec" @if($collapsible) x-data="{ open: {{ !empty($sec['collapsed']) ? 'false' : 'true' }} }" @endif>
                 <div class="ds-sec__head" @if($collapsible) @click="open = !open" style="cursor:pointer;" @endif>
                     @if(!empty($sec['icon'])) <span class="ds-sec__ic">{!! $sec['icon'] !!}</span> @endif
                     <span class="ds-sec__title">{{ $sec['title'] ?? '' }}</span>
@@ -295,7 +295,7 @@
 
         .ds-text { margin:0; font-size:14px; line-height:1.5; color:#3B3B55; white-space:pre-line; word-break:break-word; }
         .ds-tags { display:flex; flex-wrap:wrap; gap:8px; }
-        .ds-tag { display:inline-flex; align-items:center; padding:5px 12px; border-radius:9999px; background:#ECEDFA; color:#4E4E61; font-size:13px; font-weight:600; }
+        .ds-tag { display:inline-flex; align-items:center; padding:5px 12px; border-radius:4px; background:#D7DBEF; color:#4E4E61; font-size:13px; font-weight:600; }
 
         .ds-items { display:flex; flex-direction:column; gap:10px; }
         .ds-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px; background:#fff; border:1px solid #ECEEF7; }

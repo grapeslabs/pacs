@@ -102,6 +102,19 @@ class ProcessEvents extends Command
                 if(!empty($data['photo'])) {
                     $photos[] = Storage::disk('analytic')->path("thumbnails/" . basename($event['data']['snapshot_path']));
                 }
+                // Режим шаблона: текст сообщения собирается из шаблона с плейсхолдерами
+                if (($data['mode'] ?? 'fields') === 'template' && !empty($data['template'])) {
+                    $message = strtr($data['template'], [
+                        '{Дата}'               => $timestamp->format('d.m.Y'),
+                        '{Время}'              => $timestamp->format('H:i:s'),
+                        '{Видеопоток}'         => isset($stream) ? trim(($stream->name ?? '') . ' | ' . ($stream->location ?? '')) : '',
+                        '{ФИО}'                => !empty($person) ? $person->getFullName() : '',
+                        '{ID персоны}'         => !empty($person) ? (string) $person->id : '',
+                        '{Комментарий}'        => !empty($person) ? (string) $person->comment : '',
+                        '{Фото из фотобанка}'  => '',
+                        '{Фото с камеры}'      => '',
+                    ]);
+                }
                 try {
                    SendNotification::dispatch($bot->id, $message, $photos??null);
                 } catch (\Throwable $e) {

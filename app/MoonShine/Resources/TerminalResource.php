@@ -74,7 +74,7 @@ class TerminalResource extends BaseModelResource
             return null;
         }
 
-        return $this->buildEventsSection($events);
+        return $this->buildEventsSection($events, byFace: true);
     }
 
     private function deviceTypeLabel(?string $type): string

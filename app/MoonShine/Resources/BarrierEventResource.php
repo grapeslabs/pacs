@@ -393,7 +393,7 @@ class BarrierEventResource extends BaseModelResource
 
             // Фильтр по организации
             SelectField::make('Организация', 'organization')
-                ->icon('search')
+                ->icon('magnifier')
                 ->optionsIcon('organization')
                 ->options(
                     Organization::query()
