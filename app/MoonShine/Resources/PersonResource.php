@@ -56,6 +56,7 @@ class PersonResource extends BaseModelResource
 
     protected string $model = Person::class;
     protected string $title = 'Персоны';
+    protected ?string $editModalTitle = 'Редактирование персоны';
     protected string $ex_type = 'pingate';
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить персону';
@@ -104,8 +105,9 @@ class PersonResource extends BaseModelResource
                 ? ['text' => 'Доступ заморожен', 'tone' => 'danger', 'icon' => $icSnow]
                 : ['text' => 'Доступ активен', 'icon' => $icCheck],
         ];
+        $icAddKey = file_get_contents(public_path('icons/btn-addkey.svg')) ?: $icKey;
         if ($keysCount > 0) {
-            $badges[] = ['text' => $keysCount . ' ' . $this->pluralKeys($keysCount), 'icon' => $icKey, 'url' => $keysUrl];
+            $badges[] = ['text' => $keysCount . ' ' . $this->pluralKeys($keysCount), 'icon' => $icAddKey, 'url' => $keysUrl];
         }
 
         $sections = [
@@ -172,7 +174,7 @@ class PersonResource extends BaseModelResource
 
         $editHtml = $this->detailEditButtonHtml($item);
 
-        $icWarn = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3 2.5 20h19z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>';
+        $icWarn = file_get_contents(public_path('icons/warning.svg')) ?: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3 2.5 20h19z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>';
 
         return [
             'title' => 'Карточка персоны',
@@ -243,7 +245,7 @@ class PersonResource extends BaseModelResource
                 && ($model->frozen_end === null || $now->lessThan($model->frozen_end));
 
             if ($isFrozen) {
-                $attrs['class'] = trim(($attrs['class'] ?? '') . ' frozen');
+                $attrs['class'] = trim(($attrs['class'] ?? '') . ' ds-row-frozen');
             }
 
             return $attrs;

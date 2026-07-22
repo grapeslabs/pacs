@@ -105,9 +105,11 @@
         position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
         color: #A1A5B7; display: flex; pointer-events: none;
     }
-    .org-search__input {
+    /* !important — перекрываем глобальные input-стили MoonShine, из-за которых
+       сбрасывался левый паддинг и лупа наезжала на текст */
+    .org-search .org-search__input {
         width: 100%; box-sizing: border-box;
-        height: 46px; padding: 0 40px 0 42px;
+        height: 46px; padding: 0 40px 0 42px !important;
         border: 1px solid #E1E4F3; border-radius: 12px;
         background: #fff; font-size: 14px; color: #2A2F3B;
         transition: border-color .15s, box-shadow .15s;

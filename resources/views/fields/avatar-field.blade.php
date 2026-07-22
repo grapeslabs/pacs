@@ -58,7 +58,7 @@
 
         .av-cell__ava--img,
         .av-cell__ava--icon {
-            background: var(--gray-blue-100, #EAEDFB);
+            background: var(--gray-blue-100, #EAEDF8);
         }
 
         .av-cell__ava--icon {
@@ -105,7 +105,7 @@
             align-items: center;
             justify-content: center;
             flex: 0 0 auto;
-            color: #F5820B;
+            color: #D47F00;
         }
 
         .av-cell__badge svg {

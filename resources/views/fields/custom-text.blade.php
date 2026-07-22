@@ -20,18 +20,39 @@
         outline: none;
     }
 
+    .ctf-wrapper--lead .ctf-input {
+        padding-left: 2.5rem !important;
+    }
+
+    .ctf-lead {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #A1A5B7;
+        pointer-events: none;
+    }
+
+    .ctf-lead svg {
+        width: 1.05rem;
+        height: 1.05rem;
+    }
+
     .ctf-input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 1px #3b82f6;
+        border-color: #7381F4;
+        box-shadow: 0 0 0 1px #7381F4;
     }
 
     .ctf-input.ctf-error {
-        border-color: #ef4444 !important;
-        box-shadow: 0 0 0 1px #ef4444 !important;
+        border-color: #F04138 !important;
+        box-shadow: 0 0 0 1px #F04138 !important;
     }
 
     .ctf-error-msg {
-        color: #ef4444;
+        color: #F04138;
         font-size: 0.875rem;
         margin-top: 0.25rem;
         display: block;
@@ -58,13 +79,13 @@
         width: 1rem;
         height: 1rem;
         border: 2px solid #e5e7eb;
-        border-top-color: #3b82f6;
+        border-top-color: #7381F4;
         border-radius: 50%;
         animation: ctf-spin 1s linear infinite;
     }
 
     .ctf-icon-error {
-        color: #ef4444;
+        color: #F04138;
         font-weight: bold;
         font-size: 1.1rem;
         user-select: none;
@@ -180,8 +201,11 @@
             this.loading = false;
         }
     }
-}" class="ctf-wrapper" x-cloak>
+}" class="ctf-wrapper{{ method_exists($element, 'getLeadingIcon') && $element->getLeadingIcon() ? ' ctf-wrapper--lead' : '' }}" x-cloak>
     <div class="ctf-input-container">
+        @if(method_exists($element, 'getLeadingIcon') && $element->getLeadingIcon())
+            <span class="ctf-lead">{!! $element->getLeadingIcon() !!}</span>
+        @endif
         <input {!! $element->getAttributes()->merge(['class' => 'ctf-input form-input']) !!}
                type="text"
                name="{{ $element->getName() }}"
@@ -205,7 +229,7 @@
         </div>
     </div>
     <span class="ctf-error-msg" x-show="error !== null" x-text="error ?? ''"></span>
-    @if(method_exists($element, 'getHint') && $element->getHint())
-        <span class="ctf-hint" x-show="error === null">{{ $element->getHint() }}</span>
+    @if(method_exists($element, 'getCustomHint') && $element->getCustomHint())
+        <span class="ctf-hint" x-show="error === null">{{ $element->getCustomHint() }}</span>
     @endif
 </div>

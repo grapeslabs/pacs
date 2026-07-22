@@ -32,6 +32,7 @@ class BotResource extends BaseModelResource
 {
     protected string $model = Bot::class;
     protected string $title = 'Боты';
+    protected ?string $editModalTitle = 'Редактирование бота';
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить бота';
 

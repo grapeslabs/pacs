@@ -12,14 +12,19 @@
         toggleModal() {
             this.open = !this.open;
             if (this.open) { this.stack = []; this.registerInStack(); }
-            else { this.unregisterFromStack(); }
+            else { this.unregisterFromStack(); this.clearRowMarks(); }
             document.body.style.overflow = this.open ? 'hidden' : '';
+        },
+
+        clearRowMarks() {
+            document.querySelectorAll('tr.ds-row-active').forEach(el => el.classList.remove('ds-row-active'));
         },
 
         closeModal() {
             this.open = false;
             this.stack = [];
             this.unregisterFromStack();
+            this.clearRowMarks();
             document.body.style.overflow = '';
         },
 
@@ -76,5 +81,21 @@
 
     <style>
         @keyframes ds-spin { to { transform: rotate(360deg); } }
+
+        /* Маркировка строки таблицы при открытой детальной карточке (#7381F4)
+           и для заморожённых персон по умолчанию (#D47F00).
+           Активная (открытая) строка важнее заморозки. */
+        .custom-table-card .table-list tbody tr.ds-row-frozen > td:first-child {
+            box-shadow: inset 3px 0 0 0 #D47F00 !important;
+        }
+        .custom-table-card .table-list tbody tr.ds-row-active > td:first-child {
+            box-shadow: inset 4px 0 0 0 #7381F4 !important;
+        }
+        .custom-table-card .table-list tbody tr.ds-row-frozen.ds-row-active > td:first-child {
+            box-shadow: inset 4px 0 0 0 #7381F4 !important;
+        }
+        .custom-table-card .table-list tbody tr.ds-row-active > td {
+            background-color: #EEF0FE !important;
+        }
     </style>
 </div>

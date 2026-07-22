@@ -39,6 +39,7 @@ class CarResource extends BaseModelResource
 {
     protected string $model = Car::class;
     protected string $title = 'Автомобили';
+    protected ?string $editModalTitle = 'Редактирование автомобиля';
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить автомобиль';
 

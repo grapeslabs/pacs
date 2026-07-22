@@ -20,6 +20,7 @@ class BotChatResource extends BaseModelResource
 {
     protected string $model = BotChat::class;
     protected string $title = 'Чаты бота';
+    protected ?string $editModalTitle = 'Редактирование чата';
     protected function pages(): array
     {
         return [

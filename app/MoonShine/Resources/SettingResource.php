@@ -22,6 +22,7 @@ class SettingResource extends BaseModelResource
 {
     protected string $model = Setting::class;
     protected string $title = 'Настройки';
+    protected ?string $editModalTitle = 'Редактирование настройки';
     protected string $column = 'name';
     protected function pages(): array
     {

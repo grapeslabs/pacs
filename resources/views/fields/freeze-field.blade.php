@@ -149,6 +149,13 @@
         transition: border-color .15s, box-shadow .15s;
     }
     .frz__input:focus { outline: none; border-color: #8A93FF; box-shadow: 0 0 0 3px rgba(115,129,244,.2); }
+    /* Дата-инпуты: место под кастомную иконку + прячем нативный индикатор
+       (чтобы не было двойного календаря), но оставляем его кликабельным поверх иконки. */
+    .frz__input[type="date"] { padding-right: 40px; }
+    .frz__input[type="date"]::-webkit-calendar-picker-indicator {
+        position: absolute; right: 0; top: 0; width: 42px; height: 100%;
+        margin: 0; padding: 0; opacity: 0; cursor: pointer;
+    }
     .frz__cal {
         position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
         color: #A1A5B7; pointer-events: none; display: flex;

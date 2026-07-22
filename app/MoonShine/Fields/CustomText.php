@@ -10,6 +10,39 @@ class CustomText extends Text
 
     protected array $customClientRules =[];
 
+    /**
+     * Хинт хранится отдельно и рендерится только кастомным blade-полем.
+     * Родительский hint() не вызываем, иначе wrapper MoonShine выводит хинт второй раз.
+     */
+    protected ?string $customHint = null;
+
+    /** Сырой SVG иконки-префикса (слева внутри поля). */
+    protected ?string $leadingIcon = null;
+
+    public function leadingIcon(string $svg): static
+    {
+        $this->leadingIcon = $svg;
+
+        return $this;
+    }
+
+    public function getLeadingIcon(): ?string
+    {
+        return $this->leadingIcon;
+    }
+
+    public function hint(string $hint): static
+    {
+        $this->customHint = $hint;
+
+        return $this;
+    }
+
+    public function getCustomHint(): ?string
+    {
+        return $this->customHint;
+    }
+
     public function required(\Closure|bool|string|null $condition = null, string $message = 'Обязательное поле'): static
     {
         if (is_string($condition)) {

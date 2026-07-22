@@ -14,6 +14,7 @@ class CarTagResource extends BaseModelResource
 {
     protected string $model = CarTag::class;
     protected string $title = 'Теги автомобилей';
+    protected ?string $editModalTitle = 'Редактирование тега';
     protected string $column = 'name';
 
     protected function pages(): array

@@ -28,6 +28,7 @@ class CarPassageRuleResource extends BaseModelResource
 {
     protected string $model = CarPassageRule::class;
     protected string $title = 'Правила проезда';
+    protected ?string $editModalTitle = 'Редактирование правила проезда';
     protected string $column = 'name';
 
     private const TYPE_OPTIONS = [

@@ -19,6 +19,7 @@ class TerminalResource extends BaseModelResource
 {
     protected string $model = SkudController::class;
     protected string $title = 'Терминалы доступа';
+    protected ?string $editModalTitle = 'Редактирование терминала';
     protected string $column = 'serial_number';
     protected bool $softDelete = false;
     protected bool $detailSidebar = true;

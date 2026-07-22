@@ -21,17 +21,17 @@
     }
 
     .cnf-input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 1px #3b82f6;
+        border-color: #7381F4;
+        box-shadow: 0 0 0 1px #7381F4;
     }
 
     .cnf-input.cnf-error {
-        border-color: #ef4444 !important;
-        box-shadow: 0 0 0 1px #ef4444 !important;
+        border-color: #F04138 !important;
+        box-shadow: 0 0 0 1px #F04138 !important;
     }
 
     .cnf-error-msg {
-        color: #ef4444;
+        color: #F04138;
         font-size: 0.875rem;
         margin-top: 0.25rem;
         display: block;
@@ -51,13 +51,13 @@
         width: 1rem;
         height: 1rem;
         border: 2px solid #e5e7eb;
-        border-top-color: #3b82f6;
+        border-top-color: #7381F4;
         border-radius: 50%;
         animation: cnf-spin 1s linear infinite;
     }
 
     .cnf-icon-error {
-        color: #ef4444;
+        color: #F04138;
         font-weight: bold;
         font-size: 1.1rem;
         user-select: none;

@@ -19,6 +19,7 @@ class CarColorResource extends BaseModelResource
 {
     protected string $model = CarColor::class;
     protected string $title = 'Цвета автомобилей';
+    protected ?string $editModalTitle = 'Редактирование цвета';
     protected string $column = 'name';
     protected function pages(): array
     {
@@ -38,8 +39,8 @@ class CarColorResource extends BaseModelResource
     public function indexFields(): iterable
     {
         return [
-            ID::make()->sortable(),
             Text::make('Название', 'name')->sortable(),
+            \App\MoonShine\Fields\CountField::make('Автомобилей', 'id', fn($item) => $item->cars()->count()),
         ];
     }
 

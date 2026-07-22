@@ -16,6 +16,7 @@ class TagResource extends BaseModelResource
     protected string $model = Tag::class;
 
     protected string $title = 'Теги';
+    protected ?string $editModalTitle = 'Редактирование тега';
     protected function pages(): array
     {
         return [

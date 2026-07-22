@@ -42,9 +42,17 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
 
     protected ?string $createLabel = null;
 
+    /** Полный заголовок сайдбара редактирования, напр. «Редактирование ключа». */
+    protected ?string $editModalTitle = null;
+
     public function createButtonLabel(): string
     {
         return $this->createLabel ?? 'Добавить';
+    }
+
+    public function editModalTitle(): string
+    {
+        return $this->editModalTitle ?? 'Редактирование';
     }
 
     public function usesDetailSidebar(): bool
@@ -77,28 +85,34 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             '_async_form' => true,
         ], fragment: 'crud-form');
 
+        $title = $this->editModalTitle();
+        $subtitle = 'ID ' . $item->getKey();
+
         return (string) ActionButton::make($label, $url)
             ->icon('pencil')
             ->async(selector: "#{$this->safeModalName}_content")
             ->customAttributes([
                 'class' => 'ds-btn ds-btn--primary',
-                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Редактирование' }); \$dispatch('modal-toggled', { id: 'detail-sidebar' })",
+                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: '{$title}', subtitle: '{$subtitle}' }); \$dispatch('modal-toggled', { id: 'detail-sidebar' })",
             ]);
     }
 
-    public function detailEditIconButton(Model $item, string $title = 'Редактирование'): string
+    public function detailEditIconButton(Model $item, ?string $title = null): string
     {
         $url = $this->getFormPageUrl($item->getKey(), params: [
             '_component_name' => $this->getListComponentName(),
             '_async_form' => true,
         ], fragment: 'crud-form');
 
+        $title ??= $this->editModalTitle();
+        $subtitle = 'ID ' . $item->getKey();
+
         return (string) ActionButton::make('', $url)
             ->icon('pencil')
             ->async(selector: "#{$this->safeModalName}_content")
             ->class('ds-iconbtn')
             ->customAttributes([
-                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: '{$title}' })",
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: '{$title}', subtitle: '{$subtitle}' })",
             ]);
     }
 
@@ -155,6 +169,7 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             'icon' => $icPulse,
             'title' => 'Последние события · ' . $events->count(),
             'collapsible' => true,
+            'itemsTight' => true,
             'items' => $items,
         ];
     }
@@ -223,7 +238,7 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             ->icon('pencil')
             ->class('js-edit-button')
             ->customAttributes([
-                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Редактирование' })",
+                '@click.prevent.stop' => "let _m=(\$el.getAttribute('href')||'').match(/resourceItem=([^&]+)/); \$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: '{$this->editModalTitle()}', subtitle: _m ? ('ID '+decodeURIComponent(_m[1])) : '' })",
             ])
             ->async(selector: "#{$this->safeModalName}_content")
             ->canSee(fn() => $this->hasAction(Action::CREATE) && $this->can(Ability::CREATE));
@@ -298,7 +313,10 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
         }
         return function (mixed $item, int $index): array {
             return [
-                '@click' => "if(\$event.target.closest('a,button,input,label')) return; \$event.currentTarget.querySelector('.js-detail-button')?.click();",
+                '@click' => "if(\$event.target.closest('a,button,input,label')) return; "
+                    . "document.querySelectorAll('tr.ds-row-active').forEach(el => el.classList.remove('ds-row-active')); "
+                    . "\$event.currentTarget.classList.add('ds-row-active'); "
+                    . "\$event.currentTarget.querySelector('.js-detail-button')?.click();",
                 'style' => 'cursor: pointer;',
             ];
         };

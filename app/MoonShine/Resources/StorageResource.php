@@ -22,6 +22,7 @@ class StorageResource extends BaseModelResource
 {
     protected string $model = Storage::class;
     protected string $title = 'Хранилища';
+    protected ?string $editModalTitle = 'Редактирование хранилища';
     protected string $column = 'name';
 
     protected function activeActions(): ListOf

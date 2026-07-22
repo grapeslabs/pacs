@@ -18,6 +18,7 @@ class BarrierResource extends BaseModelResource
 {
     protected string $model = SkudController::class;
     protected string $title = 'Шлагбаумы';
+    protected ?string $editModalTitle = 'Редактирование шлагбаума';
     protected string $column = 'name';
     protected function pages(): array
     {

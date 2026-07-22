@@ -36,6 +36,7 @@ class TriggerResource extends BaseModelResource
 {
     protected string $model = Trigger::class;
     protected string $title = 'Триггеры';
+    protected ?string $editModalTitle = 'Редактирование триггера';
     protected string $column = 'name';
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить триггер';
@@ -380,40 +381,40 @@ class TriggerResource extends BaseModelResource
                 ->required(),
 
             Checkbox::make('Дата', 'data->date')
-                ->setValue((boolean)$item?->data['date'] ?? false),
+                ->setValue((boolean)($item?->data['date'] ?? false)),
             Checkbox::make('Время', 'data->time')
-                ->setValue((boolean)$item?->data['time'] ?? false),
+                ->setValue((boolean)($item?->data['time'] ?? false)),
 
             Checkbox::make('Видеопоток', 'data->stream')
-                ->setValue((boolean)$item?->data['stream'] ?? false)
+                ->setValue((boolean)($item?->data['stream'] ?? false))
                 ->showWhen('device_type', '=', Trigger::DEVICE_CAMERA),
 
             Checkbox::make('ФИО', 'data->lfm')
-                ->setValue((boolean)$item?->data['lfm'] ?? false)
+                ->setValue((boolean)($item?->data['lfm'] ?? false))
                 ->showWhen('event_type_camera', '!=', Trigger::EVENT_UNKNOWED)
                 ->showWhen('event_type', '!=', Trigger::EVENT_MANUAL)
                 ->showWhen('event_type', '!=', Trigger::EVENT_DENIED),
 
             Checkbox::make('ID персоны', 'data->person_id')
-                ->setValue((boolean)$item?->data['person_id'] ?? false)
+                ->setValue((boolean)($item?->data['person_id'] ?? false))
                 ->showWhen('event_type_camera', '!=', Trigger::EVENT_UNKNOWED)
                 ->showWhen('event_type', '!=', Trigger::EVENT_MANUAL)
                 ->showWhen('event_type', '!=', Trigger::EVENT_DENIED),
 
             Checkbox::make('Фото из фотобонка', 'data->photobank')
-                ->setValue((boolean)$item?->data['photobank'] ?? false)
+                ->setValue((boolean)($item?->data['photobank'] ?? false))
                 ->showWhen('event_type_camera', '!=', Trigger::EVENT_UNKNOWED)
                 ->showWhen('event_type', '!=', Trigger::EVENT_MANUAL)
                 ->showWhen('event_type', '!=', Trigger::EVENT_DENIED),
 
             Checkbox::make('Комментарий', 'data->comment')
-                ->setValue((boolean)$item?->data['comment'] ?? false)
+                ->setValue((boolean)($item?->data['comment'] ?? false))
                 ->showWhen('event_type_camera', '!=', Trigger::EVENT_UNKNOWED)
                 ->showWhen('event_type', '!=', Trigger::EVENT_MANUAL)
                 ->showWhen('event_type', '!=', Trigger::EVENT_DENIED),
 
             Checkbox::make('Фото камеры', 'data->photo')
-                ->setValue((boolean)$item?->data['photo'] ?? false)
+                ->setValue((boolean)($item?->data['photo'] ?? false))
                 ->showWhen('device_type', '=', Trigger::DEVICE_CAMERA),
 
             SelectField::make('Теги', 'tags')

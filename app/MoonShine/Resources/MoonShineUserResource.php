@@ -56,6 +56,7 @@ class MoonShineUserResource extends BaseModelResource
     protected string $model = User::class;
     protected string $column = 'name';
     protected string $title = 'Пользователи';
+    protected ?string $editModalTitle = 'Редактирование пользователя';
     protected array $with = ['moonshineUserRole'];
     protected bool $createInModal=false;
     protected bool $editInModal=false;

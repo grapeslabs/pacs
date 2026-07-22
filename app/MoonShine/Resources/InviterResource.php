@@ -26,6 +26,7 @@ class InviterResource extends BaseModelResource
 {
     protected string $model = Inviter::class;
     protected string $title = 'Приглашающие';
+    protected ?string $editModalTitle = 'Редактирование приглашающего';
     protected function pages(): array
     {
         return [

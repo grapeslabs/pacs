@@ -28,7 +28,7 @@
     }
 
     .multiselect-box.active {
-        border-color: #8A93FF;
+        border-color: #7381F4;
         box-shadow: 0 0 0 0.2rem rgba(115, 129, 244, 0.25);
     }
 
@@ -63,7 +63,7 @@
         padding: 0;
     }
 
-    .multiselect-tag-remove:hover { color: #F1416C; }
+    .multiselect-tag-remove:hover { color: #F04138; }
 
     /* Выбранное значение внутри поля (single) */
     .ms-single-value {
@@ -130,13 +130,13 @@
         transition: background-color 0.15s;
     }
     .multiselect-option:hover { background-color: #F1F3FB; }
-    .multiselect-option.is-selected { background-color: #EEF0FF; }
+    .multiselect-option.is-selected { background-color: #EFF1FF; }
 
     .ms-option-icon {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #8A93FF;
+        color: #7381F4;
         flex-shrink: 0;
     }
     .ms-option-icon svg { width: 20px; height: 20px; }
@@ -176,22 +176,22 @@
         background-color: #F1F3FB;
     }
     .multiselect-create-text {
-        color: #8A93FF;
+        color: #7381F4;
         font-weight: 600;
         font-size: 14px;
     }
     .multiselect-create-icon {
-        color: #8A93FF;
+        color: #7381F4;
         display: flex;
         align-items: center; }
 
     .multiselect-box.select-error {
-        border-color: #ef4444 !important;
-        box-shadow: 0 0 0 1px #ef4444 !important;
+        border-color: #F04138 !important;
+        box-shadow: 0 0 0 1px #F04138 !important;
     }
 
     .select-error-msg {
-        color: #ef4444;
+        color: #F04138;
         font-size: 0.875rem;
         margin-top: 0.25rem;
         display: block;

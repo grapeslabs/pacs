@@ -43,6 +43,7 @@ class VideoStreamResource extends BaseModelResource
 {
     protected string $model = Stream::class;
     protected string $title = 'Видеопотоки';
+    protected ?string $editModalTitle = 'Редактирование видеопотока';
     protected string $column = 'name';
     protected bool $softDelete = false;
 

@@ -15,6 +15,7 @@
         showConfirm: false,
         modalId: '{{ $name }}',
         modalTitle: '{{ is_callable($title) ? $title() : $title }}',
+        modalSubtitle: '',
 
         registerInStack() { Alpine.store('overlays')?.register(this.modalId, () => this.tryClose()); },
         unregisterFromStack() { Alpine.store('overlays')?.unregister(this.modalId); },
@@ -62,6 +63,9 @@
             modalTitle = (typeof $event.detail === 'object' && $event.detail.title)
                 ? $event.detail.title
                 : '{{ is_callable($title) ? $title() : $title }}';
+            modalSubtitle = (typeof $event.detail === 'object' && $event.detail.subtitle)
+                ? $event.detail.subtitle
+                : '';
             toggleModal();
         }
     "
@@ -92,9 +96,12 @@
 
                 <div style="display: flex; flex-direction: column; height: 100vh; max-height: 100vh; width: 100%;">
 
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1.5rem 1.75rem 1.25rem; flex-shrink: 0; border-bottom: 1px solid #EEF0F6;">
-                        <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; color: #1F2430;" class="dark:text-gray-100" x-text="modalTitle"></h3>
-                        <button @click="tryClose()" type="button" style="background: transparent; border: none; cursor: pointer; padding: 0.25rem; color: #A1A5B7;" class="hover:text-gray-500">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; padding: 1.5rem 1.75rem 1.25rem; flex-shrink: 0; border-bottom: 1px solid #EEF0F6;">
+                        <div style="min-width: 0;">
+                            <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; color: #1F2430; line-height: 1.25;" class="dark:text-gray-100" x-text="modalTitle"></h3>
+                            <p x-show="modalSubtitle" style="margin: 0.25rem 0 0; font-size: 0.8125rem; color: #8A8FA6;" class="dark:text-gray-400" x-text="modalSubtitle"></p>
+                        </div>
+                        <button @click="tryClose()" type="button" style="background: transparent; border: none; cursor: pointer; padding: 0.25rem; color: #A1A5B7; flex-shrink: 0;" class="hover:text-gray-500">
                             <x-moonshine::icon icon="x-mark" size="6" />
                         </button>
                     </div>

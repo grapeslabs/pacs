@@ -18,6 +18,7 @@ class CarBrandResource extends BaseModelResource
 {
     protected string $model = CarBrand::class;
     protected string $title = 'Марки автомобилей';
+    protected ?string $editModalTitle = 'Редактирование марки';
     protected string $column = 'name';
     protected function pages(): array
     {
@@ -31,8 +32,8 @@ class CarBrandResource extends BaseModelResource
     public function indexFields(): iterable
     {
         return [
-            ID::make()->sortable(),
             Text::make('Название', 'name')->sortable(),
+            \App\MoonShine\Fields\CountField::make('Автомобилей', 'id', fn($item) => $item->cars()->count()),
         ];
     }
 

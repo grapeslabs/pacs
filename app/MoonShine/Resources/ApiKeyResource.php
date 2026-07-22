@@ -24,6 +24,7 @@ class ApiKeyResource extends BaseModelResource
 {
     protected string $model = ApiKey::class;
     protected string $title = 'Ключи API';
+    protected ?string $editModalTitle = 'Редактирование ключа API';
 
 
     public function indexFields(): iterable

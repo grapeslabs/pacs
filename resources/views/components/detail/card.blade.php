@@ -5,10 +5,10 @@
     $footer = $data['footer'] ?? [];
 
     $toneStyles = [
-        'ok'     => 'background:#DFF5E3;color:#2E7D45;',
-        'warn'   => 'background:#FDF0D5;color:#9A6A15;',
-        'danger' => 'background:#FCE3E1;color:#B23A32;',
-        'muted'  => 'background:#EEF0F8;color:#5B5B75;',
+        'ok'     => 'background:#C9F3CE;color:#36944C;',
+        'warn'   => 'background:#FFF7DF;color:#D47F00;',
+        'danger' => 'background:#FAD9D5;color:#C2322B;',
+        'muted'  => 'background:#EAEDF8;color:#66667D;',
     ];
 @endphp
 
@@ -94,10 +94,10 @@
             @php
                 $banners = isset($data['banner']['text']) ? [$data['banner']] : $data['banner'];
                 $bannerTones = [
-                    'ok'     => 'background:#E7F6EA;color:#2E7D45;',
-                    'warn'   => 'background:#FCF3DA;color:#8A6316;',
-                    'danger' => 'background:#FCE7E4;color:#B23A32;',
-                    'muted'  => 'background:#EEF0F8;color:#5B5B75;',
+                    'ok'     => 'background:#C9F3CE;color:#36944C;',
+                    'warn'   => 'background:#FFF7DF;color:#946000;',
+                    'danger' => 'background:#FAD9D5;color:#C2322B;',
+                    'muted'  => 'background:#EAEDF8;color:#66667D;',
                 ];
             @endphp
             @foreach($banners as $bn)
@@ -129,7 +129,7 @@
                 @if(!empty($sec['fields']))
                     <div class="ds-fields{{ !empty($sec['single']) ? ' ds-fields--single' : '' }}">
                         @foreach($sec['fields'] as $f)
-                            <div class="ds-field">
+                            <div class="ds-field{{ !empty($f['full']) ? ' ds-field--full' : '' }}">
                                 <div class="ds-field__label">{{ $f['label'] ?? '' }}</div>
                                 <div class="ds-field__value">
                                     @if(!empty($f['value_html']))
@@ -157,7 +157,7 @@
                 @if($hasPanel)</div>@endif
 
                 @if(!empty($sec['items']))
-                    <div class="ds-items">
+                    <div class="ds-items{{ !empty($sec['itemsTight']) ? ' ds-items--tight' : '' }}">
                         @foreach($sec['items'] as $it)
                             <div class="ds-item">
                                 @if(!empty($it['icon']))
@@ -227,19 +227,19 @@
 
         /* hero */
         .ds-hero { position:relative; overflow:hidden; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:22px; border-radius:20px;
-            background:linear-gradient(135deg,#3B3660 0%,#2B2A4A 55%,#332B54 100%); color:#fff; }
+            background:linear-gradient(120deg,#2A2740 0%,#332B52 55%,#3A2C58 100%); color:#fff; }
         .ds-hero::before { content:""; position:absolute; right:-30px; top:-40px; width:170px; height:170px; border-radius:50%; background:radial-gradient(circle, rgba(126,146,248,.4), transparent 62%); pointer-events:none; z-index:0; }
         .ds-hero__text { position:relative; z-index:1; min-width:0; }
         .ds-hero__name { font-size:20px; font-weight:700; line-height:1.2; }
         .ds-hero__sub { margin-top:4px; font-size:13px; color:rgba(255,255,255,.72); }
         .ds-hero__badges { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
-        .ds-hero__badge { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:9999px; background:rgba(255,255,255,.12); font-size:12px; font-weight:600; color:#fff; text-decoration:none; }
+        .ds-hero__badge { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:9999px; background:rgba(0,0,0,.12); font-size:12px; font-weight:600; color:#fff; text-decoration:none; }
         .ds-hero__badge--link { cursor:pointer; transition:background .15s; }
-        .ds-hero__badge--link:hover { background:rgba(255,255,255,.2); }
+        .ds-hero__badge--link:hover { background:rgba(255,255,255,.16); }
         .ds-hero__badge .ds-ic svg, .ds-hero__badge svg { width:14px; height:14px; }
 
         .ds-hero__tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
-        .ds-hero__tag { display:inline-flex; align-items:center; padding:4px 12px; border-radius:9999px; background:transparent; border:1px solid rgba(255,255,255,.35); color:#fff; font-size:12px; font-weight:600; }
+        .ds-hero__tag { display:inline-flex; align-items:center; padding:4px 12px; border-radius:9999px; background:rgba(0,0,0,.12); border:0; color:#fff; font-size:12px; font-weight:600; }
 
         /* Баннер-предупреждение (напр. заморозка) */
         .ds-banner { display:flex; align-items:flex-start; gap:12px; margin:16px 0 4px; padding:14px 16px; border-radius:14px; font-size:13.5px; font-weight:600; line-height:1.45; }
@@ -250,8 +250,9 @@
         .ds-hero__media { position:relative; z-index:1; flex:0 0 auto; }
         .ds-glow { }
         .ds-hero__avatar { width:64px; height:64px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,.25); }
-        .ds-hero__icon { display:inline-flex; align-items:center; justify-content:center; width:56px; height:56px; border-radius:16px; background:rgba(255,255,255,.12); color:#fff; }
-        .ds-hero__icon svg { width:30px; height:30px; }
+        /* Иконка hero — без подложки, только на световом фоне (.ds-hero::before) */
+        .ds-hero__icon { display:inline-flex; align-items:center; justify-content:center; width:64px; height:64px; background:transparent; color:#fff; }
+        .ds-hero__icon svg { width:46px; height:46px; }
         .ds-hero__initials { display:inline-flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:linear-gradient(180deg,#7E92F8,#6972F0); color:#fff; font-size:22px; font-weight:700; }
 
         /* реалистичный ГРЗ: регион над RUS */
@@ -275,16 +276,20 @@
         .ds-sec__line { flex:1; height:1px; border-top:1px dashed #D9DEEE; }
         .ds-sec__chev { flex:0 0 auto; color:#9096AE; transition:transform .2s; }
 
-        .ds-item__ic { flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:9px; background:#EEF0F8; color:#5B5B75; }
+        .ds-item__ic { flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:9px; background:#EAEDF8; color:#66667D; }
         .ds-item__ic svg { width:18px; height:18px; }
-        .ds-item__ic--ok { background:#DFF5E3; color:#2E7D45; }
-        .ds-item__ic--danger { background:#FCE3E1; color:#B23A32; }
-        .ds-item__ic--info { background:#E4ECFB; color:#3A63B0; }
+        .ds-item__ic--ok { background:#C9F3CE; color:#36944C; }
+        .ds-item__ic--danger { background:#FAD9D5; color:#C2322B; }
+        .ds-item__ic--warn { background:#FFF7DF; color:#D47F00; }
+        .ds-item__ic--info { background:#F1F3FB; color:#7381F4; }
 
-        .ds-sec__panel { background:#F1F3FB; border-radius:14px; padding:16px 18px; }
+        /* Панель значений тянется до границ секции (margin = padding секции),
+           чтобы левый край значения совпал с левым краем заголовка блока. */
+        .ds-sec__panel { background:#F1F3FB; border-radius:14px; padding:16px 18px; margin:0 -18px; }
         .ds-fields { display:grid; grid-template-columns:1fr 1fr; gap:16px 20px; }
         .ds-fields--single { grid-template-columns:1fr; }
         .ds-field { min-width:0; }
+        .ds-field--full { grid-column:1 / -1; }
         .ds-field__label { font-size:12px; color:#9096AE; margin-bottom:3px; }
         .ds-field__value { font-size:14px; font-weight:700; color:#22223A; word-break:break-word; }
 
@@ -294,6 +299,13 @@
 
         .ds-items { display:flex; flex-direction:column; gap:10px; }
         .ds-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px; background:#fff; border:1px solid #ECEEF7; }
+
+        /* Компактный список (последние события): единая карточка с разделителями */
+        .ds-items--tight { gap:0; background:#fff; border:1px solid #ECEEF7; border-radius:14px; overflow:hidden; }
+        .ds-items--tight .ds-item { border:none; border-radius:0; padding:11px 14px; }
+        .ds-items--tight .ds-item + .ds-item { border-top:1px solid #F0F2F8; }
+        .ds-items--tight .ds-item__ic { border-radius:50%; width:30px; height:30px; }
+        .ds-items--tight .ds-item__ic svg { width:17px; height:17px; }
         .ds-item__title { font-size:14px; font-weight:700; color:#22223A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .ds-item__sub { font-size:12px; color:#9096AE; margin-top:2px; }
         .ds-item__right { display:flex; align-items:center; gap:8px; margin-left:auto; }
@@ -317,8 +329,9 @@
         .ds-btn--primary:hover { background:#5860e6; }
         .ds-btn--secondary:hover { background:#F6F7FC; }
         .ds-btn--danger:hover { background:#FCF1F0; }
-        .ds-fbtn { display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; border-radius:12px; border:1px solid #D7D0EF; background:#fff; color:#4E4E61; cursor:pointer; text-decoration:none; transition:background .15s,color .15s; }
+        .ds-fbtn { display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; padding:0 !important; gap:0 !important; border-radius:12px; border:1px solid #D7D0EF; background:#fff; color:#4E4E61; cursor:pointer; text-decoration:none; transition:background .15s,color .15s; line-height:0; }
         .ds-fbtn:hover { background:#F6F7FC; color:#2C3142; }
-        .ds-fbtn svg { width:19px; height:19px; }
+        .ds-fbtn > * { margin:0 !important; display:inline-flex; align-items:center; justify-content:center; }
+        .ds-fbtn svg { width:19px; height:19px; display:block; }
     </style>
 @endonce

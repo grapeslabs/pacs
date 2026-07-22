@@ -16,7 +16,7 @@
         user-select: none;
     }
     .cs-box.active { box-shadow: 0 0 0 0.2rem rgba(55, 107, 244, 0.5); }
-    .cs-box.cs-error { border-color: #ef4444 !important; box-shadow: 0 0 0 1px #ef4444 !important; }
+    .cs-box.cs-error { border-color: #F04138 !important; box-shadow: 0 0 0 1px #F04138 !important; }
 
     .cs-badge {
         display: inline-flex;
@@ -88,10 +88,10 @@
         margin-left: auto;
         transition: color 0.2s;
     }
-    .cs-clear:hover { color: #F1416C; }
+    .cs-clear:hover { color: #F04138; }
 
     .cs-error-msg {
-        color: #ef4444;
+        color: #F04138;
         font-size: 0.875rem;
         margin-top: 0.25rem;
         display: block;

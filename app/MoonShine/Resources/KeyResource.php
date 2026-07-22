@@ -30,6 +30,7 @@ class KeyResource extends BaseModelResource
     protected string $model = Key::class;
 
     protected string $title = 'Ключи';
+    protected ?string $editModalTitle = 'Редактирование ключа';
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить ключ';
 
@@ -46,7 +47,7 @@ class KeyResource extends BaseModelResource
     {
         $item->loadMissing('person.organization');
 
-        $icKey = '<svg viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="m11 11 8 8M16 16l2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+        $icKey = file_get_contents(public_path('icons/btn-addkey.svg'));
         $icGear = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.5 5.5l2 2M16.5 16.5l2 2M18.5 5.5l-2 2M7.5 16.5l-2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
         $icPerson = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
 

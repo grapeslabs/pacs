@@ -22,6 +22,7 @@ class ActuatorDeviceResource extends BaseModelResource
 {
     protected string $model = ActuatorDevice::class;
     protected string $title = 'Исполнительные устройства';
+    protected ?string $editModalTitle = 'Редактирование устройства';
     protected string $column = 'name';
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить устройство';

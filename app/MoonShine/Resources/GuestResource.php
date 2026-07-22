@@ -30,6 +30,7 @@ class GuestResource extends BaseModelResource
 {
     protected string $model = Guest::class;
     protected string $title = 'Гости';
+    protected ?string $editModalTitle = 'Редактирование гостя';
     protected string $column = 'full_name';
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить гостя';

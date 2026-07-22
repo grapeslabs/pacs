@@ -23,6 +23,7 @@ class OrganizationResource extends BaseModelResource
     protected string $model = Organization::class;
 
     protected string $title = 'Организации';
+    protected ?string $editModalTitle = 'Редактирование организации';
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить организацию';
 
@@ -58,10 +59,10 @@ class OrganizationResource extends BaseModelResource
                 'fields' => [
                     ['label' => 'ИНН', 'value' => $item->inn],
                     ['label' => 'КПП', 'value' => $item->kpp],
-                    ['label' => 'ОГРН / ОГРНИП', 'value' => $item->ogrn],
-                    ['label' => 'Полное название', 'value' => $item->full_name],
-                    ['label' => 'Юридический адрес', 'value' => $item->address],
-                    ['label' => 'Фактический адрес', 'value' => $item->actual_address],
+                    ['label' => 'ОГРН / ОГРНИП', 'value' => $item->ogrn, 'full' => true],
+                    ['label' => 'Полное название', 'value' => $item->full_name, 'full' => true],
+                    ['label' => 'Юридический адрес', 'value' => $item->address, 'full' => true],
+                    ['label' => 'Фактический адрес', 'value' => $item->actual_address, 'full' => true],
                 ],
             ],
         ];
@@ -127,8 +128,11 @@ class OrganizationResource extends BaseModelResource
 
     public function formFields(): iterable
     {
+        $locationIcon = file_get_contents(public_path('icons/location.svg'));
+
         return [
-            OrganizationField::make('Поиск организации', 'search_query'),
+            OrganizationField::make('Поиск организации', 'search_query')
+                ->withoutWrapper(),
             Grid::make([
                 Column::make([
                     CustomText::make('ИНН', 'inn')
@@ -148,8 +152,10 @@ class OrganizationResource extends BaseModelResource
                 ->hint('13 или 15 цифр'),
             CustomText::make('Полное название', 'full_name')->required(),
             CustomText::make('Сокращённое название', 'short_name')->required(),
-            CustomText::make('Юридический адрес', 'address'),
+            CustomText::make('Юридический адрес', 'address')
+                ->leadingIcon($locationIcon),
             CustomText::make('Фактический адрес', 'actual_address')
+                ->leadingIcon($locationIcon)
                 ->hint('Если отличается от юридического'),
             Grid::make([
                 Column::make([

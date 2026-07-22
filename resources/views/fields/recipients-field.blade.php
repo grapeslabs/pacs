@@ -11,8 +11,8 @@
 @once
     <style>
         .recipients-cell { display:inline-flex; align-items:center; gap:7px; min-width:0; }
-        .recipients-cell__ic { flex:0 0 auto; color:#8A8AA3; }
+        .recipients-cell__ic { flex:0 0 auto; color:#ACACB6; }
         .recipients-cell__name { font-size:14px; color:#22223A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .recipients-cell__more { flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; height:20px; padding:0 7px; border-radius:4px; background:#EEF0F8; color:#5B5B75; font-size:11px; font-weight:700; }
+        .recipients-cell__more { flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; height:20px; padding:0 7px; border-radius:4px; background:#EAEDF8; color:#66667D; font-size:11px; font-weight:700; }
     </style>
 @endonce
