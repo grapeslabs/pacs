@@ -88,7 +88,7 @@
             if (this.inputValue.trim() !== '') {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(this.inputValue)) {
-                    this.clientError = 'Допустимый формат: ivan@gmail.com';
+                    this.clientError = 'Допустимый формат: ivan@mail.ru';
                 } else {
                     this.clientError = '';
                 }
