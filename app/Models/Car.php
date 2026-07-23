@@ -52,6 +52,11 @@ class Car extends Model
         return $this->belongsTo(CarColor::class);
     }
 
+    public function rules(): BelongsToMany
+    {
+        return $this->belongsToMany(CarPassageRule::class, 'car_passage_rule_car', 'car_id', 'car_passage_rule_id');
+    }
+
     public function getPeopleNamesAttribute()
     {
         return $this->people->pluck('last_name')->implode(', ');

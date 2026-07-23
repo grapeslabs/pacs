@@ -8,6 +8,7 @@ use App\Models\CarColor;
 use App\Models\Organization;
 use App\Models\Person;
 use App\Models\CarTag;
+use App\Models\CarPassageRule;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Fields\TagsField;
 use App\MoonShine\Pages\CustomIndexPage;
@@ -136,12 +137,13 @@ class CarResource extends BaseModelResource
     {
         $data = request()->all();
         $personIds = $data['people_ids'] ?? [];
+        $ruleIds = $data['rule_ids'] ?? [];
 
         if (isset($data['license_plate'])) {
             $data['license_plate'] = $this->cleanLicensePlate($data['license_plate']);
         }
 
-        unset($data['people_ids']);
+        unset($data['people_ids'], $data['rule_ids']);
 
         $originalRequest = request()->duplicate();
         request()->replace($data);
@@ -152,6 +154,8 @@ class CarResource extends BaseModelResource
             if ($savedItem instanceof Model && $savedItem->id) {
                 // Синхронизируем привязанных людей
                 $savedItem->people()->sync($personIds);
+
+                $savedItem->rules()->sync($ruleIds);
 
                 // Отправляем автомобиль в Pingate контроллеры
                 $this->syncCarWithPingateControllers($savedItem);
@@ -351,8 +355,10 @@ class CarResource extends BaseModelResource
     public function formFields(): iterable
     {
         $personIds = [];
+        $ruleIds = [];
         if ($this->getItem() && $this->getItem()->exists) {
             $personIds = $this->getItem()->people->pluck('id')->toArray();
+            $ruleIds = $this->getItem()->rules->pluck('id')->toArray();
         }
 
         return [
@@ -422,6 +428,11 @@ class CarResource extends BaseModelResource
                 ->multiple(true)
                 ->creatable(true, route('car-tags.store')),
             CustomTextarea::make('Комментарий', 'comment')->nullable(),
+            SelectField::make('Правила проезда', 'rule_ids')
+                ->options(CarPassageRule::query()->pluck('name', 'id')->toArray())
+                ->multiple()
+                ->nullable()
+                ->default($ruleIds),
         ];
     }
 
@@ -458,6 +469,8 @@ class CarResource extends BaseModelResource
             'organization_id' => ['nullable', 'exists:organizations,id'],
             'people_ids' => ['nullable', 'array'],
             'people_ids.*' => ['exists:person,id'],
+            'rule_ids' => ['nullable', 'array'],
+            'rule_ids.*' => ['exists:car_passage_rules,id'],
             'comment' => ['nullable', 'string'],
         ];
     }
