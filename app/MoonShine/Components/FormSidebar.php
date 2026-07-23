@@ -4,12 +4,13 @@ namespace App\MoonShine\Components;
 use Closure;
 use MoonShine\UI\Components\MoonShineComponent;
 
-class SafeModal extends MoonShineComponent
+class FormSidebar extends MoonShineComponent
 {
-    protected string $view = 'components.safe-modal';
+    protected string $view = 'components.form-sidebar';
 
     public function __construct(
         public string|Closure|null $title = '',
+        public string|Closure|null $subtitle = '',
         public bool $async = false,
     ) {
         parent::__construct();
@@ -23,10 +24,10 @@ class SafeModal extends MoonShineComponent
     protected function viewData(): array
     {
         return [
-            'name' => $this->getName() ?? 'safe-modal',
+            'name' => $this->getName() ?? 'form-sidebar',
             'title' => $this->title,
+            'subtitle' => $this->subtitle,
             'async' => $this->async,
         ];
     }
-
 }

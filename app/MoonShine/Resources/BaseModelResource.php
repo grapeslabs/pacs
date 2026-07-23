@@ -4,7 +4,6 @@ namespace App\MoonShine\Resources;
 
 use App\MoonShine\Handlers\CsvExportHandler;
 use App\MoonShine\Pages\CustomIndexPage;
-use App\MoonShine\Components\SafeModal;
 use App\MoonShine\Traits\HasUndoNotification;
 use Illuminate\Database\Eloquent\Model;
 use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
@@ -437,8 +436,8 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
                 '_async_form' => true,
             ], fragment: 'crud-form')
         )
-            ->icon('pencil')
             ->class('js-edit-button')
+            ->customView('components.action-icon-button', ['variant' => 'edit'])
             ->customAttributes([
                 '@click.prevent.stop' => "let _m=(\$el.getAttribute('href')||'').match(/resourceItem=([^&]+)/); \$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: '{$this->editModalTitle()}', subtitle: _m ? ('ID '+decodeURIComponent(_m[1])) : '' })",
             ])
@@ -455,7 +454,7 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
     public function modifyFormComponent(ComponentContract $component): ComponentContract
     {
         if ($component instanceof FormBuilderContract) {
-            $component->submit(null, ['style' => 'width: 136px']);
+            $component->submit(null, ['class' => 'js-form-sidebar-submit']);
         }
         return $component;
     }
@@ -535,6 +534,8 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             url: fn($item) => $this->getRoute('crud.destroy', $item->getKey())
         )
             ->name('resource-delete-button')
+            ->class('js-delete-button')
+            ->customView('components.action-icon-button', ['variant' => 'delete'])
             ->withoutLoading()
             ->onAfterSet(function ($data, $ctx): void {
                 $model = $data?->getOriginal();
@@ -555,8 +556,6 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
                     && $this->hasAction(Action::DELETE)
                     && $this->setItem($item)->can(Ability::DELETE)
             )
-            ->error()
-            ->icon('trash')
             ->showInLine();
     }
 

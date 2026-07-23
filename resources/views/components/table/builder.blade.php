@@ -318,7 +318,7 @@
     border-bottom: 1px solid #D7D0EF !important;
 }
 .custom-table-card .table-responsive.table-sticky .table-list thead th {
-    position: sticky; top: 0; z-index: 2; background: #E3E7F5;
+    position: sticky; top: 0; z-index: 2; background: #F1F3FB;
 }
 .custom-table-card .table-list {
     border-collapse: collapse !important; border-spacing: 0 !important;
@@ -326,14 +326,19 @@
 }
 .custom-table-card .table-list thead tr { background: transparent !important; box-shadow: none !important; }
 .custom-table-card .table-list thead th {
-    border: none !important; border-bottom: 2px solid #D7D0EF !important; background: #E3E7F5 !important;
+    border: none !important; background: #F1F3FB !important;
 }
 .custom-table-card .table-list tbody tr { background: #fff !important; transition: background-color .15s !important; }
 .custom-table-card .table-list tbody tr.frozen { background: #ACACB6 !important; }
 .custom-table-card .table-list tbody td {
     border: none !important; border-bottom: 1px solid #EAEDFB !important;
     padding-top: 4px !important; padding-bottom: 4px !important;
+    color: #1E1E1E !important;
 }
+.custom-table-card .table-list tbody td,
+.custom-table-card .table-list tbody td span,
+.custom-table-card .table-list tbody td p,
+.custom-table-card .table-list tbody td div { color: #1E1E1E; }
 /* Компактнее аватар/контролы внутри строки, чтобы строки были ниже */
 .custom-table-card .table-list tbody td .form-group { margin: 0 !important; }
 .custom-table-card .table-list tbody tr:hover { background-color: #F5F5F8 !important; }
@@ -359,7 +364,7 @@
 .js-table-action-row, .js-actions-all-checked { cursor: pointer; border-radius: 4px !important; }
 .js-table-action-row:checked, .js-actions-all-checked:checked { accent-color: #6366f1; }
 .custom-table-paginator {
-    background: #E3E7F5; border-top: 2px solid #D7D0EF;
+    background: #F1F3FB;
     padding: 8px 16px;
 }
 .custom-table-paginator .pagination {

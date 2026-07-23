@@ -26,6 +26,12 @@ class CustomText extends Text
         return $this;
     }
 
+    /** Алиас leadingIcon() — совместимость с VideoStreamResource->icon($svg). */
+    public function icon(string $svg): static
+    {
+        return $this->leadingIcon($svg);
+    }
+
     public function getLeadingIcon(): ?string
     {
         return $this->leadingIcon;

@@ -1,18 +1,18 @@
 <style>
     .cam-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1.5fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
         width: 100%;
     }
     .cam-card {
         position: relative;
         width: 100%;
         aspect-ratio: 16 / 9;
-        background-color: #262626;
-        border-radius: 0.5rem;
+        background-color: #2A2A33;
+        border-radius: 12px;
         overflow: hidden;
-        border: 1px solid var(--border-color, #334155);
+        border: 1px solid #2A2A33;
     }
     .cam-img {
         width: 100%;
@@ -26,7 +26,8 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background-color: #262626;
+        gap: 10px;
+        background-color: #2A2A33;
         color: #f8fafc;
         z-index: 10;
         padding: 1rem;
@@ -38,57 +39,88 @@
         margin-bottom: 1rem;
         color: #f8fafc;
     }
+    .cam-overlay svg { opacity: .35; }
     .cam-overlay-text {
-        font-size: 1.125rem;
+        font-size: 0.8125rem;
         font-weight: 500;
-        color: #f8fafc;
+        color: #9A9AAC;
     }
-    .cam-top-right {
+    .cam-ph {
+        position: relative;
+        width: 90px;
+        height: 48px;
+    }
+    .cam-ph span {
+        position: absolute;
+        top: 50%;
+        width: 14px;
+        height: 14px;
+        border-radius: 9999px;
+        background: rgba(255,255,255,.5);
+        filter: blur(1px);
+        animation: cam-ph-float 2.4s ease-in-out infinite;
+    }
+    .cam-ph span:nth-child(1) { left: 6px;  animation-delay: 0s; }
+    .cam-ph span:nth-child(2) { left: 38px; animation-delay: .35s; background: rgba(255,255,255,.7); }
+    .cam-ph span:nth-child(3) { left: 70px; animation-delay: .7s; }
+    @keyframes cam-ph-float {
+        0%, 100% { transform: translateY(-8px); opacity: .35; }
+        50%      { transform: translateY(8px);  opacity: .85; }
+    }
+    .cam-actions {
         position: absolute;
         top: 0.75rem;
         right: 0.75rem;
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        background-color: rgba(64, 64, 64, 0.75);
-        backdrop-filter: blur(4px);
-        padding: 0.375rem 0.5rem;
-        border-radius: 9999px;
         z-index: 20;
     }
+    .cam-card::before {
+        content: '';
+        position: absolute;
+        left: 0; right: 0; top: 0;
+        height: 40%;
+        background: linear-gradient(to bottom, rgba(0,0,0,.5), rgba(0,0,0,0));
+        z-index: 15;
+        pointer-events: none;
+    }
+    .cam-card::after {
+        content: '';
+        position: absolute;
+        left: 0; right: 0; bottom: 0;
+        height: 55%;
+        background: linear-gradient(to top, rgba(0,0,0,.6), rgba(0,0,0,0));
+        z-index: 15;
+        pointer-events: none;
+    }
     .cam-btn {
-        color: #f8fafc;
+        color: #ffffff;
         cursor: pointer;
-        padding: 0.25rem;
+        width: 2rem;
+        height: 2rem;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 9999px;
-        transition: color 0.2s, background-color 0.2s;
-        background: transparent;
+        transition: background-color 0.2s;
+        background: rgba(38, 38, 45, 0.65);
+        backdrop-filter: blur(4px);
         border: none;
         text-decoration: none;
     }
-    .cam-btn:hover {
-        background-color: rgba(255, 255, 255, 0.2);
-    }
-    .cam-btn-icon {
-        width: 1.25rem;
-        height: 1.25rem;
-    }
-    .cam-bottom-left {
+    .cam-btn:hover { background-color: rgba(38, 38, 45, 0.9); }
+    .cam-btn svg { width: 1.05rem; height: 1.05rem; }
+
+    .cam-top-name {
         position: absolute;
-        bottom: 0.75rem;
-        left: 0.75rem;
+        top: 0.85rem;
+        left: 0.85rem;
+        right: 5.25rem;
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        background-color: rgba(64, 64, 64, 0.75);
-        backdrop-filter: blur(4px);
-        padding: 0.375rem 0.75rem;
-        border-radius: 9999px;
         z-index: 20;
-        max-width: calc(100% - 7rem);
     }
     .cam-status-dot {
         width: 0.625rem;
@@ -96,24 +128,54 @@
         border-radius: 9999px;
         flex-shrink: 0;
     }
-    .cam-status-green {
-        background-color: #10b981;
-    }
-    .cam-status-red {
-        background-color: #ef4444;
-    }
+    .cam-status-green { background-color: #10b981; }
+    .cam-status-red { background-color: #ef4444; }
     .cam-title {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #f8fafc;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: #ffffff;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        text-shadow: 0 1px 3px rgba(0,0,0,.6);
+    }
+    .cam-bottom-left {
+        position: absolute;
+        bottom: 0.85rem;
+        left: 0.85rem;
+        right: 5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        z-index: 20;
+    }
+    .cam-loc {
+        font-size: 0.8125rem;
+        color: #E5E7EB;
+        text-shadow: 0 1px 3px rgba(0,0,0,.6);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+    .cam-badges {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+    .cam-badge {
+        padding: 2px 9px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 600;
+        background: rgba(255,255,255,.22);
+        color: #fff;
+        backdrop-filter: blur(4px);
     }
     .cam-icon-rec {
-        width: 1.25rem;
-        height: 1.25rem;
-        color: #818cf8;
+        width: 1.1rem;
+        height: 1.1rem;
         flex-shrink: 0;
     }
     .cam-bottom-right {
@@ -167,12 +229,25 @@
 </style>
 
 @if(count($items))
-<div {{ $attributes->class(['cam-grid']) }}>
+<div {{ $attributes->class(['cam-grid']) }}
+     x-data
+     x-init="$store.streamView && ($store.streamView.total = {{ count($items) }})">
     @foreach($items as $item)
         @php
             $isStaticError = $isDriveLimitStopped || empty($item->is_active);
+            $playerUrl = route('moonshine.resource.page', ['video-stream-resource', 'stream-player', $item->id]);
+            $deleteUrl = $deleteUrlResolver ? $deleteUrlResolver($item) : null;
+            $o = $item->va_options ?? [];
+            $badges = [];
+            if (!empty($o['global_enable'])) {
+                if (!empty($o['is_face_detection']) || !empty($o['is_face_recognition'])) $badges[] = 'Лица';
+                if (!empty($o['is_motion_detection'])) $badges[] = 'Движение';
+                if (!empty($o['is_plate_recognition'])) $badges[] = 'ГРЗ';
+            }
         @endphp
-        <div class="cam-card" x-data="{
+        <div class="cam-card" style="cursor: pointer;"
+             x-on:click="if ($event.target.closest('button, a')) return; window.location.href = '{{ $playerUrl }}'"
+             x-data="{
             uid: '{{ $item->uid }}',
             timestamp: Math.floor(Date.now() / 1000),
             hasError: false,
@@ -194,7 +269,7 @@
             }
         }">
 
-            <div class="cam-top-right">
+            <div class="cam-actions">
                 @if($editUrlResolver)
                     <button type="button"
                             class="cam-btn"
@@ -213,26 +288,21 @@
                         </svg>
                     </button>
                 @endif
-                <a href="{{ route('moonshine.resource.page',['video-stream-resource', 'stream-player', $item->id]) }}" class="cam-btn">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M4.16602 3.33464C3.945 3.33464 3.73304 3.42243 3.57676 3.57871C3.42048 3.73499 3.33268 3.94695 3.33268 4.16797V5.83464C3.33268 6.29487 2.95959 6.66797 2.49935 6.66797C2.03911 6.66797 1.66602 6.29487 1.66602 5.83464V4.16797C1.66602 3.50493 1.92941 2.86904 2.39825 2.4002C2.86709 1.93136 3.50297 1.66797 4.16602 1.66797H5.83268C6.29292 1.66797 6.66602 2.04106 6.66602 2.5013C6.66602 2.96154 6.29292 3.33464 5.83268 3.33464H4.16602Z" fill="white"/>
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M13.334 2.5013C13.334 2.04106 13.7071 1.66797 14.1673 1.66797H15.834C16.497 1.66797 17.1329 1.93136 17.6018 2.4002C18.0706 2.86904 18.334 3.50493 18.334 4.16797V5.83464C18.334 6.29487 17.9609 6.66797 17.5007 6.66797C17.0404 6.66797 16.6673 6.29487 16.6673 5.83464V4.16797C16.6673 3.94696 16.5795 3.73499 16.4232 3.57871C16.267 3.42243 16.055 3.33464 15.834 3.33464H14.1673C13.7071 3.33464 13.334 2.96154 13.334 2.5013Z" fill="white"/>
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M17.5007 13.332C17.9609 13.332 18.334 13.7051 18.334 14.1654V15.832C18.334 16.4951 18.0706 17.131 17.6018 17.5998C17.1329 18.0686 16.497 18.332 15.834 18.332H14.1673C13.7071 18.332 13.334 17.9589 13.334 17.4987C13.334 17.0385 13.7071 16.6654 14.1673 16.6654H15.834C16.055 16.6654 16.267 16.5776 16.4232 16.4213C16.5795 16.265 16.6673 16.053 16.6673 15.832V14.1654C16.6673 13.7051 17.0404 13.332 17.5007 13.332Z" fill="white"/>
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M2.49935 13.332C2.95959 13.332 3.33268 13.7051 3.33268 14.1654V15.832C3.33268 16.053 3.42048 16.265 3.57676 16.4213C3.73304 16.5776 3.945 16.6654 4.16602 16.6654H5.83268C6.29292 16.6654 6.66602 17.0385 6.66602 17.4987C6.66602 17.9589 6.29292 18.332 5.83268 18.332H4.16602C3.50297 18.332 2.86709 18.0686 2.39825 17.5998C1.92941 17.131 1.66602 16.4951 1.66602 15.832V14.1654C1.66602 13.7051 2.03911 13.332 2.49935 13.332Z" fill="white"/>
-                    </svg>
-                </a>
+                @if($deleteUrl)
+                    <button type="button"
+                            class="cam-btn"
+                            x-on:click.prevent.stop="window.dispatchEvent(new CustomEvent('open-custom-delete-modal', { detail: { url: '{{ $deleteUrl }}' } }))">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.6" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7m1.5 0-.6 12a2 2 0 0 1-2 1.9H8.1a2 2 0 0 1-2-1.9L5.5 7" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                @endif
             </div>
 
-            <div class="cam-bottom-left">
-                @if($isStaticError)
-                    <div class="cam-status-dot cam-status-red"></div>
-                @else
-                    <div class="cam-status-dot" :class="hasError ? 'cam-status-red' : 'cam-status-green'"></div>
-                @endif
+            <div class="cam-top-name">
+                    <span class="cam-title">{{ $item->name ?? $item->uid }}</span>
 
-                <span class="cam-title">{{ $item->name ?? $item->uid }}</span>
-
-                @if(!empty($item->is_recognize))
+                    @if(!empty($item->is_recognize))
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M8.375 9.32292C8.14017 9.32292 7.91496 9.4162 7.74892 9.58225C7.58287 9.7483 7.48958 9.97351 7.48958 10.2083C7.48958 10.4432 7.58287 10.6684 7.74892 10.8344C7.91496 11.0005 8.14017 11.0938 8.375 11.0938C8.49127 11.0938 8.60641 11.0708 8.71383 11.0264C8.82126 10.9819 8.91887 10.9166 9.00108 10.8344C9.0833 10.7522 9.14852 10.6546 9.19302 10.5472C9.23751 10.4397 9.26042 10.3246 9.26042 10.2083C9.26042 10.0921 9.23751 9.97692 9.19302 9.8695C9.14852 9.76208 9.0833 9.66447 9.00108 9.58225C8.91887 9.50003 8.82126 9.43481 8.71383 9.39032C8.60641 9.34582 8.49127 9.32292 8.375 9.32292ZM12.625 9.32292C12.3902 9.32292 12.165 9.4162 11.9989 9.58225C11.8329 9.7483 11.7396 9.97351 11.7396 10.2083C11.7396 10.4432 11.8329 10.6684 11.9989 10.8344C12.165 11.0005 12.3902 11.0938 12.625 11.0938C12.8598 11.0938 13.085 11.0005 13.2511 10.8344C13.4171 10.6684 13.5104 10.4432 13.5104 10.2083C13.5104 9.97351 13.4171 9.7483 13.2511 9.58225C13.085 9.4162 12.8598 9.32292 12.625 9.32292ZM10.5 2.41667C9.5698 2.41667 8.64872 2.59988 7.78933 2.95585C6.92994 3.31182 6.14908 3.83358 5.49133 4.49133C4.16294 5.81971 3.41667 7.62138 3.41667 9.5C3.41667 11.3786 4.16294 13.1803 5.49133 14.5087C6.14908 15.1664 6.92994 15.6882 7.78933 16.0441C8.64872 16.4001 9.5698 16.5833 10.5 16.5833C12.3786 16.5833 14.1803 15.8371 15.5087 14.5087C16.8371 13.1803 17.5833 11.3786 17.5833 9.5C17.5833 8.5698 17.4001 7.64872 17.0441 6.78933C16.6882 5.92994 16.1664 5.14908 15.5087 4.49133C14.8509 3.83358 14.0701 3.31182 13.2107 2.95585C12.3513 2.59988 11.4302 2.41667 10.5 2.41667ZM10.5 15.1667C8.99711 15.1667 7.55577 14.5696 6.49306 13.5069C5.43036 12.4442 4.83333 11.0029 4.83333 9.5C4.81144 9.29753 4.81144 9.0933 4.83333 8.89083C6.52055 8.15259 7.856 6.78921 8.55917 5.08708C9.21238 6.01273 10.0783 6.76801 11.0841 7.28941C12.0899 7.8108 13.2062 8.08308 14.3392 8.08333C14.8775 8.08333 15.4088 8.01958 15.9329 7.89917C16.8183 10.9167 15.1042 14.0546 12.1008 14.9329C11.5625 15.0887 11.0383 15.1667 10.5 15.1667ZM2 2.41667C2 2.04094 2.14926 1.68061 2.41493 1.41493C2.68061 1.14926 3.04094 1 3.41667 1H6.25V2.41667H3.41667V5.25H2V2.41667ZM19 16.5833C19 16.9591 18.8507 17.3194 18.5851 17.5851C18.3194 17.8507 17.9591 18 17.5833 18H14.75V16.5833H17.5833V13.75H19V16.5833ZM3.41667 18C3.04094 18 2.68061 17.8507 2.41493 17.5851C2.14926 17.3194 2 16.9591 2 16.5833V13.75H3.41667V16.5833H6.25V18H3.41667ZM17.5833 1C17.9591 1 18.3194 1.14926 18.5851 1.41493C18.8507 1.68061 19 2.04094 19 2.41667V5.25H17.5833V2.41667H14.75V1H17.5833Z" fill="url(#paint0_linear_1016_39402)"/>
                             <defs>
@@ -242,6 +312,19 @@
                                 </linearGradient>
                             </defs>
                         </svg>
+                    @endif
+            </div>
+
+            <div class="cam-bottom-left">
+                @if(count($badges))
+                    <div class="cam-badges">
+                        @foreach($badges as $b)
+                            <span class="cam-badge">{{ $b }}</span>
+                        @endforeach
+                    </div>
+                @endif
+                @if(!empty($item->location))
+                    <span class="cam-loc">{{ $item->location }}</span>
                 @endif
             </div>
 
@@ -257,28 +340,22 @@
 
             @if($isDriveLimitStopped)
                 <div class="cam-overlay">
-                    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1.77908 7.27712C2.03689 7.01963 2.38637 6.875 2.75074 6.875C3.11512 6.875 3.4646 7.01963 3.72241 7.27712L31.2224 34.7771C31.3575 34.903 31.4659 35.0548 31.541 35.2235C31.6162 35.3921 31.6566 35.5742 31.6598 35.7588C31.6631 35.9435 31.6291 36.1268 31.56 36.2981C31.4908 36.4693 31.3879 36.6248 31.2573 36.7554C31.1267 36.8859 30.9712 36.9889 30.8 37.058C30.6288 37.1272 30.4454 37.1611 30.2608 37.1579C30.0762 37.1546 29.8941 37.1142 29.7254 37.0391C29.5568 36.9639 29.405 36.8556 29.2791 36.7205L1.77908 9.22046C1.52158 8.96264 1.37695 8.61317 1.37695 8.24879C1.37695 7.88441 1.52158 7.53494 1.77908 7.27712ZM31.6257 29.4421L36.5574 34.3738C38.2881 36.1063 41.2507 34.8798 41.2507 32.4305V11.5671C41.2507 9.11779 38.2881 7.89129 36.5574 9.62379L31.6257 14.5555V29.4421ZM28.8757 13.7488V28.5401L8.58441 8.24879H23.3757C24.8344 8.24879 26.2334 8.82825 27.2648 9.8597C28.2963 10.8912 28.8757 12.2901 28.8757 13.7488ZM2.75074 30.2488V14.0825L24.3346 35.6663C24.0217 35.7213 23.7021 35.7488 23.3757 35.7488H8.25074C6.79205 35.7488 5.39311 35.1693 4.36166 34.1379C3.33021 33.1064 2.75074 31.7075 2.75074 30.2488Z" fill="white"/>
-                    </svg>
+                    <div class="cam-ph"><span></span><span></span><span></span></div>
                     <div class="cam-overlay-text">Камера выключена из-за переполнения диска</div>
                 </div>
             @elseif(empty($item->is_active))
                 <div class="cam-overlay">
-                    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1.77908 7.27712C2.03689 7.01963 2.38637 6.875 2.75074 6.875C3.11512 6.875 3.4646 7.01963 3.72241 7.27712L31.2224 34.7771C31.3575 34.903 31.4659 35.0548 31.541 35.2235C31.6162 35.3921 31.6566 35.5742 31.6598 35.7588C31.6631 35.9435 31.6291 36.1268 31.56 36.2981C31.4908 36.4693 31.3879 36.6248 31.2573 36.7554C31.1267 36.8859 30.9712 36.9889 30.8 37.058C30.6288 37.1272 30.4454 37.1611 30.2608 37.1579C30.0762 37.1546 29.8941 37.1142 29.7254 37.0391C29.5568 36.9639 29.405 36.8556 29.2791 36.7205L1.77908 9.22046C1.52158 8.96264 1.37695 8.61317 1.37695 8.24879C1.37695 7.88441 1.52158 7.53494 1.77908 7.27712ZM31.6257 29.4421L36.5574 34.3738C38.2881 36.1063 41.2507 34.8798 41.2507 32.4305V11.5671C41.2507 9.11779 38.2881 7.89129 36.5574 9.62379L31.6257 14.5555V29.4421ZM28.8757 13.7488V28.5401L8.58441 8.24879H23.3757C24.8344 8.24879 26.2334 8.82825 27.2648 9.8597C28.2963 10.8912 28.8757 12.2901 28.8757 13.7488ZM2.75074 30.2488V14.0825L24.3346 35.6663C24.0217 35.7213 23.7021 35.7488 23.3757 35.7488H8.25074C6.79205 35.7488 5.39311 35.1693 4.36166 34.1379C3.33021 33.1064 2.75074 31.7075 2.75074 30.2488Z" fill="white"/>
-                    </svg>
+                    <div class="cam-ph"><span></span><span></span><span></span></div>
                     <div class="cam-overlay-text">Камера выключена администратором</div>
                 </div>
             @else
                 <div class="cam-overlay" x-show="hasError" x-cloak>
-                    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1.77908 7.27712C2.03689 7.01963 2.38637 6.875 2.75074 6.875C3.11512 6.875 3.4646 7.01963 3.72241 7.27712L31.2224 34.7771C31.3575 34.903 31.4659 35.0548 31.541 35.2235C31.6162 35.3921 31.6566 35.5742 31.6598 35.7588C31.6631 35.9435 31.6291 36.1268 31.56 36.2981C31.4908 36.4693 31.3879 36.6248 31.2573 36.7554C31.1267 36.8859 30.9712 36.9889 30.8 37.058C30.6288 37.1272 30.4454 37.1611 30.2608 37.1579C30.0762 37.1546 29.8941 37.1142 29.7254 37.0391C29.5568 36.9639 29.405 36.8556 29.2791 36.7205L1.77908 9.22046C1.52158 8.96264 1.37695 8.61317 1.37695 8.24879C1.37695 7.88441 1.52158 7.53494 1.77908 7.27712ZM31.6257 29.4421L36.5574 34.3738C38.2881 36.1063 41.2507 34.8798 41.2507 32.4305V11.5671C41.2507 9.11779 38.2881 7.89129 36.5574 9.62379L31.6257 14.5555V29.4421ZM28.8757 13.7488V28.5401L8.58441 8.24879H23.3757C24.8344 8.24879 26.2334 8.82825 27.2648 9.8597C28.2963 10.8912 28.8757 12.2901 28.8757 13.7488ZM2.75074 30.2488V14.0825L24.3346 35.6663C24.0217 35.7213 23.7021 35.7488 23.3757 35.7488H8.25074C6.79205 35.7488 5.39311 35.1693 4.36166 34.1379C3.33021 33.1064 2.75074 31.7075 2.75074 30.2488Z" fill="white"/>
-                    </svg>
+                    <div class="cam-ph"><span></span><span></span><span></span></div>
                     <div class="cam-overlay-text">Потеряно соединение</div>
                 </div>
                 <img :src="previewUrl"
-                     x-on:error="hasError = true"
-                     x-on:load="hasError = false"
+                     x-on:error="hasError = true; $store.streamView && $store.streamView.report(uid, false)"
+                     x-on:load="hasError = false; $store.streamView && $store.streamView.report(uid, true)"
                      class="cam-img"
                      x-show="!hasError"
                      x-cloak
@@ -303,3 +380,19 @@
         <p class="custom-empty-state__text">Нет данных для отображения</p>
     </div>
 @endif
+
+@once
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.store('streamView', {
+        mode: localStorage.getItem('streamViewMode') || 'grid',
+        total: 0,
+        _ok: {},
+        setMode(m) { this.mode = m; localStorage.setItem('streamViewMode', m); },
+        report(uid, ok) { this._ok = { ...this._ok, [uid]: ok }; },
+        get active() { return Object.values(this._ok).filter(Boolean).length; },
+        get notResponding() { return Math.max(this.total - this.active, 0); },
+    });
+});
+</script>
+@endonce

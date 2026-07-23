@@ -7,7 +7,8 @@ namespace App\MoonShine\Layouts;
 use App\MoonShine\Components\CustomDeleteModal;
 use App\MoonShine\Components\CustomSidebar;
 use App\MoonShine\Components\HeaderBar;
-use App\MoonShine\Components\SafeModal;
+use App\MoonShine\Components\FormSidebar;
+use App\MoonShine\Components\UnsavedChangesModal;
 use MoonShine\AssetManager\Css;
 use MoonShine\AssetManager\Js;
 use MoonShine\Laravel\Components\Fragment;
@@ -107,7 +108,8 @@ final class MoonShineLayout extends AppLayout
                     CustomDeleteModal::make(),
                     Div::make()->customView('components.error-notification'),
                     Div::make()->customView('components.detail-sidebar'),
-                    SafeModal::make(title: fn () => 'Редактирование', async: true)->name($this->safeModalName),
+                    FormSidebar::make(title: fn () => 'Редактирование', subtitle: '', async: true)->name($this->safeModalName),
+                    UnsavedChangesModal::make(),
                     HeaderBar::make(
                         $this->getHomeUrl(),
                         (string) Breadcrumbs::make($this->getPage()->getBreadcrumbs())

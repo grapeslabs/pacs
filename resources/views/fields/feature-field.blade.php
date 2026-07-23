@@ -7,14 +7,13 @@
 
 <style>
     .ff-wrapper {
-        height: 50px;
         width: 100%;
         margin-bottom: 0;
         font-family: inherit;
-        background-color: #FFFFFF;
-        border-radius: 8px;
-        padding: 8px 12px 4px 12px;
-        border: 1px solid #D7D0EF;
+        background: linear-gradient(92deg, #7E92F8 0%, #6972F0 100%);
+        border-radius: 14px;
+        padding: 16px 18px;
+        box-shadow: 0 6px 18px -8px rgba(105,114,240,.6);
     }
     .ff-hidden {
         display: none;
@@ -25,34 +24,49 @@
         align-items: center;
         justify-content: space-between;
         background-color: transparent;
+        gap: 12px;
     }
 
     .ff-left {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.875rem;
+        min-width: 0;
     }
 
     .ff-right {
+        display: flex;
         align-items: center;
+        flex-shrink: 0;
     }
 
     .ff-icon {
-        width: 1.5rem;
-        height: 1.5rem;
+        width: 2.25rem;
+        height: 2.25rem;
+        flex-shrink: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #7480ff;
+        color: #ffffff;
+        background: rgba(255,255,255,.18);
+        border-radius: 10px;
     }
     .ff-icon svg {
-        width: 100%;
-        height: 100%;
+        width: 1.375rem;
+        height: 1.375rem;
     }
+    .ff-texts { min-width: 0; }
     .ff-label {
-        color: #7480ff;
-        font-weight: 500;
+        color: #ffffff;
+        font-weight: 600;
         font-size: 1rem;
+        line-height: 1.25;
+        display: block;
+    }
+    .ff-desc {
+        color: rgba(255,255,255,.85);
+        font-size: 0.8125rem;
+        margin-top: 2px;
     }
 
     .ff-lock-container {
@@ -62,7 +76,7 @@
         height: 100%;
     }
     .ff-lock-btn {
-        color: #7480ff;
+        color: #ffffff;
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -144,14 +158,14 @@
         height: 26px;
         width: 46px;
         border-radius: 9999px;
-        background-color: #e2e4ef;
+        background-color: rgba(255,255,255,.3);
         border: none;
         padding: 0;
         cursor: pointer;
         transition: background-color 0.3s ease-in-out;
     }
     .ff-switcher.is-active {
-        background-color: #7480ff;
+        background-color: #ffffff;
     }
     .ff-switcher:focus {
         outline: none;
@@ -162,12 +176,13 @@
         width: 22px;
         border-radius: 9999px;
         background-color: #ffffff;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15);
         transform: translateX(2px);
         transition: transform 0.3s ease-in-out;
     }
     .ff-switcher.is-active .ff-switcher-circle {
         transform: translateX(22px);
+        background-color: #6972F0;
     }
 </style>
 
@@ -194,47 +209,14 @@
     <div class="ff-card">
         <div class="ff-left">
             <div class="ff-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M9.93808 3H5.25058C5.11141 3 4.97499 3.03873 4.85658 3.11185C4.73816 3.18496 4.64243 3.28958 4.58008 3.414L1.58008 9.414H8.33458L9.93808 3Z" fill="url(#paint0_linear_440_4905)"/>
-                    <path d="M15.666 9.414L14.0625 3H18.75C18.8892 3 19.0256 3.03873 19.144 3.11185C19.2624 3.18496 19.3582 3.28958 19.4205 3.414L22.4205 9.414H15.666Z" fill="url(#paint1_linear_440_4905)"/>
-                    <path d="M9.0225 3.5685C9.06299 3.40618 9.15658 3.26205 9.2884 3.15904C9.42022 3.05603 9.5827 3.00005 9.75 3H14.25C14.4173 3.00005 14.5798 3.05603 14.7116 3.15904C14.8434 3.26205 14.937 3.40618 14.9775 3.5685L16.4775 9.5685C16.4925 9.6285 16.5 9.689 16.5 9.75H7.5C7.50007 9.68881 7.50762 9.62786 7.5225 9.5685L9.0225 3.5685Z" fill="url(#paint2_linear_440_4905)"/>
-                    <path d="M8.35228 9H1.78678L1.57978 9.414C1.5149 9.54318 1.48874 9.68836 1.50444 9.83207C1.52014 9.97577 1.57704 10.1119 1.66828 10.224L11.4183 22.224C11.4874 22.3087 11.5741 22.3774 11.6725 22.425C11.7709 22.4727 11.8785 22.4983 11.9878 22.5C12.0972 22.5017 12.2055 22.4795 12.3054 22.435C12.4052 22.3904 12.4941 22.3245 12.5658 22.242L8.35228 9Z" fill="url(#paint3_linear_440_4905)"/>
-                    <path d="M11.4346 22.242L15.6481 9H22.2136L22.4206 9.414C22.4854 9.54318 22.5116 9.68836 22.4959 9.83207C22.4802 9.97577 22.4233 10.1119 22.3321 10.224L12.5821 22.224C12.513 22.3087 12.4262 22.3774 12.3278 22.425C12.2294 22.4727 12.1218 22.4983 12.0125 22.5C11.9032 22.5017 11.7948 22.4795 11.695 22.435C11.5952 22.3904 11.5063 22.3245 11.4346 22.242Z" fill="url(#paint4_linear_440_4905)"/>
-                    <path d="M7.66567 9L7.52317 9.5685C7.48994 9.70204 7.49409 9.84216 7.53517 9.9735L11.2852 21.9735C11.333 22.1258 11.4282 22.2588 11.5569 22.3533C11.6856 22.4477 11.841 22.4986 12.0007 22.4986C12.1603 22.4986 12.3158 22.4477 12.4444 22.3533C12.5731 22.2588 12.6683 22.1258 12.7162 21.9735L16.4662 9.9735C16.5073 9.84216 16.5114 9.70204 16.4782 9.5685L16.3357 9H7.66567Z" fill="url(#paint5_linear_440_4905)"/>
-                    <path d="M5.25028 3C5.11111 3.00001 4.97469 3.03873 4.85628 3.11185C4.73786 3.18496 4.64213 3.28958 4.57978 3.414L1.57978 9.414C1.5149 9.54318 1.48874 9.68836 1.50444 9.83207C1.52014 9.97577 1.57704 10.1119 1.66828 10.224L11.4183 22.224C11.4886 22.3105 11.5773 22.3803 11.678 22.4282C11.7787 22.4761 11.8888 22.501 12.0003 22.501C12.1118 22.501 12.2219 22.4761 12.3225 22.4282C12.4232 22.3803 12.512 22.3105 12.5823 22.224L22.3323 10.224C22.4238 10.112 22.4809 9.976 22.4969 9.83229C22.5129 9.68858 22.487 9.54332 22.4223 9.414L19.4223 3.414C19.3598 3.28935 19.2638 3.18458 19.1451 3.11145C19.0264 3.03832 18.8897 2.99973 18.7503 3H5.25028Z" fill="url(#paint6_linear_440_4905)" fill-opacity="0.7"/>
-                    <defs>
-                        <linearGradient id="paint0_linear_440_4905" x1="8.74408" y1="0.327" x2="5.27008" y2="8.64" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#9FF0F9"/>
-                            <stop offset="1" stop-color="#29C3FF"/>
-                        </linearGradient>
-                        <linearGradient id="paint1_linear_440_4905" x1="17.0475" y1="3" x2="21.006" y2="12.948" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#0FAFFF"/>
-                            <stop offset="1" stop-color="#102784"/>
-                        </linearGradient>
-                        <linearGradient id="paint2_linear_440_4905" x1="12" y1="3" x2="12" y2="11.4375" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#3BD5FF"/>
-                            <stop offset="1" stop-color="#367AF2"/>
-                        </linearGradient>
-                        <linearGradient id="paint3_linear_440_4905" x1="3.45328" y1="6.3" x2="11.7273" y2="22.26" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#0094F0"/>
-                            <stop offset="1" stop-color="#6CE0FF"/>
-                        </linearGradient>
-                        <linearGradient id="paint4_linear_440_4905" x1="25.1041" y1="2.25" x2="12.7756" y2="20.742" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#1B44B1"/>
-                            <stop offset="1" stop-color="#2052CB"/>
-                        </linearGradient>
-                        <linearGradient id="paint5_linear_440_4905" x1="11.9947" y1="4.275" x2="11.9947" y2="22.5" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#2052CB"/>
-                            <stop offset="1" stop-color="#0FAFFF"/>
-                        </linearGradient>
-                        <linearGradient id="paint6_linear_440_4905" x1="-0.632721" y1="-15.363" x2="16.1463" y2="24.0795" gradientUnits="userSpaceOnUse">
-                            <stop offset="0.533" stop-color="#FF6CE8" stop-opacity="0"/>
-                            <stop offset="1" stop-color="#FF6CE8"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="display: block; color: rgb(255, 255, 255);"><path fill="currentColor" d="M9.107 5.448C9.705 3.698 12.123 3.645 12.832 5.289L12.892 5.449L13.699 7.809C13.8839 8.35023 14.1828 8.84551 14.5754 9.26142C14.9681 9.67734 15.4453 10.0042 15.975 10.22L16.192 10.301L18.552 11.107C20.302 11.705 20.355 14.123 18.712 14.832L18.552 14.892L16.192 15.699C15.6506 15.8838 15.1551 16.1826 14.739 16.5753C14.3229 16.9679 13.9959 17.4452 13.78 17.975L13.699 18.191L12.893 20.552C12.295 22.302 9.877 22.355 9.169 20.712L9.107 20.552L8.301 18.192C8.11618 17.6506 7.81737 17.1551 7.42474 16.739C7.03211 16.3229 6.55479 15.9959 6.025 15.78L5.809 15.699L3.449 14.893C1.698 14.295 1.645 11.877 3.289 11.169L3.449 11.107L5.809 10.301C6.35023 10.1161 6.84551 9.81719 7.26142 9.42457C7.67733 9.03195 8.00421 8.55469 8.22 8.025L8.301 7.809L9.107 5.448ZM11 6.094L10.194 8.454C9.91239 9.2793 9.45427 10.0333 8.85153 10.6635C8.2488 11.2937 7.51594 11.7849 6.704 12.103L6.454 12.194L4.094 13L6.454 13.806C7.2793 14.0876 8.0333 14.5457 8.66349 15.1485C9.29369 15.7512 9.78492 16.4841 10.103 17.296L10.194 17.546L11 19.906L11.806 17.546C12.0876 16.7207 12.5457 15.9667 13.1485 15.3365C13.7512 14.7063 14.4841 14.2151 15.296 13.897L15.546 13.807L17.906 13L15.546 12.194C14.7207 11.9124 13.9667 11.4543 13.3365 10.8515C12.7063 10.2488 12.2151 9.51595 11.897 8.704L11.807 8.454L11 6.094ZM19 2C19.1871 2 19.3704 2.05248 19.5292 2.15147C19.6879 2.25046 19.8157 2.392 19.898 2.56L19.946 2.677L20.296 3.703L21.323 4.053C21.5105 4.1167 21.6748 4.23462 21.7952 4.39182C21.9156 4.54902 21.9866 4.73842 21.9993 4.93602C22.0119 5.13362 21.9656 5.33053 21.8662 5.50179C21.7668 5.67304 21.6188 5.81094 21.441 5.898L21.323 5.946L20.297 6.296L19.947 7.323C19.8832 7.51043 19.7652 7.6747 19.6079 7.79499C19.4507 7.91529 19.2612 7.98619 19.0636 7.99872C18.866 8.01125 18.6692 7.96484 18.498 7.86538C18.3268 7.76591 18.189 7.61787 18.102 7.44L18.054 7.323L17.704 6.297L16.677 5.947C16.4895 5.8833 16.3252 5.76538 16.2048 5.60819C16.0844 5.45099 16.0134 5.26158 16.0007 5.06398C15.9881 4.86638 16.0344 4.66947 16.1338 4.49821C16.2332 4.32696 16.3812 4.18906 16.559 4.102L16.677 4.054L17.703 3.704L18.053 2.677C18.1204 2.47943 18.248 2.30791 18.4178 2.1865C18.5877 2.06509 18.7912 1.99987 19 2Z"></path></svg>
             </div>
-            <span class="ff-label">{{ $field->getFeatureLabel() }}</span>
+            <div class="ff-texts">
+                <span class="ff-label">{{ $field->getFeatureLabel() }}</span>
+                @if($field->getFeatureDescription())
+                    <div class="ff-desc">{{ $field->getFeatureDescription() }}</div>
+                @endif
+            </div>
         </div>
 
         <div class="ff-right">

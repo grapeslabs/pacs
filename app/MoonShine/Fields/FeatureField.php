@@ -13,6 +13,7 @@ class FeatureField extends Checkbox
     protected Closure|bool $isLocked = false;
     protected Closure|string $unlockUrl = '#';
     protected Closure|string $featureLabel = '';
+    protected Closure|string $featureDescription = '';
 
     public function __construct(Closure|string|null $label = null, ?string $column = null, ?Closure $formatted = null)
     {
@@ -47,6 +48,17 @@ class FeatureField extends Checkbox
     public function getFeatureLabel(): string
     {
         return is_callable($this->featureLabel) ? call_user_func($this->featureLabel) : $this->featureLabel;
+    }
+
+    public function description(Closure|string $description): static
+    {
+        $this->featureDescription = $description;
+        return $this;
+    }
+
+    public function getFeatureDescription(): string
+    {
+        return is_callable($this->featureDescription) ? call_user_func($this->featureDescription) : $this->featureDescription;
     }
 
 
