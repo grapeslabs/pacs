@@ -158,6 +158,7 @@
         text-overflow: ellipsis;
     }
     .ms-option-check { display: flex; align-items: center; color: #7381F4; flex-shrink: 0; }
+    .ms-option-check svg { width: 16px; height: 16px; }
 
     .multiselect-create-wrapper {
         margin-top: 6px;

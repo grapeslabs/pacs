@@ -46,14 +46,14 @@
     .ccm_modal-panel {
         position: relative;
         overflow: hidden;
-        border-radius: 16px;
+        border-radius: 18px;
         background-color: #ffffff;
         text-align: left;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         transition-property: all;
         width: 100%;
-        max-width: 410px;
-        padding: 24px;
+        max-width: 460px;
+        padding: 26px 28px 22px;
     }
 
     .ccm_close-wrapper {
@@ -66,9 +66,10 @@
         color: #9ca3af;
         background: transparent;
         border: none;
-        padding: 4px;
+        padding: 5px;
         cursor: pointer;
-        transition-property: color;
+        border-radius: 50%;
+        transition-property: color, background-color;
         transition-duration: 150ms;
         display: flex;
         align-items: center;
@@ -77,6 +78,7 @@
 
     .ccm_close-btn:hover {
         color: #4b5563;
+        background-color: #F1F3FB;
     }
 
     .ccm_close-btn:focus {
@@ -95,8 +97,8 @@
 
     .ccm_title {
         font-size: 19px;
-        font-weight: 700;
-        color: #111827;
+        font-weight: 800;
+        color: #1E1E1E;
         margin: 0;
         padding-right: 24px
     }
@@ -106,29 +108,33 @@
     }
 
     .ccm_text {
-        font-size: 15px;
-        color: #4b5563;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.5;
+        color: #6B7390;
         margin: 0;
     }
 
     .ccm_actions {
         margin-top: 24px;
         display: flex;
-        gap: 12px;
+        gap: 10px;
+        justify-content: flex-end;
     }
 
     .ccm_btn {
-        flex: 1 1 0%;
-        display: flex;
+        display: inline-flex;
         justify-content: center;
         align-items: center;
-        border-radius: 12px;
-        padding: 11px 16px;
-        font-size: 15px;
-        font-weight: 500;
-        border: none;
+        border-radius: 999px;
+        height: 42px;
+        padding: 0 22px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: .2px;
+        border: 1px solid transparent;
         cursor: pointer;
-        transition-property: background-color, opacity;
+        transition-property: background-color, border-color, opacity;
         transition-duration: 150ms;
     }
 
@@ -137,12 +143,14 @@
     }
 
     .ccm_btn-cancel {
-        background-color: #EEF2FF;
-        color: #6366F1;
+        background-color: #fff;
+        color: #4E4E61;
+        border-color: #D7DBEF;
     }
 
     .ccm_btn-cancel:hover:not(:disabled) {
-        background-color: #E0E7FF;
+        background-color: #F1F3FB;
+        border-color: #C8D0EB;
     }
 
     .ccm_btn-cancel:disabled {
@@ -155,7 +163,7 @@
     }
 
     .ccm_btn-delete:hover:not(:disabled) {
-        background-color: #E11D48;
+        background-color: #D93A32;
     }
 
     .ccm_btn-delete:disabled {

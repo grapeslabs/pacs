@@ -49,9 +49,16 @@ class ApiKeyResource extends BaseModelResource
                 ->format('d.m.Y H:i')
                 ->sortable(),
 
-            Date::make('Срок действия', 'expires_at')
-                ->format('d.m.Y')
-                ->sortable(),
+            Preview::make('Срок действия', 'expires_at', function ($value, $item) {
+                if (blank($item->expires_at)) {
+                    return new \Illuminate\Support\HtmlString(
+                        '<span style="display:inline-flex;align-items:center;padding:4px 11px;'
+                        . 'border-radius:4px;background:#EAEDF8;color:#4E4E61;font-size:12px;'
+                        . 'font-weight:600;white-space:nowrap;">Бесконечно</span>'
+                    );
+                }
+                return \Illuminate\Support\Carbon::parse($item->expires_at)->format('d.m.Y');
+            })->sortable(),
 
             Switcher::make('Активен', 'is_active')
                 ->onValue(1)
@@ -72,8 +79,8 @@ class ApiKeyResource extends BaseModelResource
                 ->required()
                 ->placeholder('Введите название ключа'),
 
-            Checkbox::make('Бессрочный', 'is_unlimited')
-                ->setValue(false),
+            Switcher::make('Бессрочный', 'is_unlimited')
+                ->default(false),
 
             CustomDate::make('Срок действия', 'expires_at')
                 ->after(Carbon::now(), 'Срок действия не может быть в прощлом')

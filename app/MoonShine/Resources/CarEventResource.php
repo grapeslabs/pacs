@@ -65,7 +65,7 @@ class CarEventResource extends BaseModelResource
                 ->sortable(),
 
             AvatarField::make('Камера', 'camera_id')
-                ->icon($this->iconFile('menu-video.svg'))
+                ->icon($this->iconFile('menu-video'))
                 ->text(fn($item) => $this->streamNameByUid($item->camera_id))
                 ->subtext(fn($item) => $this->streamLocationByUid($item->camera_id))
                 ->deleted(fn($item) => $this->streamNameByUid($item->camera_id) === '—'),
@@ -112,8 +112,9 @@ class CarEventResource extends BaseModelResource
         $car   = $item->car;
         $brand = $car?->brand?->name;
         $color = $car?->color?->name;
-        $person = ($car && $car->people->isNotEmpty())
-            ? $car->people->map(fn($p) => trim($p->last_name . ' ' . $p->first_name))->implode(', ')
+        $people = ($car && $car->people->isNotEmpty()) ? $car->people : collect();
+        $person = $people->isNotEmpty()
+            ? $people->map(fn($p) => $p->getFullName())->implode(', ')
             : null;
 
         $serial = ! empty($item->controllers) ? implode(', ', (array) $item->controllers) : null;
@@ -126,7 +127,11 @@ class CarEventResource extends BaseModelResource
             ['k' => 'Камера',      'v' => $this->streamNameByUid($item->camera_id)],
         ];
         if ($person) {
-            $rows[] = ['k' => 'Персона', 'v' => $person];
+            $row = ['k' => 'Персона', 'v' => $person];
+            if ($people->count() === 1) {
+                $row['link'] = $this->filteredIndexUrl(app(PersonResource::class), ['last_name' => $people->first()->last_name]);
+            }
+            $rows[] = $row;
         }
         if ($serial) {
             $rows[] = ['k' => 'Оборудование', 'v' => $serial, 'mono' => true];

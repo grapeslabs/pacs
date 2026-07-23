@@ -92,7 +92,7 @@ class KeyResource extends BaseModelResource
         }
 
         $icLockClosed = $this->iconFile('lock');
-        $icLockOpen = $this->iconFile('open.svg');
+        $icLockOpen = $this->iconFile('open');
 
         $blockUrl = $this->getAsyncMethodUrl('toggleBlock', page: $this->getIndexPage(), params: ['item_id' => $item->getKey()]);
         $blockHtml = (string) ActionButton::make($active ? 'Заблокировать' : 'Разблокировать', $blockUrl)

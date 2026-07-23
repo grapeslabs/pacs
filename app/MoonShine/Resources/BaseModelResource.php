@@ -91,6 +91,74 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
         return $this->editModalTitle ?? 'Редактирование';
     }
 
+    /**
+     * Метаданные всех полей фильтра (column + label).
+     * Бейджи строятся на клиенте из текущих значений формы фильтров,
+     * т.к. фильтр применяется асинхронно без перезагрузки страницы.
+     */
+    public function filterFieldsMeta(): array
+    {
+        if (! $this->hasFilters()) {
+            return [];
+        }
+
+        $meta = [];
+
+        foreach ($this->filters() as $field) {
+            if (! is_object($field) || ! method_exists($field, 'getColumn')) {
+                continue;
+            }
+
+            $meta[] = [
+                'column' => $field->getColumn(),
+                'label'  => method_exists($field, 'getLabel') ? $field->getLabel() : $field->getColumn(),
+            ];
+        }
+
+        return $meta;
+    }
+
+    /**
+     * Активные фильтры для отрисовки бейджей под тулбаром.
+     * Возвращает список ['label', 'value', 'column'].
+     */
+    public function activeFilterBadges(): array
+    {
+        if (! $this->hasFilters()) {
+            return [];
+        }
+
+        $params = collect($this->getFilterParams());
+        $badges = [];
+
+        foreach ($this->filters() as $field) {
+            if (! is_object($field) || ! method_exists($field, 'getColumn')) {
+                continue;
+            }
+
+            $column = $field->getColumn();
+            $value = $params->get($column);
+
+            if (blank($value) || $value === '0') {
+                continue;
+            }
+
+            $display = is_array($value) ? implode(', ', array_filter($value, fn ($v) => ! blank($v))) : (string) $value;
+
+            if ($display === '') {
+                continue;
+            }
+
+            $badges[] = [
+                'label'  => method_exists($field, 'getLabel') ? $field->getLabel() : $column,
+                'value'  => $display,
+                'column' => $column,
+            ];
+        }
+
+        return $badges;
+    }
+
     public function usesDetailSidebar(): bool
     {
         return $this->detailSidebar;
@@ -511,15 +579,21 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
 
     public function trAttributes(): ?Closure
     {
-        if (! $this->detailSidebar && ! $this->detailModal && ! $this->hasDetailView()) {
+        $hasDetail = $this->detailSidebar || $this->detailModal || $this->hasDetailView();
+
+        // Если детальной панели нет — клик по строке открывает редактирование в safe-modal.
+        if (! $hasDetail && ! $this->isEditInModal()) {
             return null;
         }
-        return function (mixed $item, int $index): array {
+
+        $clickTarget = $hasDetail ? '.js-detail-button' : '.js-edit-button';
+
+        return function (mixed $item, int $index) use ($clickTarget): array {
             return [
                 '@click' => "if(\$event.target.closest('a,button,input,label,img')) return; "
                     . "document.querySelectorAll('tr.ds-row-active').forEach(el => el.classList.remove('ds-row-active')); "
                     . "\$event.currentTarget.classList.add('ds-row-active'); "
-                    . "\$event.currentTarget.querySelector('.js-detail-button')?.click();",
+                    . "\$event.currentTarget.querySelector('{$clickTarget}')?.click();",
                 'style' => 'cursor: pointer;',
             ];
         };

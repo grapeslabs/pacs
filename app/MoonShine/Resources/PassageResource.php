@@ -80,7 +80,7 @@ class PassageResource extends BaseModelResource
                 ]),
             ]),
 
-            CustomTextarea::make('Комментарий', 'comment')->nullable(),
+            CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию')->nullable(),
         ];
     }
 

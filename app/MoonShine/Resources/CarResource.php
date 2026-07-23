@@ -427,7 +427,7 @@ class CarResource extends BaseModelResource
                 ->options(CarTag::select('id', 'name')->get())
                 ->multiple(true)
                 ->creatable(true, route('car-tags.store')),
-            CustomTextarea::make('Комментарий', 'comment')->nullable(),
+            CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию')->nullable(),
             SelectField::make('Правила проезда', 'rule_ids')
                 ->options(CarPassageRule::query()->pluck('name', 'id')->toArray())
                 ->multiple()
@@ -447,7 +447,7 @@ class CarResource extends BaseModelResource
                 ->options(CarColor::query()->pluck('name', 'id')->toArray()),
             Select::make('Организация', 'organization_id')
                 ->options(Organization::query()->pluck('short_name', 'id')->toArray()),
-            Textarea::make('Комментарий', 'comment'),
+            Textarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию'),
         ];
     }
 

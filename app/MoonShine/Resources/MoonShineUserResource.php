@@ -63,7 +63,7 @@ class MoonShineUserResource extends BaseModelResource
 
     protected function activeActions(): ListOf
     {
-        return parent::activeActions()->only(Action::CREATE, Action::DELETE, Action::UPDATE);
+        return parent::activeActions()->only(Action::CREATE, Action::DELETE, Action::UPDATE, Action::MASS_DELETE);
     }
 
     public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
@@ -201,6 +201,8 @@ class MoonShineUserResource extends BaseModelResource
         return [
             'id',
             'name',
+            'email',
+            'moonshineUserRole.name',
         ];
     }
 

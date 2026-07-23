@@ -240,7 +240,7 @@ class GuestResource extends BaseModelResource
                         }),
                 ])->columnSpan(6),
             ]),
-            CustomTextarea::make('Комментарий', 'comment')
+            CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию')
                 ->nullable(),
         ];
     }

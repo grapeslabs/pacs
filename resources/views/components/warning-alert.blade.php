@@ -9,7 +9,8 @@
         border-radius: 12px;
         margin-bottom: 24px;
         font-family: inherit;
-        width: 45%;
+        width: 100%;
+        box-sizing: border-box;
     }
     .ms-warning-icon {
         flex-shrink: 0;

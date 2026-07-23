@@ -254,6 +254,7 @@ class InviterResource extends BaseModelResource
             SelectField::make('Теги', 'person.tags')
                 ->icon('tag')
                 ->optionsIcon('tag')
+                ->placeholder('Введите тег')
                 ->multiple()
                 ->options(
                     Tag::query()

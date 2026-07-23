@@ -63,16 +63,6 @@ class MenuService
     {
         return [
             [
-                'label' => 'Управление',
-                'sectionIcon' => self::permIcon('settings'),
-                'items' => [
-                    ['label' => 'Пользователи', 'class' => MoonShineUserResource::class, 'icon' => self::icon('users'), 'model' => User::class],
-                    ['label' => 'Роли', 'class' => MoonShineUserRoleResource::class, 'icon' => self::icon('shield'), 'model' => Role::class],
-                    ['label' => 'Ключи API', 'class' => ApiKeyResource::class, 'icon' => self::icon('code'), 'model' => ApiKey::class],
-                    ['label' => 'Настройки', 'class' => SettingsPage::class, 'icon' => self::icon('cog'), 'feature' => 'services.ms.enabled'],
-                ],
-            ],
-            [
                 'label' => 'Видео',
                 'sectionIcon' => self::permIcon('streams'),
                 'feature' => 'services.ms.enabled',
@@ -130,6 +120,16 @@ class MenuService
                 'items' => [
                     ['label' => 'Марки автомобилей', 'class' => CarBrandResource::class, 'icon' => self::icon('tag')],
                     ['label' => 'Цвета автомобилей', 'class' => CarColorResource::class, 'icon' => self::icon('swatch')],
+                ],
+            ],
+            [
+                'label' => 'Управление',
+                'sectionIcon' => self::permIcon('settings'),
+                'items' => [
+                    ['label' => 'Пользователи', 'class' => MoonShineUserResource::class, 'icon' => self::icon('users'), 'model' => User::class],
+                    ['label' => 'Роли', 'class' => MoonShineUserRoleResource::class, 'icon' => self::icon('shield'), 'model' => Role::class],
+                    ['label' => 'Ключи API', 'class' => ApiKeyResource::class, 'icon' => self::icon('code'), 'model' => ApiKey::class],
+                    ['label' => 'Настройки', 'class' => SettingsPage::class, 'icon' => self::icon('cog'), 'feature' => 'services.ms.enabled'],
                 ],
             ],
         ];

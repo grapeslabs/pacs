@@ -111,7 +111,7 @@ class CarPassageRuleResource extends BaseModelResource
 
             Switcher::make('Активно', 'is_active')->default(true),
 
-            CustomTextarea::make('Комментарий', 'comment')->nullable(),
+            CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию')->nullable(),
         ];
     }
 
@@ -265,7 +265,7 @@ class CarPassageRuleResource extends BaseModelResource
                 ->nullable()
                 ->options(CarPassageRule::TYPES),
 
-            CustomText::make('Комментарий', 'comment'),
+            CustomText::make('Комментарий', 'comment')->placeholder('Дополнительная информацию'),
         ];
     }
 

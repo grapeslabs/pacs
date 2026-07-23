@@ -117,10 +117,10 @@
 
                     <div style="display: flex; align-items: flex-start; justify-content: space-between; padding: 1.25rem 1.5rem; flex-shrink: 0; border-bottom: 1px solid #EAEDFB;">
                         <div style="min-width: 0;">
-                            <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0; line-height: 1.4;" class="text-gray-900 dark:text-gray-100" x-text="modalTitle"></h3>
+                            <h3 style="font-size: 19px; font-weight: 800; margin: 0; line-height: 1.4;" class="text-gray-900 dark:text-gray-100" x-text="modalTitle"></h3>
                             <p x-show="modalSubtitle" x-cloak style="font-size: 0.8125rem; color: #7F7F9D; margin: 0.125rem 0 0;" x-text="modalSubtitle"></p>
                         </div>
-                        <button @click="tryClose()" type="button" style="background: transparent; border: none; cursor: pointer; padding: 0.25rem;" class="text-gray-400 hover:text-gray-500">
+                        <button @click="tryClose()" type="button" style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; background: transparent; border: none; border-radius: 50%; cursor: pointer; padding: 0.25rem; transition: background-color .15s;" class="text-gray-400 hover:text-gray-500 hover:bg-gray-100" onmouseover="this.style.backgroundColor='#F1F3FB'" onmouseout="this.style.backgroundColor='transparent'">
                             <x-moonshine::icon icon="x-mark" size="6" />
                         </button>
                     </div>

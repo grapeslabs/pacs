@@ -168,6 +168,23 @@ body {
     }
 }
 
+/* Кнопка «Фильтры» в открытом/активном состоянии — без толстой обводки */
+.js-filter-button:focus,
+.js-filter-button:focus-visible,
+.js-filter-button:active,
+.js-filter-button._is-active {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: #EAEDFB !important;
+}
+
+/* Ширина сайдбара = дефолт 16.75rem × 0.98 */
+@media (min-width: 1024px) {
+    .layout-menu:not(._is-minimized) {
+        width: 16.415rem !important;
+    }
+}
+
 .form-checkbox:checked {
     background-color: #7E92F8 !important;
 }
@@ -175,6 +192,8 @@ body {
 .form-switcher {
     .form-switcher-toggler {
         background-color: #FFFFFF !important;
+        border: none !important;
+        box-shadow: none !important;
         transition: background-color 0.2s;
     }
 
@@ -238,11 +257,15 @@ body {
     border: none !important;
     background: transparent !important;
     color: #C7C0EB !important;
-    border-radius: 9px;
+    border-radius: 50%;
     box-shadow: none !important;
 }
 .btn.ds-rowbtn:hover {
-    background: #F1F3FB !important;
+    background: #EAEDF8 !important;
+}
+.btn.ds-rowbtn:hover svg {
+    color: #7381F4 !important;
+    stroke: #7381F4 !important;
 }
 .btn.ds-rowbtn > div {
     width: 18px !important;
