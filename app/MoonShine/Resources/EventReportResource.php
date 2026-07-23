@@ -68,7 +68,7 @@ class EventReportResource extends BaseModelResource
                     : ($item->person?->getFullName() ?? $item->person_photobank_id))
                 ->subtext(fn($item) => $item->is_unknown
                     ? ($item->data['unknown_uuid'] ?? $item->person_photobank_id)
-                    : ($item->person?->certificate_number ? '№ ' . $item->person->certificate_number : null))
+                    : ($item->person?->certificate_number ? $item->person->certificate_number : null))
                 ->photo(fn($item) => (! $item->is_unknown && $item->person)
                     ? ($item->person->photo[0] ?? null)
                     : null)

@@ -173,7 +173,7 @@ class CustomIndexPage extends IndexPage
         ]);
     }
 
-    private function buildSearchPlaceholder(): string
+    public function buildSearchPlaceholder(): string
     {
         $resource = $this->getResource();
         $searchColumns = method_exists($resource, 'getSearch') ? $resource->getSearch() : [];

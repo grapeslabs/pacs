@@ -60,7 +60,7 @@ class PeopleReportResource extends BaseModelResource
                     : ($item->person?->getFullName() ?? $item->person_photobank_id))
                 ->subtext(fn($item) => ($this->oldPerson === $item->person_photobank_id || ! $item->person?->certificate_number)
                     ? null
-                    : '№ ' . $item->person->certificate_number)
+                    : $item->person->certificate_number)
                 ->photo(fn($item) => ($this->oldPerson === $item->person_photobank_id || ! $item->person)
                     ? null
                     : ($item->person->photo[0] ?? null)),

@@ -62,7 +62,7 @@
             font-size: 13px;
             font-weight: 700;
             line-height: 1;
-            color: #fff;
+            color: #fff !important;
             background: linear-gradient(180deg, #7E92F8, #6972F0);
         }
 
@@ -72,12 +72,12 @@
         }
 
         .av-cell__ava--icon {
-            color: #66667D;
+            color: #66667D !important;
         }
 
         .av-cell__ava--deleted {
             background: #FBECEC;
-            color: #F04138;
+            color: #F04138 !important;
         }
 
         .av-cell--deleted .av-cell__name {

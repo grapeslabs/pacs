@@ -114,7 +114,7 @@ class PersonResource extends BaseModelResource
         $org = $item->organization?->short_name;
         $cert = $item->certificate_number;
 
-        $heroSub = collect([$org, $cert ? '№ ' . $cert : null])->filter()->join(' · ');
+        $heroSub = collect([$org, $cert ? $cert : null])->filter()->join(' · ');
 
         $photo = $item->first_photo;
         $avatar = $photo ? Storage::disk('public')->url($photo) : null;
@@ -303,7 +303,7 @@ class PersonResource extends BaseModelResource
             ID::make()->sortable(),
             AvatarField::make('ФИО', 'last_name')
                 ->text(fn($item) => trim(($item->last_name ?? '') . ' ' . ($item->first_name ?? '') . ' ' . ($item->middle_name ?? '')))
-                ->subtext(fn($item) => '№' . $item->certificate_number)
+                ->subtext(fn($item) => $item->certificate_number)
                 ->photo(fn($item) => is_array($item->photo) ? ($item->photo[0] ?? null) : $item->photo)
                 ->indicator(fn($item) => $item && $item->isFrozen()
                     ? '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M4.5 6l15 12M19.5 6l-15 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 6.5 9.5 5m2.5 1.5L14.5 5M12 17.5 9.5 19m2.5-1.5L14.5 19M5.5 8.8 5 6m.5 2.8L3 9.4M18.5 8.8 19 6m-.5 2.8L21 9.4M5.5 15.2 5 18m.5-2.8L3 14.6M18.5 15.2 19 18m-.5-2.8L21 14.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'

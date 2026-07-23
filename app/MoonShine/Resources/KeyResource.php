@@ -77,7 +77,7 @@ class KeyResource extends BaseModelResource
             $person = $item->person;
             $pSub = collect([
                 $person->organization?->short_name,
-                $person->certificate_number ? '№ ' . $person->certificate_number : null,
+                $person->certificate_number ? $person->certificate_number : null,
             ])->filter()->join(' · ');
 
             $sections[] = [
@@ -140,7 +140,7 @@ class KeyResource extends BaseModelResource
                 ->sortable(),
             AvatarField::make('Персона', 'person')
                 ->text(fn($item) => $item->person?->getFullName() ?: '—')
-                ->subtext(fn($item) => $item->person?->certificate_number ? '№ ' . $item->person->certificate_number : null)
+                ->subtext(fn($item) => $item->person?->certificate_number ? $item->person->certificate_number : null)
                 ->photo(fn($item) => $item->person?->first_photo)
                 ->sortable(function (Builder $query, string $column, string $direction) {
                     return $query->orderBy(
@@ -232,7 +232,7 @@ class KeyResource extends BaseModelResource
                 ->options(Person::query()->get()->map(fn($p) => [
                     'id'      => $p->id,
                     'name'    => trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '') . ' ' . ($p->middle_name ?? '')),
-                    'subtext' => $p->certificate_number ? '№ ' . $p->certificate_number : null,
+                    'subtext' => $p->certificate_number ? $p->certificate_number : null,
                 ])->toArray())
                 ->required()
                 ->default(request()->person_id??null),
