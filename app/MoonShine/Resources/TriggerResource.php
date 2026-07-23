@@ -369,6 +369,7 @@ class TriggerResource extends BaseModelResource
             SelectField::make('Теги', 'tags')
                 ->icon('tag')
                 ->optionsIcon('tag')
+                ->placeholder('Введите тег')
                 ->options(Tag::select('id', 'name')->get())
                 ->multiple(true),
 
@@ -442,6 +443,7 @@ class TriggerResource extends BaseModelResource
             SelectField::make('Теги', 'tags')
                 ->icon('tag')
                 ->optionsIcon('tag')
+                ->placeholder('Введите тег')
                 ->options(Tag::select('id', 'name')->get())
                 ->multiple(true)
         ];

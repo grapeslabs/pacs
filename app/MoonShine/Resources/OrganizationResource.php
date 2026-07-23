@@ -46,7 +46,7 @@ class OrganizationResource extends BaseModelResource
     {
         $peopleCount = $item->people()->count();
 
-        $icDoc = $this->iconFile('doc');
+        $icDoc = $this->iconFile('document');
         $icPhone = $this->iconFile('phone');
         $icPerson = $this->iconFile('person');
         $orgIcon = $this->iconFile('organization');
@@ -175,7 +175,7 @@ class OrganizationResource extends BaseModelResource
             CustomText::make('Телефон', 'phone')
                 ->phone()
                 ->leadingIcon($phoneIcon),
-            CustomTextarea::make('Комментарий', 'comment'),
+            CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию'),
         ];
     }
 
@@ -250,7 +250,7 @@ class OrganizationResource extends BaseModelResource
             Text::make('Контактные данные', 'contact_data')
                 ->placeholder('Фильтрация по контактным данным'),
 
-            CustomTextarea::make('Комментарий', 'comment')
+            CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию')
                 ->placeholder('Фильтрация по комментарию'),
         ];
     }

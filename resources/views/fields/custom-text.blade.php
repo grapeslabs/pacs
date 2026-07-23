@@ -12,12 +12,19 @@
 
     .ctf-input {
         width: 100%;
-        border-radius: 0.5rem;
-        border: 1px solid #d1d5db;
+        height: 46px;
+        border-radius: 12px;
+        border: 1.5px solid #D7DBEF;
         padding: 0.5rem 2rem 0.5rem 0.75rem;
-        background-color: transparent;
+        background-color: #fff;
         transition: all 0.2s;
         outline: none;
+    }
+
+    .ctf-input:hover {
+        border-color: #7381F4;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(115, 129, 244, .18);
     }
 
     .ctf-wrapper--lead .ctf-input {
@@ -43,7 +50,7 @@
 
     .ctf-input:focus {
         border-color: #7381F4;
-        box-shadow: 0 0 0 1px #7381F4;
+        box-shadow: 0 0 0 3px rgba(115, 129, 244, .18);
     }
 
     .ctf-input.ctf-error {
@@ -101,15 +108,36 @@
     }
 </style>
 
+@php
+    $ctfIsPhone = collect($element->getCustomClientRules())->contains(fn ($r) => ($r['type'] ?? '') === 'phone');
+@endphp
 <div x-data="{
     rules: {{ json_encode($element->getCustomClientRules()) }},
     value: '{{ addslashes((string) $element->getValue()) }}',
     modelId: '{{ $element->getData()?->getKey() ?? '' }}',
     csrfToken: '{{ csrf_token() }}',
+    isPhone: {{ $ctfIsPhone ? 'true' : 'false' }},
     error: null,
     loading: false,
     timeout: null,
+    maskPhone() {
+        let raw = String(this.value).replace(/\D/g, '');
+        if (raw === '') { this.value = ''; return; }
+        let d = raw;
+        if (d.startsWith('8')) d = '7' + d.slice(1);
+        if (!d.startsWith('7')) d = '7' + d;
+        d = d.slice(0, 11);
+        let rest = d.slice(1);
+        let out = '+7';
+        if (rest.length) out += '(' + rest.slice(0, 3);
+        if (rest.length >= 3) out += ')';
+        if (rest.length > 3) out += rest.slice(3, 6);
+        if (rest.length > 6) out += '-' + rest.slice(6, 8);
+        if (rest.length > 8) out += '-' + rest.slice(8, 10);
+        this.value = out;
+    },
     init() {
+        if (this.isPhone && this.value) { this.maskPhone(); }
         if (!window.textFieldsInitialized) {
             window.textFieldsInitialized = true;
             document.addEventListener('submit', function(event) {
@@ -210,6 +238,7 @@
                type="text"
                name="{{ $element->getName() }}"
                x-model="value"
+               @if($ctfIsPhone) @input="maskPhone()" inputmode="tel" placeholder="+7(___)___-__-__" @endif
                @blur="validate()"
                :class="{'ctf-error': error !== null}"
         />

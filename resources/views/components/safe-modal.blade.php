@@ -6,6 +6,7 @@
 <style>
     #{{ $name }}_content form button[type="submit"] { display: none !important; }
     #{{ $name }}_content .mt-4:has(> button[type="submit"]:only-child) { display: none !important; }
+    .safe-modal__close:hover { background: #F1F3FB !important; color: #4E4E61 !important; }
 </style>
 
 <div
@@ -106,10 +107,10 @@
 
                     <div style="display: flex; align-items: flex-start; justify-content: space-between; padding: 1.5rem 1.75rem 1.25rem; flex-shrink: 0; border-bottom: 1px solid #EEF0F6;">
                         <div style="min-width: 0;">
-                            <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; color: #1F2430; line-height: 1.25;" class="dark:text-gray-100" x-text="modalTitle"></h3>
+                            <h3 style="font-size: 19px; font-weight: 800; margin: 0; color: #1F2430; line-height: 1.25;" class="dark:text-gray-100" x-text="modalTitle"></h3>
                             <p x-show="modalSubtitle" style="margin: 0.25rem 0 0; font-size: 0.8125rem; color: #8A8FA6;" class="dark:text-gray-400" x-text="modalSubtitle"></p>
                         </div>
-                        <button @click="tryClose()" type="button" style="background: transparent; border: none; cursor: pointer; padding: 0.25rem; color: #A1A5B7; flex-shrink: 0;" class="hover:text-gray-500">
+                        <button @click="tryClose()" type="button" class="safe-modal__close" style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; background: transparent; border: none; border-radius: 50%; cursor: pointer; color: #9096AE; flex-shrink: 0; transition: background .15s, color .15s;">
                             <x-moonshine::icon icon="x-mark" size="6" />
                         </button>
                     </div>

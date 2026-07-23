@@ -504,8 +504,9 @@ class BarrierEventResource extends BaseModelResource
 
         $brand = $car?->brand?->name;
         $color = $car?->color?->name;
-        $person = ($car && $car->people->isNotEmpty())
-            ? $car->people->map(fn($p) => trim($p->last_name . ' ' . $p->first_name . ' ' . ($p->middle_name ?? '')))->implode(', ')
+        $people = ($car && $car->people->isNotEmpty()) ? $car->people : collect();
+        $person = $people->isNotEmpty()
+            ? $people->map(fn($p) => $p->getFullName())->implode(', ')
             : null;
         $org = $car?->organization?->short_name
             ?? $car?->organization?->full_name
@@ -521,7 +522,11 @@ class BarrierEventResource extends BaseModelResource
             $rows[] = ['k' => 'Марка / цвет', 'v' => trim(($brand ?? '—') . ($color ? ' · ' . $color : ''))];
         }
         if ($person) {
-            $rows[] = ['k' => 'ФИО персоны', 'v' => $person];
+            $row = ['k' => 'ФИО персоны', 'v' => $person];
+            if ($people->count() === 1) {
+                $row['link'] = $this->filteredIndexUrl(app(PersonResource::class), ['last_name' => $people->first()->last_name]);
+            }
+            $rows[] = $row;
         }
         if ($org) {
             $rows[] = ['k' => 'Организация', 'v' => $org]

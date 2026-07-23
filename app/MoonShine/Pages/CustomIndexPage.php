@@ -119,11 +119,32 @@ class CustomIndexPage extends IndexPage
                 ->class('mb-6 gap-3 flex-wrap'),
         ]);
 
+        $filterBadges = $this->buildFilterBadges($resource);
+        if ($filterBadges !== null) {
+            $components[] = $filterBadges;
+        }
+
         if ($filterSidebar !== null) {
             $components[] = $filterSidebar;
         }
 
         return $components;
+    }
+
+    protected function buildFilterBadges($resource): ?Div
+    {
+        if (! method_exists($resource, 'filterFieldsMeta')) {
+            return null;
+        }
+
+        $fields = $resource->filterFieldsMeta();
+        if (empty($fields)) {
+            return null;
+        }
+
+        return Div::make()->customView('components.filter-badges', [
+            'fields' => $fields,
+        ]);
     }
 
     protected function getPeriodSegment($resource): ?Div

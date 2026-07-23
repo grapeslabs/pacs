@@ -106,13 +106,11 @@ class ColoredSelectField extends Field
 
         return sprintf(
             '<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;'
-            . 'border-radius:20px;background-color:%s;font-size:13px;font-weight:500;'
+            . 'border-radius:20px;background-color:%s;font-size:12px;font-weight:500;'
             . 'color:%s;white-space:nowrap;">'
-            . '<span style="width:8px;height:8px;border-radius:50%%;background-color:%s;flex-shrink:0;"></span>'
             . '%s</span>',
             $styles['bg'],
             $styles['text'],
-            $styles['dot'],
             e($label)
         );
     }

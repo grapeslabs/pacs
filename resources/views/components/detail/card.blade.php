@@ -117,11 +117,11 @@
                 <div class="ds-sec__head" @if($collapsible) @click="open = !open" style="cursor:pointer;" @endif>
                     @if(!empty($sec['icon'])) <span class="ds-sec__ic">{!! $sec['icon'] !!}</span> @endif
                     <span class="ds-sec__title">{{ $sec['title'] ?? '' }}</span>
-                    <span class="ds-sec__line"></span>
                     @if($collapsible)
                         <svg class="ds-sec__chev" :style="open ? 'transform:rotate(180deg)' : ''" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     @endif
                 </div>
+                <span class="ds-sec__line"></span>
 
                 <div @if($collapsible) x-show="open" @endif>
                 @php $hasPanel = !empty($sec['fields']) || !empty($sec['text']) || !empty($sec['tags']); @endphp
@@ -218,9 +218,9 @@
         .ds-card__back { flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; margin-top:-2px; border:none; background:transparent; border-radius:9px; color:#6B7185; cursor:pointer; transition:background .15s,color .15s; }
         .ds-card__back:hover { background:#F1F3FB; color:#2C3142; }
         [x-cloak] { display:none !important; }
-        .ds-card__title { margin:0; font-size:19px; font-weight:700; color:#1a1a2e; line-height:1.25; }
+        .ds-card__title { margin:0; font-size:19px; font-weight:800; color:#1a1a2e; line-height:1.25; }
         .ds-card__sub { margin:3px 0 0; font-size:13px; color:#8A8AA3; }
-        .ds-card__close { flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border:none; background:transparent; border-radius:9px; color:#9096AE; cursor:pointer; transition:background .15s,color .15s; }
+        .ds-card__close { flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border:none; background:transparent; border-radius:50%; color:#9096AE; cursor:pointer; transition:background .15s,color .15s; }
         .ds-card__close:hover { background:#F1F3FB; color:#4E4E61; }
 
         .ds-card__body { flex:1 1 0%; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:6px 24px 24px; }
@@ -269,12 +269,12 @@
 
         /* section */
         .ds-sec { margin-top:16px; padding:18px; border-radius:18px; background:#F6F7FC; }
-        .ds-sec__head { display:flex; align-items:center; gap:9px; margin-bottom:14px; }
+        .ds-sec__head { display:flex; align-items:center; gap:9px; margin-bottom:10px; }
         .ds-sec__ic { display:inline-flex; color:#9096AE; }
         .ds-sec__ic svg { width:16px; height:16px; }
         .ds-sec__title { font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#8A8AA3; white-space:nowrap; }
-        .ds-sec__line { flex:1; height:1px; border-top:1px dashed #D9DEEE; }
-        .ds-sec__chev { flex:0 0 auto; color:#9096AE; transition:transform .2s; }
+        .ds-sec__line { display:block; width:100%; height:1px; border-top:1px dashed #D9DEEE; margin:0 0 14px; }
+        .ds-sec__chev { flex:0 0 auto; margin-left:auto; color:#9096AE; transition:transform .2s; }
 
         .ds-item__ic { flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:9px; background:#EAEDF8; color:#66667D; }
         .ds-item__ic svg { width:18px; height:18px; }
@@ -285,7 +285,7 @@
 
         /* Панель значений тянется до границ секции (margin = padding секции),
            чтобы левый край значения совпал с левым краем заголовка блока. */
-        .ds-sec__panel { background:#F1F3FB; border-radius:14px; padding:16px 18px; margin:0 -18px; }
+        .ds-sec__panel { background:transparent; border-radius:0; padding:0; margin:0; }
         .ds-fields { display:grid; grid-template-columns:1fr 1fr; gap:16px 20px; }
         .ds-fields--single { grid-template-columns:1fr; }
         .ds-field { min-width:0; }

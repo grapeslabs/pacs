@@ -106,7 +106,7 @@ class PersonResource extends BaseModelResource
         $icTag = $this->iconFile('tag');
         $icKey = $this->iconFile('btn-addkey');
         $icCheck = $this->iconFile('check');
-        $icSnow = $this->iconFile('snow.svg');
+        $icSnow = $this->iconFile('snow');
 
         $badges = [
             $frozen
@@ -371,10 +371,11 @@ class PersonResource extends BaseModelResource
             SelectField::make('Теги', 'tags')
                 ->icon('tag')
                 ->optionsIcon('tag')
+                ->placeholder('Введите тег')
                 ->options(Tag::select('id', 'name')->get())
                 ->multiple(true)
                 ->creatable(true, route('tags.store')),
-            CustomTextarea::make('Комментарий', 'comment'),
+            CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию'),
             \App\MoonShine\Fields\FreezeField::make('Заморозка доступа', 'frozen_start'),
         ];
     }
@@ -425,6 +426,7 @@ class PersonResource extends BaseModelResource
             SelectField::make('Теги', 'tags')
                 ->icon('tag')
                 ->optionsIcon('tag')
+                ->placeholder('Введите тег')
                 ->options(Tag::select('id', 'name')->get())
                 ->multiple(true)
         ];

@@ -137,22 +137,6 @@ final class MoonShineLayout extends AppLayout
     {
         return [
             MenuItem::make('Главная', Dashboard::class)->icon('home'),
-            MenuGroup::make('Управление', [
-                MenuItem::make('Пользователи', MoonShineUserResource::class)
-                    ->icon('user-group')
-                    ->canSee(fn () => auth()->user()->hasPermission(MoonShineUserResource::class, Ability::VIEW_ANY) or auth() -> user()->id==1),
-                MenuItem::make('Роли', MoonShineUserRoleResource::class)
-                    ->icon('rectangle-group')
-                    ->canSee(fn () => auth()->user()->hasPermission(MoonShineUserRoleResource::class, Ability::VIEW_ANY)),
-                MenuItem::make('Ключи API', ApiKeyResource::class)
-                    ->icon(file_get_contents(public_path('icons/menu-apikeys.svg')), true)
-                    ->canSee(fn () => auth()->user()->hasPermission(ApiKeyResource::class, Ability::VIEW_ANY)),
-                ...config('services.ms.enabled')?[
-                    MenuItem::make('Настройки', SettingsPage::class)
-                        ->icon('cog-8-tooth')
-                        ->canSee(fn () => auth()->user()->hasPermission(SettingsPage::class, Ability::VIEW)),
-                ]:[],
-            ])->icon(file_get_contents(public_path('icons/menu-settings.svg')),true),
             ...config('services.ms.enabled')?[
                 MenuItem::make('Видеопотоки', VideoStreamResource::class)
                     ->icon(file_get_contents(public_path('icons/menu-video.svg')),true)
@@ -226,6 +210,23 @@ final class MoonShineLayout extends AppLayout
                 MenuItem::make('Цвета автомобилей', CarColorResource::class)
                     ->canSee(fn () => auth()->user()->hasPermission(CarColorResource::class, Ability::VIEW_ANY)),
             ])->icon(file_get_contents(public_path('icons/menu-references.svg')), true),
+
+            MenuGroup::make('Управление', [
+                MenuItem::make('Пользователи', MoonShineUserResource::class)
+                    ->icon('user-group')
+                    ->canSee(fn () => auth()->user()->hasPermission(MoonShineUserResource::class, Ability::VIEW_ANY) or auth() -> user()->id==1),
+                MenuItem::make('Роли', MoonShineUserRoleResource::class)
+                    ->icon('rectangle-group')
+                    ->canSee(fn () => auth()->user()->hasPermission(MoonShineUserRoleResource::class, Ability::VIEW_ANY)),
+                MenuItem::make('Ключи API', ApiKeyResource::class)
+                    ->icon(file_get_contents(public_path('icons/menu-apikeys.svg')), true)
+                    ->canSee(fn () => auth()->user()->hasPermission(ApiKeyResource::class, Ability::VIEW_ANY)),
+                ...config('services.ms.enabled')?[
+                    MenuItem::make('Настройки', SettingsPage::class)
+                        ->icon('cog-8-tooth')
+                        ->canSee(fn () => auth()->user()->hasPermission(SettingsPage::class, Ability::VIEW)),
+                ]:[],
+            ])->icon(file_get_contents(public_path('icons/menu-settings.svg')),true),
         ];
     }
 
@@ -263,7 +264,6 @@ final class MoonShineLayout extends AppLayout
             Burger::make(),
             Breadcrumbs::make($this->getPage()->getBreadcrumbs())->prepend($this->getHomeUrl(), icon: 'home'),
             Div::make()->customView('components.error-notification'),
-            '<img src="/images/logo.svg" style="width: 10vh; height: 7vh; object-fit: contain;">',
             SafeModal::make(
                 title: fn() => 'Редактирование',
                 async: true

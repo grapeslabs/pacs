@@ -24,16 +24,9 @@
         gap: 6px;
         padding: 4px 12px;
         border-radius: 20px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 500;
         white-space: nowrap;
-    }
-
-    .cs-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
     }
 
     .cs-placeholder {
@@ -163,7 +156,6 @@
             <span class="cs-badge"
                   :style="'background-color:' + selected.bg + ';color:' + selected.text"
             >
-                <span class="cs-dot" :style="'background-color:' + selected.dot"></span>
                 <span x-text="selected.name"></span>
             </span>
         </template>
@@ -194,7 +186,6 @@
                     <span class="cs-badge"
                           :style="'background-color:' + option.bg + ';color:' + option.text"
                     >
-                        <span class="cs-dot" :style="'background-color:' + option.dot"></span>
                         <span x-text="option.name"></span>
                     </span>
                 </div>

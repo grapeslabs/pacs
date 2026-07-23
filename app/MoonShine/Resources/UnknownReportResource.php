@@ -251,10 +251,11 @@ class UnknownReportResource extends BaseModelResource
                 SelectField::make('Теги', 'tags')
                     ->icon('tag')
                     ->optionsIcon('tag')
+                    ->placeholder('Введите тег')
                     ->options(Tag::select('id', 'name')->get())
                     ->multiple(true)
                     ->creatable(true, route('tags.store')),
-                CustomTextarea::make('Комментарий', 'comment'),
+                CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию'),
                 Grid::make([
                     Column::make([
                         CustomDate::make('Заморозить с', 'frozen_start')

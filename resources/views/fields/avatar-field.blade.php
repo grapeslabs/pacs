@@ -46,6 +46,8 @@
             align-items: center;
             gap: 12px;
             min-width: 0;
+            padding-top: 13px;
+            padding-bottom: 13px;
         }
 
         .av-cell__ava {
@@ -60,7 +62,7 @@
             font-size: 13px;
             font-weight: 700;
             line-height: 1;
-            color: var(--white-main, #fff);
+            color: #fff;
             background: linear-gradient(180deg, #7E92F8, #6972F0);
         }
 
@@ -70,7 +72,7 @@
         }
 
         .av-cell__ava--icon {
-            color: var(--gray-500, #666070);
+            color: #66667D;
         }
 
         .av-cell__ava--deleted {
@@ -141,7 +143,7 @@
             font-weight: 600;
             font-size: 12px;
             line-height: 1.2;
-            color: var(--gray-main, #7F7F9D);
+            color: #6B7390;
         }
     </style>
 @endonce

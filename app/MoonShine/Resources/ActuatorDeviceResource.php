@@ -35,7 +35,7 @@ class ActuatorDeviceResource extends BaseModelResource
 
     public function detailSidebarData(Model $item): array
     {
-        $icPlug = $this->iconFile('plug.svg');
+        $icPlug = $this->iconFile('plug');
 
         $active = $item->status === ActuatorDevice::STATUS_ACTIVE;
 

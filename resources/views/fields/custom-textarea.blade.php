@@ -12,19 +12,25 @@
 
     .cta-wrapper .cta-input {
         width: 100%;
-        border-radius: 0.5rem;
-        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        border: 1.5px solid #D7DBEF;
         padding: 1rem 2rem 0.5rem 0.75rem;
-        background-color: transparent;
+        background-color: #fff;
         transition: all 0.2s;
         outline: none;
         resize: vertical;
         min-height: 6rem;
     }
 
+    .cta-wrapper .cta-input:hover {
+        border-color: #7381F4;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(115, 129, 244, .18);
+    }
+
     .cta-wrapper .cta-input:focus {
         border-color: #7381F4;
-        box-shadow: 0 0 0 1px #7381F4;
+        box-shadow: 0 0 0 3px rgba(115, 129, 244, .18);
     }
 
     .cta-wrapper .cta-input.cta-error {
