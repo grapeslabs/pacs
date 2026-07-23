@@ -101,21 +101,6 @@ class PersonPassageRuleResource extends BaseModelResource
         ];
     }
 
-    public function detailFields(): iterable
-    {
-        return [
-            ID::make(),
-            Text::make('Наименование', 'name'),
-            Text::make('Персоны', 'people', fn($item) => $item->people->map(fn(Person $p) => $p->getFullName())->implode(', ') ?: '—'),
-            Text::make('Теги', 'personTags', fn($item) => $item->personTags->pluck('name')->implode(', ') ?: '—'),
-            Text::make('Ключи', 'keys', fn($item) => $item->keys->pluck('key')->implode(', ') ?: '—'),
-            Text::make('Контроллеры', 'controllers', fn($item) => $item->controllers->map(fn($c) => $c->serial_number . ' (' . $c->type_label . ')')->implode(', ') ?: '—'),
-            ColoredSelectField::make('Тип правила', 'type')->options(self::TYPE_OPTIONS),
-            Switcher::make('Активно', 'is_active'),
-            Text::make('Комментарий', 'comment'),
-        ];
-    }
-
     public function rules($item): array
     {
         return [

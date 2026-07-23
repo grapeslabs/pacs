@@ -108,6 +108,7 @@ final class MoonShineLayout extends AppLayout
                     CustomDeleteModal::make(),
                     Div::make()->customView('components.error-notification'),
                     Div::make()->customView('components.detail-sidebar'),
+                    Div::make()->customView('components.detail-modal'),
                     FormSidebar::make(title: fn () => 'Редактирование', subtitle: '', async: true)->name($this->safeModalName),
                     UnsavedChangesModal::make(),
                     HeaderBar::make(

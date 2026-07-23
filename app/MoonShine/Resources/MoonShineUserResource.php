@@ -98,11 +98,6 @@ class MoonShineUserResource extends BaseModelResource
         ];
     }
 
-    protected function detailFields(): iterable
-    {
-        return $this->indexFields();
-    }
-
     public function modifyFormComponent(ComponentContract $component): ComponentContract
     {
         if ($component instanceof FormBuilderContract) {

@@ -198,26 +198,6 @@ class SettingResource extends BaseModelResource
         }
     }
 
-    public function detailFields(): iterable
-    {
-        return [
-            ID::make(),
-            Text::make('Ключ', 'key'),
-            Text::make('Название', 'name'),
-            CustomTextarea::make('Описание', 'description'),
-            Text::make('Тип поля', 'type')
-                ->setValue(fn($item) => $item->type_label),
-            Text::make('Значение', 'value'),
-            Json::make('Опции', 'options')
-                ->keyValue('Ключ', 'Значение'),
-            Text::make('Группа', 'group')
-                ->setValue(fn($item) => $item->group_label),
-            Number::make('Порядок сортировки', 'sort_order'),
-            Checkbox::make('Публичная настройка', 'is_public'),
-            Checkbox::make('Шифрованное значение', 'is_encrypted'),
-        ];
-    }
-
     public function rules($item): array
     {
         return [

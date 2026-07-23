@@ -62,13 +62,6 @@ class CarBrandResource extends BaseModelResource
         ];
     }
 
-    public function detailFields(): iterable
-    {
-        return [
-            Text::make('Название', 'name'),
-        ];
-    }
-
     public function rules($item): array
     {
         return [

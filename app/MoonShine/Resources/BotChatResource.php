@@ -62,15 +62,6 @@ class BotChatResource extends BaseModelResource
         ];
     }
 
-    public function detailFields(): iterable
-    {
-        return [
-            BelongsTo::make('Бот', 'bot', fn($item) => $item->name),
-            Text::make('ID чата', 'chat_id'),
-            Text::make('Название', 'name'),
-        ];
-    }
-
     // Добавляем кнопку "Тест" в таблицу
     protected function indexButtons(): ListOf
     {

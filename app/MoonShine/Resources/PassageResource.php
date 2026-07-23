@@ -84,19 +84,6 @@ class PassageResource extends BaseModelResource
         ];
     }
 
-    public function detailFields(): iterable
-    {
-        return [
-            ID::make(),
-            Text::make('Наименование', 'name'),
-            Text::make('Устройство въезда', 'entryActuatorDevice', fn($item) => $item->entryActuatorDevice?->name ?? '—'),
-            Text::make('Камеры въезда', 'entryCameras', fn($item) => $item->entryCameras->pluck('name')->implode(', ') ?: '—'),
-            Text::make('Устройство выезда', 'exitActuatorDevice', fn($item) => $item->exitActuatorDevice?->name ?? '—'),
-            Text::make('Камеры выезда', 'exitCameras', fn($item) => $item->exitCameras->pluck('name')->implode(', ') ?: '—'),
-            Text::make('Комментарий', 'comment'),
-        ];
-    }
-
     public function rules($item): array
     {
         return [

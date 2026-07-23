@@ -1,6 +1,8 @@
 <?php
 
 namespace App\MoonShine\Resources;
+use App\MoonShine\Fields\ColorSwatchField;
+use App\MoonShine\Fields\CountField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
@@ -48,8 +50,8 @@ class CarColorResource extends BaseModelResource
     public function indexFields(): iterable
     {
         return [
-            Text::make('Название', 'name')->sortable(),
-            \App\MoonShine\Fields\CountField::make('Автомобилей', 'id', fn($item) => $item->cars()->count()),
+            ColorSwatchField::make('Название', 'name')->sortable(),
+            CountField::make('Автомобилей', 'id', fn($item) => $item->cars()->count()),
         ];
     }
 
@@ -58,14 +60,6 @@ class CarColorResource extends BaseModelResource
         return [
             ID::make(),
             CustomText::make('Название', 'name')->required(),
-        ];
-    }
-
-    protected function detailFields(): iterable
-    {
-        return [
-            ID::make(),
-            Text::make('Название', 'name'),
         ];
     }
 

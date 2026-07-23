@@ -116,23 +116,6 @@ class CarPassageRuleResource extends BaseModelResource
     }
 
 
-    public function detailFields(): iterable
-    {
-        return [
-            ID::make(),
-            Text::make('Наименование', 'name'),
-            Text::make('Теги авто', 'carTags', fn($item) => $item->carTags->pluck('name')->implode(', ') ?: '—'),
-            Text::make('Персоны', 'people', fn($item) => $item->people->map(fn(Person $p) => $p->getFullName())->implode(', ') ?: '—'),
-            Text::make('Номера автомобилей', 'cars', fn($item) => $item->cars->pluck('license_plate')->implode(', ') ?: '—'),
-            Text::make('Проезды', 'passages', fn($item) => $item->passages->pluck('name')->implode(', ') ?: '—'),
-            ColoredSelectField::make('Направление', 'direction')->options(self::DIRECTION_OPTIONS),
-            ColoredSelectField::make('Тип правила', 'type')->options(self::TYPE_OPTIONS),
-            Switcher::make('Активно', 'is_active'),
-            Text::make('Комментарий', 'comment'),
-        ];
-    }
-
-
     public function rules($item): array
     {
         return [
