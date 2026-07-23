@@ -32,8 +32,8 @@ class ControllerResource extends BaseModelResource
 
     public function detailSidebarData(Model $item): array
     {
-        $icCpu = @file_get_contents(public_path('icons/controller.svg')) ?: '';
-        $icGear = @file_get_contents(public_path('icons/gear.svg')) ?: '';
+        $icCpu = $this->iconFile('controller');
+        $icGear = $this->iconFile('gear');
 
         $typeLabel = $this->deviceTypeLabel($item->type);
 

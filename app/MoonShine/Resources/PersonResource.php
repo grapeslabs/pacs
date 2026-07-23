@@ -102,11 +102,11 @@ class PersonResource extends BaseModelResource
         $keyRes = app(KeyResource::class);
         $keysUrl = $this->filteredIndexUrl($keyRes, ['person_id' => $item->getKey()]);
 
-        $icPerson = @file_get_contents(public_path('icons/person.svg'))?:'';
-        $icTag = @file_get_contents(public_path('icons/tag.svg'))?:'';
-        $icKey = @file_get_contents(public_path('icons/btn-addkey.svg'))?:'';
-        $icCheck = @file_get_contents(public_path('icons/check.svg'))?:'';
-        $icSnow = @file_get_contents(public_path('icons/snow.svg'))?:'';
+        $icPerson = $this->iconFile('person');
+        $icTag = $this->iconFile('tag');
+        $icKey = $this->iconFile('btn-addkey');
+        $icCheck = $this->iconFile('check');
+        $icSnow = $this->iconFile('snow.svg');
 
         $badges = [
             $frozen
@@ -161,7 +161,7 @@ class PersonResource extends BaseModelResource
 
         if (! blank($item->comment)) {
             $sections[] = [
-                'icon' => $this->commentIcon(),
+                'icon' => $this->iconFile('comment'),
                 'title' => 'Комментарий',
                 'text' => $item->comment,
             ];

@@ -252,9 +252,11 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
         return $class::query()->findOrFail($id);
     }
 
-    protected function commentIcon(): string
+    protected function iconFile(string $name): string
     {
-        return '<svg viewBox="0 0 24 24" fill="none"><path d="M4 5.5h16v11H9.5L5 20.5v-4H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 9.5h8M8 13h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+        static $cache = [];
+
+        return $cache[$name] ??= (string) @file_get_contents(public_path("icons/{$name}.svg"));
     }
 
     protected function detailEditButtonHtml(Model $item, string $label = 'Редактировать'): string
@@ -297,12 +299,10 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
 
     protected function buildEventsSection(\Illuminate\Support\Collection $events, bool $byFace = false): array
     {
-        $icOk = @file_get_contents(public_path('icons/accept.svg'))
-            ?: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="m8.5 12.5 2.5 2.5 4.5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        $icNo = @file_get_contents(public_path('icons/deny.svg'))
-            ?: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-        $icSys = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 0 1 13.5-5.5L20 8M20 4v4h-4M20 12a8 8 0 0 1-13.5 5.5L4 16M4 20v-4h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        $icPulse = '<svg viewBox="0 0 24 24" fill="none"><path d="M3 12h4l2 6 4-14 2 8h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        $icOk = $this->iconFile('accept');
+        $icNo = $this->iconFile('deny');
+        $icSys = $this->iconFile('sync');
+        $icPulse = $this->iconFile('pulse');
 
         $granted = [0, 1, 4, 5, 8, 9, 16, 17];
         $denied = [2, 3, 6, 7, 10, 11, 12, 13];
@@ -405,6 +405,7 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             fn($item) => route('detail-modal', ['resource' => $this->getUriKey(), 'id' => $item->getKey()])
         )
             ->class('js-detail-button')
+            ->withoutLoading()
             ->customAttributes([
                 'style' => 'display: none !important;',
                 '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: 'detail-modal' })",
@@ -420,6 +421,7 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             fn($item) => route('detail-card', ['resource' => $this->getUriKey(), 'id' => $item->getKey()])
         )
             ->class('js-detail-button')
+            ->withoutLoading()
             ->customAttributes([
                 'style' => 'display: none !important;',
                 '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: 'detail-sidebar' })",
@@ -437,8 +439,8 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
                 '_async_form' => true,
             ], fragment: 'crud-form')
         )
-            ->icon('pencil')
-            ->class('js-edit-button')
+            ->icon($this->iconFile('pencil'), true)
+            ->class(['js-edit-button', 'ds-rowbtn'])
             ->customAttributes([
                 '@click.prevent.stop' => "let _m=(\$el.getAttribute('href')||'').match(/resourceItem=([^&]+)/); \$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: '{$this->editModalTitle()}', subtitle: _m ? ('ID '+decodeURIComponent(_m[1])) : '' })",
             ])
@@ -535,6 +537,7 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             url: fn($item) => $this->getRoute('crud.destroy', $item->getKey())
         )
             ->name('resource-delete-button')
+            ->class('ds-rowbtn')
             ->withoutLoading()
             ->onAfterSet(function ($data, $ctx): void {
                 $model = $data?->getOriginal();
@@ -555,8 +558,7 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
                     && $this->hasAction(Action::DELETE)
                     && $this->setItem($item)->can(Ability::DELETE)
             )
-            ->error()
-            ->icon('trash')
+            ->icon($this->iconFile('trashbin'), true)
             ->showInLine();
     }
 

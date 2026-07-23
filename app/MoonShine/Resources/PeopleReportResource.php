@@ -77,7 +77,7 @@ class PeopleReportResource extends BaseModelResource
                 ->sortable(),
 
             AvatarField::make('Камера', 'camera_id')
-                ->icon(@file_get_contents(public_path('icons/menu-video.svg')) ?: '')
+                ->icon($this->iconFile('menu-video'))
                 ->text(fn($item) => $item->stream?->name ?? 'Камера удалена')
                 ->subtext(fn($item) => $item->stream?->location
                     ? \Illuminate\Support\Str::limit($item->stream->location, 26)

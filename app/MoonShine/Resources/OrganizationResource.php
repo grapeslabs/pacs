@@ -46,10 +46,10 @@ class OrganizationResource extends BaseModelResource
     {
         $peopleCount = $item->people()->count();
 
-        $icDoc = @file_get_contents(public_path('icons/doc.svg'))?:'';
-        $icPhone = @file_get_contents(public_path('icons/phone.svg'))?:'';
-        $icPerson = @file_get_contents(public_path('icons/person.svg'))?:'';
-        $orgIcon = @file_get_contents(public_path('icons/organization.svg'))?:'';
+        $icDoc = $this->iconFile('doc');
+        $icPhone = $this->iconFile('phone');
+        $icPerson = $this->iconFile('person');
+        $orgIcon = $this->iconFile('organization');
 
         $personsUrl = $this->filteredIndexUrl(app(PersonResource::class), ['organization_id' => $item->getKey()]);
 
@@ -95,7 +95,7 @@ class OrganizationResource extends BaseModelResource
 
         if (! blank($item->comment)) {
             $sections[] = [
-                'icon' => $this->commentIcon(),
+                'icon' => $this->iconFile('comment'),
                 'title' => 'Комментарий',
                 'text' => $item->comment,
             ];

@@ -70,7 +70,7 @@ class UnknownReportResource extends BaseModelResource
 
     public function indexFields(): iterable
     {
-        $personIcon = @file_get_contents(public_path('icons/person.svg')) ?: '';
+        $personIcon = $this->iconFile('person');
 
         return [
             Date::make('Дата и время', 'datetime')
@@ -84,7 +84,7 @@ class UnknownReportResource extends BaseModelResource
                 ->sortable(),
 
             AvatarField::make('Камера', 'camera_id')
-                ->icon(@file_get_contents(public_path('icons/menu-video.svg')) ?: '')
+                ->icon($this->iconFile('menu-video'))
                 ->text(fn($item) => $item->stream?->name ?? 'Камера удалена')
                 ->subtext(fn($item) => $item->stream?->location
                     ? \Illuminate\Support\Str::limit($item->stream->location, 26)
@@ -115,8 +115,8 @@ class UnknownReportResource extends BaseModelResource
                 ]
             )
         )
-            ->icon('pencil')
-            ->class('js-identify-button')
+            ->icon($this->iconFile('user-plus'), true)
+            ->class(['js-identify-button', 'ds-rowbtn'])
             ->customAttributes([
                 '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' })",
             ])

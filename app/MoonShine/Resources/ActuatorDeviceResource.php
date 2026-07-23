@@ -35,7 +35,7 @@ class ActuatorDeviceResource extends BaseModelResource
 
     public function detailSidebarData(Model $item): array
     {
-        $icPlug = @file_get_contents(public_path('icons/plug.svg'))?:'';
+        $icPlug = $this->iconFile('plug.svg');
 
         $active = $item->status === ActuatorDevice::STATUS_ACTIVE;
 
@@ -139,7 +139,7 @@ class ActuatorDeviceResource extends BaseModelResource
     {
         return [
             AvatarField::make('Название', 'name')
-                ->icon(@file_get_contents(public_path('icons/menu-equipments.svg')) ?: $this->deviceFallbackIconSvg())
+                ->icon($this->iconFile('menu-equipments') ?: $this->deviceFallbackIconSvg())
                 ->text(fn($item) => $item->name)
                 ->subtext(fn($item) => $item->driver_label)
                 ->sortable(),
