@@ -9,7 +9,6 @@ use App\Models\Trigger;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\AvatarField;
-use App\MoonShine\Fields\Select2Field;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Fields\TriggerContentField;
 use Closure;

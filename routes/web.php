@@ -12,6 +12,7 @@ use App\Http\Controllers\CustomFieldController;
 use App\Http\Controllers\DetailCardController;
 use App\Http\Controllers\DetailModalController;
 use App\Http\Controllers\PersonPhotoArchiveController;
+use App\Http\Controllers\SearchController;
 
 Route::prefix(config('moonshine.prefix', 'admin'))
     ->middleware(\MoonShine\Laravel\Http\Middleware\Authenticate::class)
@@ -36,6 +37,8 @@ Route::prefix('car-tags')->group(function() {
 });
 
 Route::post("/field-validation", [CustomFieldController::class, "validate"])->name("field.validation");
+
+Route::get("/system-search", [SearchController::class, "index"])->name("system.search");
 
 Route::prefix("settings")->group(function () {
     Route::post("store", [SettingsController::class, "store"])->name("settings.store");

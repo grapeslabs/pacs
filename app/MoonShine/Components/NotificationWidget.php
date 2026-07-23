@@ -2,7 +2,7 @@
 
 namespace App\MoonShine\Components;
 
-
+use MoonShine\Laravel\MoonShineAuth;
 use MoonShine\UI\Components\MoonShineComponent;
 
 class NotificationWidget extends MoonShineComponent
@@ -11,56 +11,74 @@ class NotificationWidget extends MoonShineComponent
 
     protected function viewData(): array
     {
-        $user = auth()->user();
+        $readAllUrl = rescue(fn (): string => route('moonshine.notifications.readAll'), '#', report: false);
+        $empty = ['groups' => [], 'unreadCount' => 0, 'readAllUrl' => $readAllUrl];
 
-        if (!$user) {
-            return [
-                'notifications' => [],
-                'unreadCount' => 0,
-                'unreadIds' => [],
-            ];
-        }
+        return rescue(function () use ($readAllUrl, $empty) {
+            $user = MoonShineAuth::getGuard()->user();
 
-        $rawNotifications = $user->notifications()->limit(30)->get();
-        $unreadCount = 0;
-        $unreadIds = [];
-        $notifications = [];
-
-        foreach ($rawNotifications as $notification) {
-            if ($notification->read_at === null) {
-                $unreadCount++;
-                $unreadIds[] = $notification->id;
+            if (! $user) {
+                return $empty;
             }
 
-            $data = $notification->data;
-            $text = $data['message'] ?? '';
-            $links = $data['links'] ?? [];
+            $raw = $user->notifications()->latest()->limit(30)->get();
 
-            foreach ($links as $index => $link) {
-                $html = sprintf(
-                    '<a href="%s" class="pacs-link">%s</a>',
-                    htmlspecialchars($link['url']),
-                    htmlspecialchars($link['label'])
-                );
-                $text = str_replace('{link_' . $index . '}', $html, $text);
+            $buckets = ['Сегодня' => [], 'Вчера' => [], 'Ранее' => []];
+            $unreadCount = 0;
+
+            foreach ($raw as $notification) {
+                $isUnread = $notification->read_at === null;
+                if ($isUnread) {
+                    $unreadCount++;
+                }
+
+                $created = $notification->created_at;
+                $bucket = $created->isToday() ? 'Сегодня' : ($created->isYesterday() ? 'Вчера' : 'Ранее');
+
+                $buckets[$bucket][] = [
+                    'id' => $notification->id,
+                    'type' => $notification->data['type'] ?? 'info',
+                    'title' => $this->title($notification),
+                    'description' => $this->description($notification),
+                    'time' => $bucket === 'Ранее' ? $created->format('d.m.Y') : $created->format('H:i'),
+                    'is_unread' => $isUnread,
+                ];
             }
 
-            $notifications[] = [
-                'id' => $notification->id,
-                'type' => $data['type'] ?? 'info',
-                'html_message' => $text,
-                'date' => $notification->created_at->format('d.m.Y, H:i'),
-            ];
+            $groups = [];
+            foreach ($buckets as $label => $items) {
+                if ($items !== []) {
+                    $groups[] = ['label' => $label, 'items' => $items];
+                }
+            }
+
+            return ['groups' => $groups, 'unreadCount' => $unreadCount, 'readAllUrl' => $readAllUrl];
+        }, $empty, report: false);
+    }
+
+    private function title(object $notification): string
+    {
+        $message = (string) ($notification->data['message'] ?? '');
+        $pos = mb_strpos($message, '. ');
+
+        return $pos === false ? $message : mb_substr($message, 0, $pos);
+    }
+
+    private function description(object $notification): string
+    {
+        $message = (string) ($notification->data['message'] ?? '');
+        $pos = mb_strpos($message, '. ');
+        $text = $pos === false ? '' : mb_substr($message, $pos + 2);
+
+        foreach (($notification->data['links'] ?? []) as $index => $link) {
+            $html = sprintf(
+                '<a href="%s" class="pacs-link">%s</a>',
+                htmlspecialchars((string) ($link['url'] ?? '#')),
+                htmlspecialchars((string) ($link['label'] ?? ''))
+            );
+            $text = str_replace('{link_' . $index . '}', $html, $text);
         }
 
-        if ($unreadCount > 0) {
-            $user->unreadNotifications->markAsRead();
-        }
-
-        return [
-            'notifications' => $notifications,
-            'unreadCount' => $unreadCount,
-            'unreadIds' => $unreadIds,
-        ];
+        return $text;
     }
 }

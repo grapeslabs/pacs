@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\CarColor;
 use App\MoonShine\Pages\SettingsPage;
-use App\MoonShine\Resources\ActuatorDeviceResource;
 use App\MoonShine\Resources\ApiKeyResource;
 use App\MoonShine\Resources\BarrierEventResource;
 use App\MoonShine\Resources\BarrierResource;
@@ -12,7 +11,6 @@ use App\MoonShine\Resources\BotResource;
 use App\MoonShine\Resources\CarBrandResource;
 use App\MoonShine\Resources\CarColorResource;
 use App\MoonShine\Resources\CarPassageRuleResource;
-use App\MoonShine\Resources\PersonPassageRuleResource;
 use App\MoonShine\Resources\CarResource;
 use App\MoonShine\Resources\ControllerResource;
 use App\MoonShine\Resources\EventReportResource;
@@ -36,54 +34,9 @@ class PermissionService
 {
     protected array $categoryMap;
 
-    public function __construct()
+    public function __construct(MenuService $menuService)
     {
-        $this->categoryMap = [
-            'Пользователи' => [
-                'icon' => file_get_contents(public_path('icons/Permissions/persons.svg')),
-                'classes' => [MoonShineUserResource::class, MoonShineUserRoleResource::class]
-            ],
-            'Настройки' => [
-                'icon' => file_get_contents(public_path('icons/Permissions/settings.svg')),
-                'classes' => [SettingsPage::class]
-            ],
-            'Видеопотоки' => [
-                'icon' => file_get_contents(public_path('icons/Permissions/streams.svg')),
-                'classes' => [VideoStreamResource::class]
-            ],
-            'Данные СКУД'  => [
-                'icon' => file_get_contents(public_path('icons/Permissions/skud.svg')),
-                'classes' => [PersonResource::class, OrganizationResource::class, KeyResource::class, PersonPassageRuleResource::class]
-            ],
-            'Боты'  => [
-                'icon' => file_get_contents(public_path('icons/Permissions/bots.svg')),
-                'classes' => [BotResource::class]
-            ],
-            'Триггеры'  => [
-                'icon' => file_get_contents(public_path('icons/Permissions/triggers.svg')),
-                'classes' => [TriggerResource::class]
-            ],
-            'Отчёты'  => [
-                'icon' => file_get_contents(public_path('icons/Permissions/reports.svg')),
-                'classes' => [SkudEventResource::class, EventReportResource::class, PeopleReportResource::class, UnknownReportResource::class]
-            ],
-            'Оборудование'  => [
-                'icon' => file_get_contents(public_path('icons/Permissions/devices.svg')),
-                'classes' => [TerminalResource::class, ControllerResource::class, ActuatorDeviceResource::class]
-            ],
-            'Автомобили'  => [
-                'icon' => file_get_contents(public_path('icons/Permissions/cars.svg')),
-                'classes' => [CarResource::class, CarPassageRuleResource::class, PassageResource::class, PassageEventResource::class, CarBrandResource::class, CarColorResource::class, BarrierEventResource::class]
-            ],
-            'Доступ гостей'  => [
-                'icon' => file_get_contents(public_path('icons/Permissions/guests.svg')),
-                'classes' => [GuestResource::class]
-            ],
-            'Ключи API'  => [
-                'icon' => file_get_contents(public_path('icons/Permissions/apikeys.svg')),
-                'classes' => [ApiKeyResource::class]
-            ],
-        ];
+        $this->categoryMap = $menuService->permissionCategories();
     }
 
     public function getPermissionTree(): array
