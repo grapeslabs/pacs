@@ -343,7 +343,12 @@
     display: inline-flex !important; align-items: center !important;
     gap: 6px !important; flex-direction: row !important;
 }
+/* Прячем всю обёртку иконки сортировки (div.w-5.h-5), а не только svg —
+   иначе пустой контейнер + gap сдвигают текст заголовка вправо от значения */
+.custom-table-card .table-list thead th a > div,
 .custom-table-card .table-list thead th a svg { display: none !important; }
+.custom-table-card .table-list thead th a { gap: 0 !important; }
+.custom-table-card .table-list thead th a::after { margin-left: 6px; }
 .custom-table-card .table-list thead th a::after {
     content: '';
     flex-shrink: 0;

@@ -43,6 +43,11 @@ class VideoStreamResource extends BaseModelResource
 {
     protected string $model = Stream::class;
     protected string $title = 'Видеопотоки';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('видеопоток', 'видеопотока', 'видеопотоков');
+    }
     protected ?string $editModalTitle = 'Редактирование видеопотока';
     protected string $column = 'name';
     protected bool $softDelete = false;
@@ -75,6 +80,14 @@ class VideoStreamResource extends BaseModelResource
         $pages[] = StreamMotionZonesEditorPage::class;
         $pages[] = StreamLprZoneEditorPage::class;
         return $pages;
+    }
+
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить камеру?',
+            'text'  => '«' . ($item->name ?: 'Камера') . '» будет снята с мониторинга. Архив записей сохранится 30 дней.',
+        ];
     }
 
     public function indexFields(): array

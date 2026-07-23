@@ -68,11 +68,29 @@ class CustomIndexPage extends IndexPage
                 ]);
         }
 
+        $periodSegment = $this->getPeriodSegment($resource);
+
+        $handlersGroup = $resource->getHandlers()->isNotEmpty()
+            ? ActionGroup::make()
+                ->addMany($resource->getHandlers()->getButtons())
+                ->class('gap-3')
+            : null;
+
+        $subtitle = method_exists($resource, 'indexSubtitle') ? $resource->indexSubtitle() : null;
+
         $components = [
             Heading::make($this->getTitle())
                 ->class('truncate')
-                ->style('font-size: 26px; font-weight: 700; line-height: 1.15; color: #1a1a2e; margin: 0 0 20px;'),
+                ->style('font-size: 26px; font-weight: 700; line-height: 1.15; color: #1a1a2e;'),
+        ];
 
+        if ($subtitle !== null) {
+            $components[] = Heading::make($subtitle)
+                ->class('truncate')
+                ->style('font-size: 14px; font-weight: 600; line-height: 1.35; color: #6B7390;');
+        }
+
+        $components = array_merge($components, [
             Flex::make([
                 SearchField::make(placeholder: $this->buildSearchPlaceholder()),
                 ActionGroup::make()
@@ -89,27 +107,49 @@ class CustomIndexPage extends IndexPage
                             )->primary()
                         )
                     )
-                    ->when(
-                        $resource->getHandlers()->isNotEmpty(),
-                        fn (ActionGroup $group): ActionGroup => $group->addMany(
-                            $this->getResource()->getHandlers()->getButtons()
-                        )
-                    )
                     ->class('gap-4'),
+                $periodSegment,
                 Div::make()->style('flex: 1 1 auto;'),
+                $handlersGroup,
                 $importButton,
                 $exportButton,
                 $this->getCustomCreateButton(),
             ])
                 ->itemsAlign('center')
                 ->class('mb-6 gap-3 flex-wrap'),
-        ];
+        ]);
 
         if ($filterSidebar !== null) {
             $components[] = $filterSidebar;
         }
 
         return $components;
+    }
+
+    protected function getPeriodSegment($resource): ?Div
+    {
+        if (! method_exists($resource, 'hasPeriodFilter') || ! $resource->hasPeriodFilter()) {
+            return null;
+        }
+
+        $current = $resource->currentPeriod();
+
+        $periods = array_map(function (array $opt) use ($current): array {
+            return [
+                'key'    => $opt['key'],
+                'label'  => $opt['label'],
+                'custom' => $opt['key'] === 'custom',
+                'active' => $current === $opt['key'],
+                'url'    => request()->fullUrlWithQuery(['period' => $opt['key'], 'page' => 1]),
+            ];
+        }, $resource->periodOptions());
+
+        return Div::make()->customView('components.period-segment', [
+            'periods'      => $periods,
+            'customActive' => $current === 'custom',
+            'from'         => (string) request()->query('from', ''),
+            'to'           => (string) request()->query('to', ''),
+        ]);
     }
 
     private function buildSearchPlaceholder(): string

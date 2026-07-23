@@ -30,6 +30,7 @@ use App\MoonShine\Fields\ColorSwatchField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\CustomTextarea;
 use App\MoonShine\Fields\LicensePlateField;
+use App\MoonShine\Fields\NameListField;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -40,6 +41,11 @@ class CarResource extends BaseModelResource
 {
     protected string $model = Car::class;
     protected string $title = 'Автомобили';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('автомобиль', 'автомобиля', 'автомобилей');
+    }
     protected ?string $editModalTitle = 'Редактирование автомобиля';
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить автомобиль';
@@ -57,13 +63,12 @@ class CarResource extends BaseModelResource
     {
         $item->loadMissing(['brand', 'color', 'organization', 'people', 'tags']);
 
-        $icData = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 3h9l3 3v15H6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12h6M9 16h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-        $icPerson = file_get_contents(public_path('icons/person.svg'));
-        $icCar = @file_get_contents(public_path('icons/car.svg')) ?: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="13" width="18" height="5" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>';
+        $icPerson = @file_get_contents(public_path('icons/person.svg'))?:'';
+        $icCar = @file_get_contents(public_path('icons/car.svg'))?:'';
 
         $sections = [
             [
-                'icon' => $icData,
+                'icon' => $icCar,
                 'title' => 'Данные',
                 'fields' => [
                     ['label' => 'Марка', 'value' => $item->brand?->name],
@@ -304,6 +309,17 @@ class CarResource extends BaseModelResource
         return strtoupper(preg_replace('/\s+/', '', $licensePlate));
     }
 
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        $brand = $item->brand?->name;
+        return [
+            'title' => 'Удалить автомобиль?',
+            'text'  => 'Автомобиль «' . ($item->license_plate ?: '—') . '»'
+                . ($brand ? ' (' . $brand . ')' : '')
+                . ' будет удалён из базы. Привязка к персонам снимется, а ранее зафиксированные проезды останутся в журнале событий.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
@@ -311,16 +327,21 @@ class CarResource extends BaseModelResource
             BelongsTo::make('Марка', 'brand', 'name', resource: CarBrandResource::class)
                 ->sortable(),
             ColorSwatchField::make('Цвет', 'color', fn($item) => $item->color?->name),
-            Text::make('Персоны', 'people_names')->sortable(function (
-                Builder $query,
-                string $column,
-                string $direction,
-            ) {
-                return $query->orderBy(
-                    DB::raw("(SELECT last_name FROM person WHERE person.id IN (SELECT person_id FROM car_person WHERE car_person.car_id = cars.id) ORDER BY last_name {$direction} LIMIT 1)"),
-                    $direction,
-                );
-            }),
+            NameListField::make('Персоны', 'people', fn($item) => $item->people
+                ->map(fn($p) => trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '') . ' ' . ($p->middle_name ?? '')))
+                ->filter()
+                ->values()
+                ->all())
+                ->sortable(function (
+                    Builder $query,
+                    string $column,
+                    string $direction,
+                ) {
+                    return $query->orderBy(
+                        DB::raw("(SELECT last_name FROM person WHERE person.id IN (SELECT person_id FROM car_person WHERE car_person.car_id = cars.id) ORDER BY last_name {$direction} LIMIT 1)"),
+                        $direction,
+                    );
+                }),
             TagsField::make('Теги', 'tags', fn($item) => $item->tags->pluck('name')->all()),
             Text::make('Комментарий', 'comment')
                 ->sortable(),

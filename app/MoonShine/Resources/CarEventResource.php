@@ -5,9 +5,11 @@ namespace App\MoonShine\Resources;
 use App\Models\CarPassageEvent;
 use App\Models\Stream;
 use App\MoonShine\Fields\ColoredSelectField;
+use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\LicensePlateField;
 use App\MoonShine\Fields\SelectField;
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Support\Enums\SortDirection;
 use MoonShine\Support\ListOf;
@@ -21,9 +23,16 @@ class CarEventResource extends BaseModelResource
 {
     protected string $model = CarPassageEvent::class;
     protected string $title = 'Отчеты автомобилей';
+
+    public function indexSubtitle(): ?string
+    {
+        return 'Распознавание ГРЗ на въезде и выезде';
+    }
     protected string $column = 'id';
     protected string $sortColumn = 'id';
     protected SortDirection $sortDirection = SortDirection::DESC;
+    protected bool $detailModal = true;
+    protected ?string $periodColumn = 'recognized_at';
 
     protected function activeActions(): ListOf
     {
@@ -38,23 +47,29 @@ class CarEventResource extends BaseModelResource
 
     protected function modifyQueryBuilder(Builder $builder): Builder
     {
-        return $builder->with(['car']);
+        return $builder->with(['car.brand', 'car.color']);
     }
 
     public function indexFields(): iterable
     {
         return [
-            ID::make()
-                ->sortable(),
+            LicensePlateField::make('Номер', 'plate_text'),
+
+            AvatarField::make('Марка', 'car_id')
+                ->hideAvatar()
+                ->text(fn($item) => $item->car?->brand?->name ?? '—')
+                ->subtext(fn($item) => $item->car?->color?->name),
 
             Date::make('Дата и время', 'recognized_at')
                 ->withTime()
                 ->sortable(),
 
-            Text::make('Камера', 'camera_id')
-                ->changeFill(fn($item) => $this->streamNameByUid($item->camera_id)),
+            AvatarField::make('Камера', 'camera_id')
+                ->icon(@file_get_contents(public_path('icons/menu-video.svg')) ?: '')
+                ->text(fn($item) => $this->streamNameByUid($item->camera_id))
+                ->subtext(fn($item) => $this->streamLocationByUid($item->camera_id))
+                ->deleted(fn($item) => $this->streamNameByUid($item->camera_id) === '—'),
 
-            LicensePlateField::make('Номер', 'plate_text'),
 
             ColoredSelectField::make('Статус', 'car_id', fn($item) => match (true) {
                 empty($item->plate_text) => 'not_recognized',
@@ -77,6 +92,54 @@ class CarEventResource extends BaseModelResource
                     $url = $item->plateImageUrl();
                     return $url ? $this->renderImageWithModal($url, 'plate-' . $item->id) : '—';
                 }),
+        ];
+    }
+
+    public function detailModalData(Model $item): array
+    {
+        /** @var CarPassageEvent $item */
+        $statusKey = match (true) {
+            empty($item->plate_text) => 'not_recognized',
+            $item->car_id !== null   => 'in_db',
+            default                  => 'not_in_db',
+        };
+        $statusOpt = [
+            'in_db'          => ['label' => 'В базе',       'tone' => 'green'],
+            'not_in_db'      => ['label' => 'Не в базе',    'tone' => 'yellow'],
+            'not_recognized' => ['label' => 'Не распознан', 'tone' => 'pink'],
+        ][$statusKey];
+
+        $car   = $item->car;
+        $brand = $car?->brand?->name;
+        $color = $car?->color?->name;
+        $person = ($car && $car->people->isNotEmpty())
+            ? $car->people->map(fn($p) => trim($p->last_name . ' ' . $p->first_name))->implode(', ')
+            : null;
+
+        $serial = ! empty($item->controllers) ? implode(', ', (array) $item->controllers) : null;
+
+        $rows = [
+            ['k' => 'Дата, время', 'v' => $item->recognized_at ? $item->recognized_at->format('d.m.Y, H:i:s') : '—', 'mono' => true],
+            ['k' => 'ГРЗ',         'v' => $item->plate_text ?: '—', 'mono' => true],
+            ['k' => 'Марка / цвет', 'v' => trim(($brand ?? '—') . ($color ? ' · ' . $color : ''))],
+            ['k' => 'Статус',      'badge' => $statusOpt],
+            ['k' => 'Камера',      'v' => $this->streamNameByUid($item->camera_id)],
+        ];
+        if ($person) {
+            $rows[] = ['k' => 'Персона', 'v' => $person];
+        }
+        if ($serial) {
+            $rows[] = ['k' => 'Оборудование', 'v' => $serial, 'mono' => true];
+        }
+
+        return [
+            'title'   => 'Событие · распознавание ГРЗ',
+            'layout'  => 'gallery',
+            'gallery' => [
+                ['label' => 'Кадр автомобиля', 'image' => $item->imageUrl()],
+                ['label' => 'Фото номера',     'image' => $item->plateImageUrl(), 'plate' => $item->plate_text],
+            ],
+            'rows'    => $rows,
         ];
     }
 
@@ -139,6 +202,7 @@ class CarEventResource extends BaseModelResource
     }
 
     private array $streamCache = [];
+    private array $streamLocCache = [];
 
     private function streamNameByUid(?string $uid): string
     {
@@ -151,6 +215,21 @@ class CarEventResource extends BaseModelResource
         }
 
         return $this->streamCache[$uid] ?? $uid;
+    }
+
+    private function streamLocationByUid(?string $uid): ?string
+    {
+        if (empty($uid)) {
+            return null;
+        }
+
+        if (! array_key_exists($uid, $this->streamLocCache)) {
+            $this->streamLocCache[$uid] = Stream::withTrashed()->where('uid', $uid)->value('location');
+        }
+
+        $location = $this->streamLocCache[$uid];
+
+        return $location ? \Illuminate\Support\Str::limit($location, 26) : null;
     }
 
     private function renderImageWithModal(string $src, string $id): string

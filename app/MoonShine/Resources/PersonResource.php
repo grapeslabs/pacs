@@ -10,6 +10,7 @@ use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\CountField;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
+use App\MoonShine\Fields\PersonBindingField;
 use App\MoonShine\Fields\PhotoField;
 use App\Models\Tag;
 use App\MoonShine\Fields\SelectField;
@@ -58,6 +59,11 @@ class PersonResource extends BaseModelResource
 
     protected string $model = Person::class;
     protected string $title = 'Персоны';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('персона', 'персоны', 'персон');
+    }
     protected ?string $editModalTitle = 'Редактирование персоны';
     protected string $ex_type = 'pingate';
     protected bool $detailSidebar = true;
@@ -96,11 +102,11 @@ class PersonResource extends BaseModelResource
         $keyRes = app(KeyResource::class);
         $keysUrl = $this->filteredIndexUrl($keyRes, ['person_id' => $item->getKey()]);
 
-        $icPerson = file_get_contents(public_path('icons/person.svg'));
-        $icTag = '<svg viewBox="0 0 24 24" fill="none"><path d="M3 11.5 11.5 3H20v8.5L11.5 20z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="15.5" cy="8.5" r="1.4" fill="currentColor"/></svg>';
-        $icKey = '<svg viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="m11 11 8 8M16 16l2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
-        $icCheck = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6z" stroke="currentColor" stroke-width="1.6"/><path d="m9 11.5 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        $icSnow = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M4.5 6l15 12M19.5 6l-15 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 6.5 9.5 5m2.5 1.5L14.5 5M12 17.5 9.5 19m2.5-1.5L14.5 19M5.5 8.8 5 6m.5 2.8L3 9.4M18.5 8.8 19 6m-.5 2.8L21 9.4M5.5 15.2 5 18m.5-2.8L3 14.6M18.5 15.2 19 18m-.5-2.8L21 14.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        $icPerson = @file_get_contents(public_path('icons/person.svg'))?:'';
+        $icTag = @file_get_contents(public_path('icons/tag.svg'))?:'';
+        $icKey = @file_get_contents(public_path('icons/btn-addkey.svg'))?:'';
+        $icCheck = @file_get_contents(public_path('icons/check.svg'))?:'';
+        $icSnow = @file_get_contents(public_path('icons/snow.svg'))?:'';
 
         $badges = [
             $frozen
@@ -171,7 +177,7 @@ class PersonResource extends BaseModelResource
             ->async(selector: "#{$this->safeModalName}_content")
             ->customAttributes([
                 'class' => 'ds-btn ds-btn--secondary',
-                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Выдача ключа' }); \$dispatch('modal-toggled', { id: 'detail-sidebar' })",
+                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Выдача ключа', submitLabel: 'Выдать ключ', submitIcon: 'addkey' }); \$dispatch('modal-toggled', { id: 'detail-sidebar' })",
             ]);
 
         $editHtml = $this->detailEditButtonHtml($item);
@@ -253,6 +259,15 @@ class PersonResource extends BaseModelResource
             return $attrs;
         };
     }
+    public function deleteConfirmation(Model $item): array
+    {
+        $name = trim(($item->last_name ?? '') . ' ' . ($item->first_name ?? '') . ' ' . ($item->middle_name ?? ''));
+        return [
+            'title' => 'Удалить персону?',
+            'text'  => '«' . ($name ?: 'Без имени') . '» будет удалена из базы. Связанные ключи будут отвязаны.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
@@ -271,7 +286,8 @@ class PersonResource extends BaseModelResource
                 ->sortable(),
             BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
                 ->sortable(),
-            CountField::make('Ключи', 'id', fn($item) => $item->keys()->count()),
+            CountField::make('Ключи', 'id', fn($item) => $item->keys()->count())
+                ->sortable(),
             TagsField::make('Теги', 'tags', fn($item) => $item->tags->pluck('name')->all()),
             ColoredSelectField::make('Статус', 'frozen_start', fn($item) => $item && $item->isFrozen() ? 'frozen' : 'active')
                 ->options([
@@ -455,7 +471,7 @@ class PersonResource extends BaseModelResource
             ->icon(file_get_contents(public_path('icons/btn-addkey.svg')), true)
             ->class('js-key-button')
             ->customAttributes([
-                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Выдача ключа' })",
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Выдача ключа', submitLabel: 'Выдать ключ', submitIcon: 'addkey' })",
             ])
             ->async(selector: "#{$this->safeModalName}_content");
     }
@@ -475,12 +491,13 @@ class PersonResource extends BaseModelResource
             ->action($this->getAsyncMethodUrl('saveKey', null, ['item_id' => $itemId]))
             ->async()
             ->fields([
-                    \App\MoonShine\Fields\PersonBindingField::make('', 'person_card')
+                    PersonBindingField::make('', 'person_card')
                         ->person($personName, $personPhoto, 'Ключ привяжется к этой персоне')
                         ->withoutWrapper(),
                     Hidden::make('person_id')->default((int) $itemId),
                     CustomText::make('Ключ', 'key')
                         ->leadingIcon(file_get_contents(public_path('icons/btn-addkey.svg')))
+                        ->placeholder('XXXXXXXXXXXX')
                         ->hint('12 символов: UID карты / чипа или мобильный идентификатор')
                         ->max(255)
                         ->unique('keys', 'key', 'Ключ должен быть уникальным')

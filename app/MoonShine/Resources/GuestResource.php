@@ -35,6 +35,11 @@ class GuestResource extends BaseModelResource
 {
     protected string $model = Guest::class;
     protected string $title = 'Гости';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('временный пропуск', 'временных пропуска', 'временных пропусков');
+    }
     protected ?string $editModalTitle = 'Редактирование гостя';
     protected string $column = 'full_name';
     protected bool $detailSidebar = true;
@@ -51,8 +56,8 @@ class GuestResource extends BaseModelResource
 
     public function detailSidebarData(Model $item): array
     {
-        $icPerson = file_get_contents(public_path('icons/person.svg'));
-        $icCheck = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6z" stroke="currentColor" stroke-width="1.6"/><path d="m9 11.5 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        $icPerson = @file_get_contents(public_path('icons/person.svg'))?:'';
+        $icCheck = @file_get_contents(public_path('icons/check.svg'))?:'';
 
         $photos = is_array($item->photo) ? $item->photo : [];
         $avatar = ! empty($photos[0]) ? Storage::disk('public')->url($photos[0]) : null;
@@ -88,7 +93,7 @@ class GuestResource extends BaseModelResource
 
         if (! blank($item->comment)) {
             $sections[] = [
-                'icon' => $icPerson,
+                'icon' => $this->commentIcon(),
                 'title' => 'Комментарий',
                 'text' => $item->comment,
             ];
@@ -120,6 +125,14 @@ class GuestResource extends BaseModelResource
     }
 
 
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить гостя?',
+            'text'  => 'Пропуск «' . ($item->full_name ?: 'Гость') . '» будет удалён.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
@@ -131,8 +144,6 @@ class GuestResource extends BaseModelResource
             Text::make('Телефон', 'phone')
                 ->sortable(),
             Text::make('Документ', 'document')
-                ->sortable(),
-            Text::make('Комментарий', 'comment')
                 ->sortable(),
             Date::make('Действует до', 'entry_end')
                 ->sortable(),

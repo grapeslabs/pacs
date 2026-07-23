@@ -13,6 +13,22 @@ class LicensePlateField extends Field
 
     private const PLATE_LETTERS = 'АВЕКМНОРСТУХABEKMHOPCTYX';
 
+    /** Готовый HTML плашки ГРЗ для переиспользования вне поля (карточки/модалки). */
+    public static function previewHtml(?string $plate): string
+    {
+        $plate = trim((string) $plate);
+        if ($plate === '') {
+            return '—';
+        }
+
+        $field = new self();
+
+        return view('fields.license-plate-field', [
+            'plate' => $plate,
+            ...$field->parse($plate),
+        ])->render();
+    }
+
     protected function parse(string $plate): array
     {
         $normalized = mb_strtoupper(preg_replace('/\s+/u', '', $plate) ?? '');

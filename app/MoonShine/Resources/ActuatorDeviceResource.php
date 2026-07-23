@@ -6,6 +6,7 @@ use App\Actuators\ActuatorDriverManager;
 use App\Actuators\ActuatorService;
 use App\Models\ActuatorDevice;
 use Illuminate\Database\Eloquent\Model;
+use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
@@ -22,6 +23,11 @@ class ActuatorDeviceResource extends BaseModelResource
 {
     protected string $model = ActuatorDevice::class;
     protected string $title = 'Исполнительные устройства';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('устройство', 'устройства', 'устройств');
+    }
     protected ?string $editModalTitle = 'Редактирование устройства';
     protected string $column = 'name';
     protected bool $detailSidebar = true;
@@ -29,8 +35,7 @@ class ActuatorDeviceResource extends BaseModelResource
 
     public function detailSidebarData(Model $item): array
     {
-        $icPlug = '<svg viewBox="0 0 24 24" fill="none"><path d="M9 3v5M15 3v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M6 8h12v3a6 6 0 0 1-12 0z" stroke="currentColor" stroke-width="1.6"/><path d="M12 17v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-        $icGear = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.5 5.5l2 2M16.5 16.5l2 2M18.5 5.5l-2 2M7.5 16.5l-2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+        $icPlug = @file_get_contents(public_path('icons/plug.svg'))?:'';
 
         $active = $item->status === ActuatorDevice::STATUS_ACTIVE;
 
@@ -103,7 +108,7 @@ class ActuatorDeviceResource extends BaseModelResource
             ],
             'sections' => [
                 [
-                    'icon' => $icGear,
+                    'icon' => $icPlug,
                     'title' => 'Параметры',
                     'fields' => $fields,
                 ],
@@ -122,15 +127,22 @@ class ActuatorDeviceResource extends BaseModelResource
         return app(ActuatorDriverManager::class);
     }
 
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить устройство?',
+            'text'  => '«' . ($item->name ?: 'Устройство') . '» будет удалено из системы.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
-            ID::make()->sortable(),
-
-            Text::make('Название', 'name')->sortable(),
-
-            Text::make('Тип устройства', 'driver_key')
-                ->setValue(fn($item) => $item->driver_label),
+            AvatarField::make('Название', 'name')
+                ->icon(@file_get_contents(public_path('icons/menu-equipments.svg')) ?: $this->deviceFallbackIconSvg())
+                ->text(fn($item) => $item->name)
+                ->subtext(fn($item) => $item->driver_label)
+                ->sortable(),
 
             ColoredSelectField::make('Статус', 'status')
                 ->options([

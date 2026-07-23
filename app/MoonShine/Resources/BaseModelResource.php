@@ -40,6 +40,14 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
 
     protected bool $detailSidebar = false;
 
+    /** Открывать детальный просмотр записи в центрированной модалке (для отчётов). */
+    protected bool $detailModal = false;
+
+    /** Колонка даты для быстрого фильтра «Сегодня / 7 дней / 30 дней» (для отчётов). */
+    protected ?string $periodColumn = null;
+
+    private bool $periodApplied = false;
+
     protected ?string $createLabel = null;
 
     /** Полный заголовок сайдбара редактирования, напр. «Редактирование ключа». */
@@ -48,6 +56,35 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
     public function createButtonLabel(): string
     {
         return $this->createLabel ?? 'Добавить';
+    }
+
+    /** Подзаголовок под заголовком index-страницы (описание или счётчик). null — не показывать. */
+    public function indexSubtitle(): ?string
+    {
+        return null;
+    }
+
+    /** Русская форма числительного: 1 ключ / 2 ключа / 5 ключей. */
+    protected function pluralRu(int $n, string $one, string $few, string $many): string
+    {
+        $mod10  = $n % 10;
+        $mod100 = $n % 100;
+
+        $form = match (true) {
+            $mod10 === 1 && $mod100 !== 11                          => $one,
+            $mod10 >= 2 && $mod10 <= 4 && ($mod100 < 12 || $mod100 > 14) => $few,
+            default                                                 => $many,
+        };
+
+        return $n . ' ' . $form;
+    }
+
+    /** Подзаголовок-счётчик по всем записям модели (без фильтров периода). */
+    protected function countSubtitle(string $one, string $few, string $many): string
+    {
+        $count = (int) $this->getModel()->newQuery()->count();
+
+        return $this->pluralRu($count, $one, $few, $many);
     }
 
     public function editModalTitle(): string
@@ -63,6 +100,148 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
     public function detailSidebarData(Model $item): array
     {
         return [];
+    }
+
+    public function usesDetailModal(): bool
+    {
+        return $this->detailModal;
+    }
+
+    /** Payload для модалки детального просмотра записи отчёта (см. components/detail/modal.blade.php). */
+    public function detailModalData(Model $item): array
+    {
+        return [];
+    }
+
+    /** SVG-иконка устройства СКУД по типу контроллера (терминал/шлагбаум/контроллер). */
+    protected function deviceTypeIconSvg(?string $type): string
+    {
+        $file = match ($type) {
+            'pinterm' => 'terminal.svg',
+            'pingate' => 'gate.svg',
+            default   => 'controller.svg', // z5rweb, ironlogic и прочие контроллеры
+        };
+
+        // Фолбэк — инлайн-иконка «устройство», если svg-файл ещё не задеплоен,
+        // чтобы в аватаре оборудования не появлялась буква-инициал.
+        return @file_get_contents(public_path('icons/' . $file))
+            ?: $this->deviceFallbackIconSvg();
+    }
+
+    /** Инлайн-иконка-заглушка устройства (когда файла иконки нет). */
+    protected function deviceFallbackIconSvg(): string
+    {
+        return '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 7h8M8 11h8M8 15h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+    }
+
+    /** Человекочитаемый лейбл типа контроллера СКУД. */
+    protected function controllerTypeLabel(?string $type): string
+    {
+        return [
+            'pinterm'   => 'PinTerm',
+            'pingate'   => 'PinGate',
+            'z5rweb'    => 'Z5R-Web',
+            'ironlogic' => 'IronLogic',
+        ][$type] ?? (string) $type;
+    }
+
+    /** Доступен ли быстрый фильтр периода (сегмент «Сегодня / 7 дней / …»). */
+    public function hasPeriodFilter(): bool
+    {
+        return $this->periodColumn !== null;
+    }
+
+    /** Текущий выбранный период (из query-параметра). */
+    public function currentPeriod(): string
+    {
+        $period = (string) request()->query('period', '');
+
+        return in_array($period, ['today', '7d', '30d', 'custom'], true) ? $period : '';
+    }
+
+    /** Опции сегмента периода: [key, label]. */
+    public function periodOptions(): array
+    {
+        return [
+            ['key' => 'today', 'label' => 'Сегодня'],
+            ['key' => '7d',    'label' => '7 дней'],
+            ['key' => '30d',   'label' => '30 дней'],
+            ['key' => 'custom','label' => 'Период'],
+        ];
+    }
+
+    protected function applyPeriodFilter(\Illuminate\Contracts\Database\Eloquent\Builder $builder): \Illuminate\Contracts\Database\Eloquent\Builder
+    {
+        if ($this->periodColumn === null) {
+            return $builder;
+        }
+
+        $now = \Illuminate\Support\Carbon::now();
+        [$from, $to] = match ($this->currentPeriod()) {
+            'today'  => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
+            '7d'     => [$now->copy()->subDays(6)->startOfDay(), $now->copy()->endOfDay()],
+            '30d'    => [$now->copy()->subDays(29)->startOfDay(), $now->copy()->endOfDay()],
+            'custom' => $this->customPeriodRange(),
+            default  => [null, null],
+        };
+
+        if ($from !== null && $to !== null) {
+            $builder->whereBetween($this->periodColumn, [$from, $to]);
+        } elseif ($from !== null) {
+            $builder->where($this->periodColumn, '>=', $from);
+        } elseif ($to !== null) {
+            $builder->where($this->periodColumn, '<=', $to);
+        }
+
+        return $builder;
+    }
+
+    /** Диапазон для произвольного периода из query-параметров from/to. */
+    protected function customPeriodRange(): array
+    {
+        $parse = function (?string $value): ?\Illuminate\Support\Carbon {
+            $value = trim((string) $value);
+            if ($value === '') {
+                return null;
+            }
+            try {
+                return \Illuminate\Support\Carbon::parse($value);
+            } catch (\Throwable) {
+                return null;
+            }
+        };
+
+        $from = $parse(request()->query('from'));
+        $to   = $parse(request()->query('to'));
+
+        return [
+            $from?->startOfDay(),
+            $to?->endOfDay(),
+        ];
+    }
+
+    public function newQuery(): \Illuminate\Contracts\Database\Eloquent\Builder
+    {
+        $builder = parent::newQuery();
+
+        if (! $this->periodApplied) {
+            $this->periodApplied = true;
+            $this->applyPeriodFilter($builder);
+        }
+
+        return $builder;
+    }
+
+    /**
+     * Текст модалки подтверждения удаления записи: ['title' => ..., 'text' => ...].
+     * Дефолт — «ближайший аналог»; каждый ресурс переопределяет своим текстом.
+     */
+    public function deleteConfirmation(Model $item): array
+    {
+        return [
+            'title' => 'Удалить запись?',
+            'text'  => 'Запись будет удалена безвозвратно.',
+        ];
     }
 
     public function findItemForDetail(int|string $id): Model
@@ -208,11 +387,30 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             return $buttons;
         }
         return (new ListOf(ActionButton::class, [
-            $this->detailSidebar ? $this->getDetailSidebarButton() : $this->getDetailButton(),
+            match (true) {
+                $this->detailModal   => $this->getDetailModalButton(),
+                $this->detailSidebar => $this->getDetailSidebarButton(),
+                default              => $this->getDetailButton(),
+            },
             $this->getSafeEditButton(),
             $this->getDeleteButton(),
             $this->getMassDeleteButton()
         ]));
+    }
+
+    protected function getDetailModalButton(): ActionButtonContract
+    {
+        return ActionButton::make(
+            '',
+            fn($item) => route('detail-modal', ['resource' => $this->getUriKey(), 'id' => $item->getKey()])
+        )
+            ->class('js-detail-button')
+            ->customAttributes([
+                'style' => 'display: none !important;',
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: 'detail-modal' })",
+            ])
+            ->async(selector: '#detail-modal_content')
+            ->canSee(fn() => $this->can(Ability::VIEW_ANY));
     }
 
     protected function getDetailSidebarButton(): ActionButtonContract
@@ -312,12 +510,12 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
 
     public function trAttributes(): ?Closure
     {
-        if (! $this->detailSidebar && ! $this->hasDetailView()) {
+        if (! $this->detailSidebar && ! $this->detailModal && ! $this->hasDetailView()) {
             return null;
         }
         return function (mixed $item, int $index): array {
             return [
-                '@click' => "if(\$event.target.closest('a,button,input,label')) return; "
+                '@click' => "if(\$event.target.closest('a,button,input,label,img')) return; "
                     . "document.querySelectorAll('tr.ds-row-active').forEach(el => el.classList.remove('ds-row-active')); "
                     . "\$event.currentTarget.classList.add('ds-row-active'); "
                     . "\$event.currentTarget.querySelector('.js-detail-button')?.click();",
@@ -338,8 +536,19 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
         )
             ->name('resource-delete-button')
             ->withoutLoading()
+            ->onAfterSet(function ($data, $ctx): void {
+                $model = $data?->getOriginal();
+                if (! $model instanceof Model) {
+                    return;
+                }
+                $conf = $this->deleteConfirmation($model);
+                $ctx->customAttributes([
+                    'data-delete-title' => $conf['title'] ?? 'Удалить запись?',
+                    'data-delete-text'  => $conf['text'] ?? '',
+                ]);
+            })
             ->customAttributes([
-                '@click.prevent.stop' => "window.dispatchEvent(new CustomEvent('open-custom-delete-modal', {detail: {url: \$el.href}}));",
+                '@click.prevent.stop' => "window.dispatchEvent(new CustomEvent('open-custom-delete-modal', {detail: {url: \$el.href, title: \$el.dataset.deleteTitle, text: \$el.dataset.deleteText}}));",
             ])
             ->canSee(
                 fn($item) => $item->getKey()

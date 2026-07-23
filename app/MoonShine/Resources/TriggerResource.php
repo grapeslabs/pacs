@@ -8,7 +8,7 @@ use App\Models\Tag;
 use App\Models\Trigger;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomText;
-use App\MoonShine\Fields\DeviceField;
+use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\Select2Field;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Fields\TriggerContentField;
@@ -39,6 +39,11 @@ class TriggerResource extends BaseModelResource
 {
     protected string $model = Trigger::class;
     protected string $title = 'Триггеры';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('триггер', 'триггера', 'триггеров');
+    }
     protected ?string $editModalTitle = 'Редактирование триггера';
     protected string $column = 'name';
     protected bool $detailSidebar = true;
@@ -91,9 +96,9 @@ class TriggerResource extends BaseModelResource
     {
         $item->loadMissing('bot');
 
-        $icBolt = file_get_contents(public_path('icons/lightning.svg'));
-        $icBot = file_get_contents(public_path('icons/bot.svg'));
-        $icGear = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.5 5.5l2 2M16.5 16.5l2 2M18.5 5.5l-2 2M7.5 16.5l-2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+        $icBolt = @file_get_contents(public_path('icons/lightning.svg'))?:'';
+        $icBot = @file_get_contents(public_path('icons/bot.svg'))?:'';
+        $icGear = @file_get_contents(public_path('icons/gear.svg'))?:'';
 
         $deviceLabel = $this->deviceTypeLabel($item->device_type);
         $deviceExists = $item->device_type === Trigger::DEVICE_CAMERA
@@ -173,14 +178,22 @@ class TriggerResource extends BaseModelResource
         ][$type] ?? (string) $type;
     }
 
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить триггер?',
+            'text'  => '«' . ($item->name ?: 'Триггер') . '» будет удалён.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
             Text::make('Название', 'name')
                 ->sortable(),
 
-            DeviceField::make('Устройство', 'device_id')
-                ->deviceIcon(fn($item) => $this->deviceIconSvg($item->device_type))
+            AvatarField::make('Устройство', 'device_id')
+                ->icon(fn($item) => $this->deviceIconSvg($item->device_type))
                 ->text(fn($item) => $this->resolveDevice($item)['name'] ?: ('Устройство #' . $item->device_id))
                 ->subtext(fn($item) => $this->resolveDevice($item)['exists'] ? $this->deviceTypeLabel($item->device_type) : 'Устройство удалено')
                 ->deleted(fn($item) => ! $this->resolveDevice($item)['exists']),
@@ -206,8 +219,8 @@ class TriggerResource extends BaseModelResource
                         END $direction
                     ")),
 
-            DeviceField::make('Бот', 'bot_id')
-                ->deviceIcon(@file_get_contents(public_path('icons/bot.svg')) ?: '')
+            AvatarField::make('Бот', 'bot_id')
+                ->icon(@file_get_contents(public_path('icons/bot.svg')) ?: '')
                 ->text(fn($item) => $item->bot?->name ?? '—'),
 
             Switcher::make('Активность', 'is_active')
@@ -237,12 +250,14 @@ class TriggerResource extends BaseModelResource
 
     private function deviceIconSvg(?string $type): string
     {
-        return match ($type) {
-            Trigger::DEVICE_CAMERA => '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="6.5" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="m15 10.5 6-3.5v10l-6-3.5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
-            Trigger::DEVICE_TERMINAL => '<svg viewBox="0 0 24 24" fill="none"><rect x="7" y="3" width="10" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 18h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
-            Trigger::DEVICE_BARIER => '<svg viewBox="0 0 24 24" fill="none"><path d="M5 20V9a2 2 0 0 1 2-2l11 2v3L7 10" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 20h4M7 20V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
-            default => '<svg viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="1.6" stroke="currentColor" stroke-width="1.6"/><rect x="9.5" y="9.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M9 6V3.5M15 6V3.5M9 20.5V18M15 20.5V18M6 9H3.5M6 15H3.5M20.5 9H18M20.5 15H18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+        $file = match ($type) {
+            Trigger::DEVICE_CAMERA   => 'menu-video.svg',
+            Trigger::DEVICE_TERMINAL => 'terminal.svg',
+            Trigger::DEVICE_BARIER   => 'gate.svg',
+            default                  => 'controller.svg',
         };
+
+        return @file_get_contents(public_path('icons/' . $file)) ?: '';
     }
 
     public function formFields(): iterable

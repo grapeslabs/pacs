@@ -231,8 +231,12 @@
         isOpen: false,
         isLoading: false,
         formAction: '',
+        title: 'Удалить запись?',
+        text: 'Вы уверены, что хотите удалить запись?',
         open(event) {
             this.formAction = event.detail.url;
+            this.title = event.detail.title || 'Удалить запись?';
+            this.text = event.detail.text || 'Вы уверены, что хотите удалить запись?';
             this.isOpen = true;
             this.isLoading = false;
         },
@@ -324,11 +328,11 @@
                     </div>
 
                     <div>
-                        <h3 class="ccm_title" id="modal-title">
-                            Подтвердите действие
+                        <h3 class="ccm_title" id="modal-title" x-text="title">
+                            Удалить запись?
                         </h3>
                         <div class="ccm_text-wrapper">
-                            <p class="ccm_text">
+                            <p class="ccm_text" x-text="text">
                                 Вы уверены, что хотите удалить запись?
                             </p>
                         </div>

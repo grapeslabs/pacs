@@ -4,6 +4,7 @@ namespace App\MoonShine\Resources;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
+use Illuminate\Database\Eloquent\Model;
 use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
 use App\Models\CarColor;
@@ -36,6 +37,14 @@ class CarColorResource extends BaseModelResource
             Text::make('name'),
         ];
     }
+    public function deleteConfirmation(Model $item): array
+    {
+        return [
+            'title' => 'Удалить запись?',
+            'text'  => '«' . ($item->name ?: 'Запись') . '» будет удалена из справочника.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [

@@ -7,6 +7,7 @@ use App\Models\Organization;
 use App\Models\Tag;
 use App\Models\Stream;
 use App\Models\VideoAnalyticReport;
+use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
@@ -40,9 +41,16 @@ class UnknownReportResource extends BaseModelResource
 {
     protected string $model = VideoAnalyticReport::class;
     protected string $title = 'Отчеты по неизвестным';
+
+    public function indexSubtitle(): ?string
+    {
+        return 'Лица, не найденные в базе персон';
+    }
     protected string $column = 'name';
     protected string $sortColumn = 'id';
     protected SortDirection $sortDirection = SortDirection::DESC;
+    protected bool $detailModal = true;
+    protected ?string $periodColumn = 'datetime';
     protected ?string $oldPerson = null;
 
     protected function modifyQueryBuilder(Builder $builder): Builder
@@ -62,20 +70,26 @@ class UnknownReportResource extends BaseModelResource
 
     public function indexFields(): iterable
     {
-        return [
-            Text::make('Персона', 'person_photobank_id', function($item) {
-                if(!empty($this->oldPerson) && $this->oldPerson == $item->person_photobank_id) {
-                    return "";
-                }
-                return $this->oldPerson = $item->person_photobank_id;
-            })->sortable(),
+        $personIcon = @file_get_contents(public_path('icons/person.svg')) ?: '';
 
+        return [
             Date::make('Дата и время', 'datetime')
                 ->withTime()
                 ->sortable(),
 
-            BelongsTo::make('Камера', 'stream', fn($item) => $item->name ?? 'Камера удалена', VideoStreamResource::class)
+            AvatarField::make('Персона', 'person_photobank_id')
+                ->text(fn($item) => 'Неизвестное лицо')
+                ->subtext(fn($item) => $item->data['unknown_uuid'] ?? $item->person_photobank_id)
+                ->icon($personIcon)
                 ->sortable(),
+
+            AvatarField::make('Камера', 'camera_id')
+                ->icon(@file_get_contents(public_path('icons/menu-video.svg')) ?: '')
+                ->text(fn($item) => $item->stream?->name ?? 'Камера удалена')
+                ->subtext(fn($item) => $item->stream?->location
+                    ? \Illuminate\Support\Str::limit($item->stream->location, 26)
+                    : null)
+                ->deleted(fn($item) => $item->stream === null),
 
             Image::make('Фото', 'snapshot_path_display', fn($item) => basename($item->data['snapshot_path'] ?? ''))
                 ->disk('analytic')
@@ -109,6 +123,47 @@ class UnknownReportResource extends BaseModelResource
             ->async(selector: "#{$this->safeModalName}_content");
     }
 
+
+    public function detailModalData(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        /** @var VideoAnalyticReport $item */
+        $snapshot = $item->data['snapshot_path'] ?? null;
+        $photo    = $snapshot
+            ? Storage::disk('analytic')->url('thumbnails/' . basename($snapshot))
+            : null;
+
+        $uuid = $item->data['unknown_uuid'] ?? $item->person_photobank_id;
+
+        $userPlus = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/><path d="M4 20a7 7 0 0 1 12.5-4.3"/><path d="M18 14v6"/><path d="M15 17h6"/></svg>';
+
+        $identifyBtn = (string) ActionButton::make(
+            'Добавить в базу',
+            $this->getAsyncMethodUrl('getIdentifyForm', params: [
+                'item_id' => $item->getKey(),
+                '_component_name' => $this->getListComponentName(),
+                '_async_form' => true,
+            ], page: $this->getIndexPage())
+        )
+            ->icon($userPlus, true)
+            ->async(selector: "#{$this->safeModalName}_content")
+            ->customAttributes([
+                'class' => 'dm-btn dm-btn--primary',
+                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' }); \$dispatch('modal-toggled', { id: 'detail-modal' })",
+            ]);
+
+        return [
+            'title'    => 'Неопознанное лицо',
+            'layout'   => 'portrait',
+            'photo'    => $photo,
+            'rows'     => [
+                ['k' => 'Дата, время',   'v' => $item->datetime ? $item->datetime->format('d.m.Y, H:i:s') : '—', 'mono' => true],
+                ['k' => 'Статус',        'badge' => ['label' => 'Неизвестное лицо', 'tone' => 'yellow']],
+                ['k' => 'Идентификатор', 'v' => $uuid, 'mono' => true],
+                ['k' => 'Камера',        'v' => $item->stream?->name ?? 'Камера удалена'],
+            ],
+            'footer'   => ['html' => $identifyBtn],
+        ];
+    }
 
     public function getIdentifyForm(MoonShineRequest $request): string
     {

@@ -5,11 +5,18 @@
     /** @var string|null $icon */
     /** @var string|null $badge */
     /** @var string $initials */
+    /** @var bool $deleted */
+    /** @var bool $hideAvatar */
+    $deleted = $deleted ?? false;
+    $hideAvatar = $hideAvatar ?? false;
 @endphp
 
-<div class="av-cell">
-    <span class="av-cell__ava{{ $photoUrl ? ' av-cell__ava--img' : ($icon ? ' av-cell__ava--icon' : '') }}">
-        @if($photoUrl)
+<div class="av-cell{{ $deleted ? ' av-cell--deleted' : '' }}">
+    @unless($hideAvatar)
+    <span class="av-cell__ava{{ $deleted ? ' av-cell__ava--deleted' : ($photoUrl ? ' av-cell__ava--img' : ($icon ? ' av-cell__ava--icon' : '')) }}">
+        @if($deleted)
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 8v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>
+        @elseif($photoUrl)
             <img src="{{ $photoUrl }}" alt="" loading="lazy">
         @elseif($icon)
             {!! $icon !!}
@@ -17,6 +24,7 @@
             {{ $initials }}
         @endif
     </span>
+    @endunless
 
     <span class="av-cell__body">
         <span class="av-cell__title">
@@ -63,6 +71,21 @@
 
         .av-cell__ava--icon {
             color: var(--gray-500, #666070);
+        }
+
+        .av-cell__ava--deleted {
+            background: #FBECEC;
+            color: #F04138;
+        }
+
+        .av-cell--deleted .av-cell__name {
+            text-decoration: line-through;
+            color: #A6ABC2;
+            font-weight: 500;
+        }
+
+        .av-cell--deleted .av-cell__sub {
+            color: #F04138;
         }
 
         .av-cell__ava img {

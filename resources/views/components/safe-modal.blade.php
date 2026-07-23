@@ -16,6 +16,8 @@
         modalId: '{{ $name }}',
         modalTitle: '{{ is_callable($title) ? $title() : $title }}',
         modalSubtitle: '',
+        submitLabel: 'Сохранить',
+        submitIcon: 'check',
 
         registerInStack() { Alpine.store('overlays')?.register(this.modalId, () => this.tryClose()); },
         unregisterFromStack() { Alpine.store('overlays')?.unregister(this.modalId); },
@@ -66,6 +68,12 @@
             modalSubtitle = (typeof $event.detail === 'object' && $event.detail.subtitle)
                 ? $event.detail.subtitle
                 : '';
+            submitLabel = (typeof $event.detail === 'object' && $event.detail.submitLabel)
+                ? $event.detail.submitLabel
+                : 'Сохранить';
+            submitIcon = (typeof $event.detail === 'object' && $event.detail.submitIcon)
+                ? $event.detail.submitIcon
+                : 'check';
             toggleModal();
         }
     "
@@ -119,8 +127,9 @@
                         </button>
                         <button @click="saveAndClose()" type="button"
                                 style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1.6rem; border-radius: 9999px; background: #6972F0; color: #fff; border: none; cursor: pointer; font-weight: 600; font-size: 0.9rem;">
-                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            Сохранить
+                            <svg x-show="submitIcon === 'check'" width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <svg x-show="submitIcon === 'addkey'" x-cloak width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M15 5H19.5C20.435 5 20.902 5 21.25 5.201C21.478 5.33265 21.6674 5.52199 21.799 5.75C22 6.098 22 6.565 22 7.5C22 8.435 22 8.902 21.799 9.25C21.6674 9.47801 21.478 9.66735 21.25 9.799C20.902 10 20.435 10 19.5 10H15M13 14H19.5C20.435 14 20.902 14 21.25 14.201C21.478 14.3326 21.6674 14.522 21.799 14.75C22 15.098 22 15.565 22 16.5C22 17.435 22 17.902 21.799 18.25C21.6674 18.478 21.478 18.6674 21.25 18.799C20.902 19 20.435 19 19.5 19H13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 11.584C9.3 12.271 10.3256 11.8234 11.8111 10.15C12.4239 9.21373 12.75 8.119 12.75 7C12.75 5.47501 12.1442 4.01247 11.0659 2.93414C9.98753 1.8558 8.52499 1.25 7 1.25C5.47501 1.25 4.01247 1.8558 2.93414 2.93414C1.8558 4.01247 1.25 5.47501 1.25 7C1.25 8.119 1.57611 9.21373 2.18892 10.15C3.67442 11.8234 4.7 12.271 5 11.584V19.586C5 19.933 5.055 21.53 5.586 21C6.116 20.47 7 20.47 7 20.47C7 20.47 7.884 20.47 8.414 21C8.944 21.53 9 19.933 9 19.586V11.584Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                            <span x-text="submitLabel">Сохранить</span>
                         </button>
                     </div>
 

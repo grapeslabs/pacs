@@ -3,6 +3,7 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Organization;
+use App\MoonShine\Fields\CountField;
 use Illuminate\Database\Eloquent\Model;
 use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\CustomText;
@@ -23,6 +24,11 @@ class OrganizationResource extends BaseModelResource
     protected string $model = Organization::class;
 
     protected string $title = 'Организации';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('организация', 'организации', 'организаций');
+    }
     protected ?string $editModalTitle = 'Редактирование организации';
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить организацию';
@@ -40,10 +46,10 @@ class OrganizationResource extends BaseModelResource
     {
         $peopleCount = $item->people()->count();
 
-        $icDoc = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 3h9l3 3v15H6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12h6M9 16h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-        $icPhone = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 3h3l1.6 5-2 1.4a11 11 0 0 0 5 5l1.4-2 5 1.6V21a17 17 0 0 1-19-18z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
-        $icPerson = file_get_contents(public_path('icons/person.svg'));
-        $orgIcon = @file_get_contents(public_path('icons/organization.svg')) ?: $icDoc;
+        $icDoc = @file_get_contents(public_path('icons/doc.svg'))?:'';
+        $icPhone = @file_get_contents(public_path('icons/phone.svg'))?:'';
+        $icPerson = @file_get_contents(public_path('icons/person.svg'))?:'';
+        $orgIcon = @file_get_contents(public_path('icons/organization.svg'))?:'';
 
         $personsUrl = $this->filteredIndexUrl(app(PersonResource::class), ['organization_id' => $item->getKey()]);
 
@@ -173,6 +179,14 @@ class OrganizationResource extends BaseModelResource
         ];
     }
 
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить организацию?',
+            'text'  => '«' . ($item->short_name ?: 'Организация') . '» будет удалена. Персоны останутся, но потеряют привязку.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
@@ -183,7 +197,8 @@ class OrganizationResource extends BaseModelResource
                 ->sortable(),
             Text::make('ИНН', 'inn')->sortable(),
             Text::make('Адрес', 'address')->sortable(),
-            \App\MoonShine\Fields\CountField::make('Персон', 'id', fn($item) => $item->people()->count()),
+            CountField::make('Персон', 'id', fn($item) => $item->people()->count())
+                ->sortable(),
         ];
     }
 

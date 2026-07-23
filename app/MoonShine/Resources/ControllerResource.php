@@ -11,6 +11,7 @@ use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
+use App\MoonShine\Fields\AvatarField;
 use MoonShine\UI\Fields\Text;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Support\ListOf;
@@ -19,6 +20,11 @@ class ControllerResource extends BaseModelResource
 {
     protected string $model = SkudController::class;
     protected string $title = 'Контроллеры СКУД';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('устройство', 'устройства', 'устройств');
+    }
     protected ?string $editModalTitle = 'Редактирование контроллера';
     protected string $column = 'serial_number';
     protected bool $softDelete = false;
@@ -26,8 +32,8 @@ class ControllerResource extends BaseModelResource
 
     public function detailSidebarData(Model $item): array
     {
-        $icCpu = '<svg viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="1.6" stroke="currentColor" stroke-width="1.6"/><rect x="9.5" y="9.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M9 6V3.5M15 6V3.5M9 20.5V18M15 20.5V18M6 9H3.5M6 15H3.5M20.5 9H18M20.5 15H18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
-        $icGear = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.5 5.5l2 2M16.5 16.5l2 2M18.5 5.5l-2 2M7.5 16.5l-2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+        $icCpu = @file_get_contents(public_path('icons/controller.svg')) ?: '';
+        $icGear = @file_get_contents(public_path('icons/gear.svg')) ?: '';
 
         $typeLabel = $this->deviceTypeLabel($item->type);
 
@@ -110,11 +116,22 @@ class ControllerResource extends BaseModelResource
         return new ListOf(Action::class, [Action::VIEW, Action::DELETE, Action::MASS_DELETE]);
     }
 
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить устройство?',
+            'text'  => '«' . ($item->serial_number ?: 'Устройство') . '» будет удалено из системы.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
-            ID::make('ID', 'id')->sortable(),
-            Text::make('Серийный номер', 'serial_number')->sortable(),
+            AvatarField::make('Тип', 'type')
+                ->icon(fn($item) => $this->deviceTypeIconSvg($item->type))
+                ->text(fn($item) => $this->controllerTypeLabel($item->type) ?: 'Контроллер')
+                ->subtext(fn($item) => $item->serial_number)
+                ->sortable('serial_number'),
             Text::make('IP адрес', 'ip')->sortable(),
         ];
     }

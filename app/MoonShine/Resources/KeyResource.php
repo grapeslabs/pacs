@@ -4,11 +4,14 @@ namespace App\MoonShine\Resources;
 
 use App\Models\Key;
 use App\Models\Person;
+use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
 use MoonShine\Laravel\MoonShineRequest;
@@ -28,8 +31,11 @@ use MoonShine\UI\Components\ActionButton;
 class KeyResource extends BaseModelResource
 {
     protected string $model = Key::class;
-
     protected string $title = 'Ключи';
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('ключ доступа', 'ключа доступа', 'ключей доступа');
+    }
     protected ?string $editModalTitle = 'Редактирование ключа';
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить ключ';
@@ -46,10 +52,10 @@ class KeyResource extends BaseModelResource
     public function detailSidebarData(Model $item): array
     {
         $item->loadMissing('person.organization');
-
-        $icKey = file_get_contents(public_path('icons/btn-addkey.svg'));
-        $icGear = '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.5 5.5l2 2M16.5 16.5l2 2M18.5 5.5l-2 2M7.5 16.5l-2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-        $icPerson = file_get_contents(public_path('icons/person.svg'));
+        $icCheck = @file_get_contents(public_path('icons/check.svg'))?:'';
+        $icKey = @file_get_contents(public_path('icons/btn-addkey.svg'))?:'';
+        $icGear = @file_get_contents(public_path('icons/gear.svg'))?:'';
+        $icPerson = @file_get_contents(public_path('icons/person.svg'))?:'';
 
         $type = $item->type ?: '—';
         $active = (bool) $item->is_active;
@@ -85,8 +91,8 @@ class KeyResource extends BaseModelResource
             ];
         }
 
-        $icLockClosed = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.4" fill="currentColor"/></svg>';
-        $icLockOpen = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M8 10.5V8a4 4 0 0 1 7.5-1.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.4" fill="currentColor"/></svg>';
+        $icLockClosed = @file_get_contents(public_path('icons/lock.svg'))?:'';
+        $icLockOpen = @file_get_contents(public_path('icons/open.svg.svg'))?:'';
 
         $blockUrl = $this->getAsyncMethodUrl('toggleBlock', page: $this->getIndexPage(), params: ['item_id' => $item->getKey()]);
         $blockHtml = (string) ActionButton::make($active ? 'Заблокировать' : 'Разблокировать', $blockUrl)
@@ -103,7 +109,7 @@ class KeyResource extends BaseModelResource
                 'icon' => $icKey,
                 'badges' => [
                     $active
-                        ? ['text' => 'Активен']
+                        ? ['text' => 'Активен', 'icon' => $icCheck]
                         : ['text' => 'Заблокирован', 'tone' => 'danger'],
                 ],
             ],
@@ -116,6 +122,14 @@ class KeyResource extends BaseModelResource
         ];
     }
 
+    public function deleteConfirmation(Model $item): array
+    {
+        return [
+            'title' => 'Удалить ключ?',
+            'text'  => 'Ключ «' . ($item->key ?: '—') . '» и вся история по нему будут удалены безвозвратно. Если ключ утерян — лучше заблокировать его, сохранив историю.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
@@ -124,8 +138,16 @@ class KeyResource extends BaseModelResource
             Select::make('Тип ключа', 'type')
                 ->options(Key::TYPES)
                 ->sortable(),
-            BelongsTo::make('Персона', 'person', fn($item) => trim(($item->last_name ?? '') . ' ' . ($item->first_name ?? '')), resource: PersonResource::class)
-                ->sortable(),
+            AvatarField::make('Персона', 'person')
+                ->text(fn($item) => $item->person?->getFullName() ?: '—')
+                ->subtext(fn($item) => $item->person?->certificate_number ? '№ ' . $item->person->certificate_number : null)
+                ->photo(fn($item) => $item->person?->first_photo)
+                ->sortable(function (Builder $query, string $column, string $direction) {
+                    return $query->orderBy(
+                        DB::raw('(SELECT last_name FROM person WHERE person.id = keys.person_id)'),
+                        $direction,
+                    );
+                }),
             ColoredSelectField::make('Статус', 'is_active', fn($item) => $item->is_active ? 'active' : 'blocked')
                 ->options([
                     'active' => ['label' => 'Активен', 'color' => 'green'],
@@ -230,6 +252,11 @@ class KeyResource extends BaseModelResource
             Select::make('Персона', 'person_id')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray()),
         ];
+    }
+
+    public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
+    {
+        return parent::indexQuery()->with('person');
     }
 
     public function search(): array

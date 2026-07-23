@@ -32,6 +32,11 @@ class BotResource extends BaseModelResource
 {
     protected string $model = Bot::class;
     protected string $title = 'Боты';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('бот', 'бота', 'ботов');
+    }
     protected ?string $editModalTitle = 'Редактирование бота';
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить бота';
@@ -40,9 +45,8 @@ class BotResource extends BaseModelResource
     {
         $item->loadMissing('chats');
 
-        $icBot = file_get_contents(public_path('icons/bot.svg'));
-        $icPlug = '<svg viewBox="0 0 24 24" fill="none"><path d="M9 3v5M15 3v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M6 8h12v3a6 6 0 0 1-12 0z" stroke="currentColor" stroke-width="1.6"/><path d="M12 17v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-        $icBolt = file_get_contents(public_path('icons/lightning.svg'));
+        $icBot = @file_get_contents(public_path('icons/bot.svg'))?:'';
+        $icBolt = @file_get_contents(public_path('icons/lightning.svg'))?:'';
 
         $service = Bot::SERVICES[$item->service] ?? $item->service;
 
@@ -57,7 +61,7 @@ class BotResource extends BaseModelResource
 
         $sections = [
             [
-                'icon' => $icPlug,
+                'icon' => $icBot,
                 'title' => 'Параметры подключения',
                 'single' => true,
                 'fields' => [
@@ -172,6 +176,14 @@ class BotResource extends BaseModelResource
                 ['name' => $chat['name'] ?? '']
             );
         }
+    }
+
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить бота?',
+            'text'  => '«' . ($item->name ?: 'Бот') . '» будет удалён. Триггеры, использующие его, перестанут отправлять уведомления.',
+        ];
     }
 
     // Поля для индексной страницы

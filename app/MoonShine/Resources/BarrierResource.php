@@ -10,6 +10,7 @@ use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
+use App\MoonShine\Fields\AvatarField;
 use MoonShine\UI\Fields\Text;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Support\ListOf;
@@ -43,11 +44,22 @@ class BarrierResource extends BaseModelResource
     {
         return new ListOf(Action::class, [Action::VIEW, Action::DELETE]);
     }
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить устройство?',
+            'text'  => '«' . ($item->serial_number ?: 'Устройство') . '» будет удалено из системы.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
-            ID::make()->sortable(),
-            Text::make('Серийный номер', 'serial_number')->sortable(),
+            AvatarField::make('Тип', 'type')
+                ->icon(fn($item) => $this->deviceTypeIconSvg($item->type))
+                ->text(fn($item) => $this->controllerTypeLabel($item->type) ?: 'Шлагбаум')
+                ->subtext(fn($item) => $item->serial_number)
+                ->sortable('serial_number'),
             Text::make('IP', 'ip')->sortable(),
         ];
     }

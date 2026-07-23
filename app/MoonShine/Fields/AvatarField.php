@@ -23,6 +23,10 @@ class AvatarField extends Field
 
     protected Closure|string|null $badgeValue = null;
 
+    protected Closure|bool $deletedFlag = false;
+
+    protected bool $hideAvatar = false;
+
     protected string $disk = 'public';
 
     public function text(Closure|string $value): static
@@ -60,6 +64,22 @@ class AvatarField extends Field
     public function indicator(Closure|string $svg): static
     {
         $this->badgeValue = $svg;
+
+        return $this;
+    }
+
+    /** Пометка «удалено» (оборудование/камера пропали из системы): зачёркивание + красный значок. */
+    public function deleted(Closure|bool $value): static
+    {
+        $this->deletedFlag = $value;
+
+        return $this;
+    }
+
+    /** Не показывать кружок-аватар — только текст и подпись (двухстрочная ячейка). */
+    public function hideAvatar(bool $value = true): static
+    {
+        $this->hideAvatar = $value;
 
         return $this;
     }
@@ -142,13 +162,19 @@ class AvatarField extends Field
                 : $this->badgeValue;
         }
 
+        $deleted = $this->deletedFlag instanceof Closure
+            ? (bool) ($this->deletedFlag)($item)
+            : $this->deletedFlag;
+
         return [
             'text' => $text,
             'subtext' => $this->resolveAccessor($this->subtextAccessor, $item),
-            'photoUrl' => $this->resolvePhotoUrl($item),
+            'photoUrl' => $deleted ? null : $this->resolvePhotoUrl($item),
             'icon' => $icon,
             'badge' => $badge,
             'initials' => $this->resolveInitials($text),
+            'deleted' => $deleted,
+            'hideAvatar' => $this->hideAvatar,
         ];
     }
 

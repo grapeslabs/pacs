@@ -5,6 +5,7 @@ namespace App\MoonShine\Resources;
 use App\Models\Person;
 use App\Models\GrapeslabsSkudEvent;
 use App\MoonShine\Fields\ColoredSelectField;
+use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\SelectField;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use MoonShine\Laravel\Handlers\Handler;
@@ -23,7 +24,14 @@ class SkudEventResource extends BaseModelResource
 {
     protected string $model = GrapeslabsSkudEvent::class;
     protected string $title = 'Отчеты СКУД';
+
+    public function indexSubtitle(): ?string
+    {
+        return 'События контроля доступа: проходы, отказы, тревоги';
+    }
     protected string $ex_type = 'pingate';
+    protected bool $detailModal = true;
+    protected ?string $periodColumn = 'datetime';
 
     protected function activeActions(): ListOf
     {
@@ -97,21 +105,20 @@ class SkudEventResource extends BaseModelResource
 
     public function indexFields(): iterable
     {
+        $personIcon = @file_get_contents(public_path('icons/person.svg')) ?: '';
+
         return [
-            ID::make()->sortable(),
 
             Date::make('Дата/время', 'datetime')
                 ->sortable()
                 ->format('d.m.Y H:i:s')
                 ->withTime(),
 
-            Text::make('Тип оборудования', 'controller_id')
-                ->sortable('controller_id')
-                ->changeFill(function ($data) {
-                    return $this->getControllerType($data->controller_id);
-                }),
-
-            Text::make('Серийный номер', 'controller.serial_number')
+            AvatarField::make('Оборудование', 'controller_id')
+                ->icon(fn($item) => $this->deviceTypeIconSvg($this->getControllerType($item->controller_id)))
+                ->text(fn($item) => $this->controllerTypeLabel($this->getControllerType($item->controller_id)) ?: 'Оборудование')
+                ->subtext(fn($item) => $item->controller?->serial_number)
+                ->deleted(fn($item) => $item->controller === null)
                 ->sortable(function (Builder $query, string $column, string $direction) {
                     return $query->orderBy(
                         SkudController::select('serial_number')
@@ -121,74 +128,24 @@ class SkudEventResource extends BaseModelResource
                     );
                 }),
 
-            ColoredSelectField::make('Тип события', 'type', function ($item) {
-                $type = (int) $item->type;
-                $typeMap = [
-                    0 => '0_1',   1 => '0_1',
-                    2 => '2_3',   3 => '2_3',
-                    4 => '4_5',   5 => '4_5',
-                    6 => '6_7',   7 => '6_7',
-                    8 => '8_9',   9 => '8_9',
-                    10 => '10_11', 11 => '10_11',
-                    12 => '12_13', 13 => '12_13',
-                    14 => '14_15', 15 => '14_15',
-                    16 => '16_17', 17 => '16_17',
-                    18 => '18',   19 => '19',
-                    20 => '20',   21 => '21',
-                    22 => '22_23', 23 => '22_23',
-                    26 => '26_27', 27 => '26_27',
-                    28 => '28_29', 29 => '28_29',
-                    30 => '30_31', 31 => '30_31',
-                    32 => '32_33', 33 => '32_33',
-                    34 => '34_35', 35 => '34_35',
-                    36 => '36',   37 => '37',
-                    38 => '38',   39 => '39',
-                    40 => '40_41', 41 => '40_41',
-                    48 => '48_49', 49 => '48_49',
-                    50 => '50_51', 51 => '50_51',
-                    52 => '52_53', 53 => '52_53',
-                    54 => '54_55', 55 => '54_55',
-                    64 => '64',   65 => '65',
-                    85 => '85',   86 => '86',
-                ];
-                return $typeMap[$type] ?? 'unknown';
-            })->options([
-                '0_1'     => ['label' => 'Открытие кнопкой изнутри',         'color' => 'blue'],
-                '2_3'     => ['label' => 'Ключ не найден в банке ключей',     'color' => 'red'],
-                '4_5'     => ['label' => 'Ключ найден, дверь открыта',        'color' => 'green'],
-                '6_7'     => ['label' => 'Ключ найден, доступ не разрешён',   'color' => 'red'],
-                '8_9'     => ['label' => 'Открыто оператором по сети',        'color' => 'blue'],
-                '10_11'   => ['label' => 'Дверь заблокирована',               'color' => 'gray'],
-                '12_13'   => ['label' => 'Взлом двери',                       'color' => 'pink'],
-                '14_15'   => ['label' => 'Дверь оставлена открытой',          'color' => 'orange'],
-                '16_17'   => ['label' => 'Проход состоялся',                  'color' => 'green'],
-                '18'      => ['label' => 'Срабатывание датчика 1',            'color' => 'orange'],
-                '19'      => ['label' => 'Срабатывание датчика 2',            'color' => 'orange'],
-                '20'      => ['label' => 'Перезагрузка контроллера',          'color' => 'purple'],
-                '21'      => ['label' => 'Событие питания',                   'color' => 'purple'],
-                '22_23'   => ['label' => 'Заблокирована кнопка открывания',   'color' => 'gray'],
-                '26_27'   => ['label' => 'Нарушение антипассбэка',            'color' => 'red'],
-                '28_29'   => ['label' => 'Замок включён (режим Триггер)',     'color' => 'gray'],
-                '30_31'   => ['label' => 'Замок выключен (режим Триггер)',    'color' => 'gray'],
-                '32_33'   => ['label' => 'Дверь открыта',                     'color' => 'blue'],
-                '34_35'   => ['label' => 'Дверь закрыта',                     'color' => 'blue'],
-                '36'      => ['label' => 'Управление питанием',               'color' => 'purple'],
-                '37'      => ['label' => 'Смена режима работы',               'color' => 'purple'],
-                '38'      => ['label' => 'Пожарная тревога',                  'color' => 'pink'],
-                '39'      => ['label' => 'Охранная тревога',                  'color' => 'pink'],
-                '40_41'   => ['label' => 'Таймаут прохода',                   'color' => 'orange'],
-                '48_49'   => ['label' => 'Совершён вход в шлюз',              'color' => 'blue'],
-                '50_51'   => ['label' => 'Заблокирован вход в шлюз (занят)',  'color' => 'orange'],
-                '52_53'   => ['label' => 'Разрешён вход в шлюз',             'color' => 'green'],
-                '54_55'   => ['label' => 'Заблокирован проход (Антипассбек)', 'color' => 'red'],
-                '64'      => ['label' => 'Hotel: изменение режима работы',    'color' => 'purple'],
-                '65'      => ['label' => 'Hotel: отработка карт',             'color' => 'purple'],
-                '85'      => ['label' => 'Идентификация ключа',               'color' => 'blue'],
-                '86'      => ['label' => 'Идентификация 7-байтного ключа',    'color' => 'blue'],
-                'unknown' => ['label' => 'Неизвестное событие',               'color' => 'gray'],
-            ])->sortable('type'),
+            ColoredSelectField::make('Тип события', 'type', fn($item) => $this->skudTypeKey((int) $item->type))
+                ->options($this->skudTypeOptions())
+                ->sortable('type'),
 
-            Text::make('ФИО/Имя', 'subject_name')
+            AvatarField::make('ФИО/Имя', 'subject_name')
+                ->text(function ($item) {
+                    $eventData = is_array($item->event) ? $item->event : json_decode($item->event ?? '{}', true);
+                    return $this->getSubjectName($eventData);
+                })
+                ->photo(function ($item) {
+                    $eventData = is_array($item->event) ? $item->event : json_decode($item->event ?? '{}', true);
+                    $person = $this->getPersonByCardNumber($eventData['card_number'] ?? null);
+                    return $person?->photo[0] ?? null;
+                })
+                ->icon(function ($item) use ($personIcon) {
+                    $eventData = is_array($item->event) ? $item->event : json_decode($item->event ?? '{}', true);
+                    return $this->getPersonByCardNumber($eventData['card_number'] ?? null) ? null : $personIcon;
+                })
                 ->sortable(function (Builder $query, string $column, string $direction) {
                     // Очищаем существующие orderBy
                     $query->getQuery()->orders = null;
@@ -201,17 +158,7 @@ class SkudEventResource extends BaseModelResource
                     $query->orderByRaw("CONCAT_WS(' ', p.last_name, p.first_name, p.middle_name) {$direction} NULLS LAST");
 
                     return $query->addSelect('grapeslabs_skud_events.*');
-                })
-                ->changeFill(function ($data) {
-                    $eventData = json_decode($data->event ?? '{}', true);
-                    return $this->getSubjectName($eventData);
                 }),
-
-            Image::make('Фото', 'photo', function ($item) {
-                $eventData = is_array($item->event) ? $item->event : json_decode($item->event ?? '{}', true);
-                $person = $this->getPersonByCardNumber($eventData['card_number'] ?? null);
-                return $person?->photo[0] ?? null;
-            }),
 
             Text::make('Номер удостоверения', 'certificate_number')
                 ->sortable(function (Builder $query, string $column, string $direction) {
@@ -536,6 +483,120 @@ class SkudEventResource extends BaseModelResource
     </template>
 </div>
 HTML;
+    }
+
+    /** Нормализованный ключ типа события СКУД (пара кодов вход/выход → один ключ). */
+    private function skudTypeKey(int $type): string
+    {
+        $typeMap = [
+            0 => '0_1',   1 => '0_1',
+            2 => '2_3',   3 => '2_3',
+            4 => '4_5',   5 => '4_5',
+            6 => '6_7',   7 => '6_7',
+            8 => '8_9',   9 => '8_9',
+            10 => '10_11', 11 => '10_11',
+            12 => '12_13', 13 => '12_13',
+            14 => '14_15', 15 => '14_15',
+            16 => '16_17', 17 => '16_17',
+            18 => '18',   19 => '19',
+            20 => '20',   21 => '21',
+            22 => '22_23', 23 => '22_23',
+            26 => '26_27', 27 => '26_27',
+            28 => '28_29', 29 => '28_29',
+            30 => '30_31', 31 => '30_31',
+            32 => '32_33', 33 => '32_33',
+            34 => '34_35', 35 => '34_35',
+            36 => '36',   37 => '37',
+            38 => '38',   39 => '39',
+            40 => '40_41', 41 => '40_41',
+            48 => '48_49', 49 => '48_49',
+            50 => '50_51', 51 => '50_51',
+            52 => '52_53', 53 => '52_53',
+            54 => '54_55', 55 => '54_55',
+            64 => '64',   65 => '65',
+            85 => '85',   86 => '86',
+        ];
+
+        return $typeMap[$type] ?? 'unknown';
+    }
+
+    /** Опции типов событий СКУД: ключ → ['label','color']. */
+    private function skudTypeOptions(): array
+    {
+        return [
+            '0_1'     => ['label' => 'Открытие кнопкой изнутри',         'color' => 'blue'],
+            '2_3'     => ['label' => 'Ключ не найден в банке ключей',     'color' => 'red'],
+            '4_5'     => ['label' => 'Ключ найден, дверь открыта',        'color' => 'green'],
+            '6_7'     => ['label' => 'Ключ найден, доступ не разрешён',   'color' => 'red'],
+            '8_9'     => ['label' => 'Открыто оператором по сети',        'color' => 'blue'],
+            '10_11'   => ['label' => 'Дверь заблокирована',               'color' => 'gray'],
+            '12_13'   => ['label' => 'Взлом двери',                       'color' => 'pink'],
+            '14_15'   => ['label' => 'Дверь оставлена открытой',          'color' => 'orange'],
+            '16_17'   => ['label' => 'Проход состоялся',                  'color' => 'green'],
+            '18'      => ['label' => 'Срабатывание датчика 1',            'color' => 'orange'],
+            '19'      => ['label' => 'Срабатывание датчика 2',            'color' => 'orange'],
+            '20'      => ['label' => 'Перезагрузка контроллера',          'color' => 'purple'],
+            '21'      => ['label' => 'Событие питания',                   'color' => 'purple'],
+            '22_23'   => ['label' => 'Заблокирована кнопка открывания',   'color' => 'gray'],
+            '26_27'   => ['label' => 'Нарушение антипассбэка',            'color' => 'red'],
+            '28_29'   => ['label' => 'Замок включён (режим Триггер)',     'color' => 'gray'],
+            '30_31'   => ['label' => 'Замок выключен (режим Триггер)',    'color' => 'gray'],
+            '32_33'   => ['label' => 'Дверь открыта',                     'color' => 'blue'],
+            '34_35'   => ['label' => 'Дверь закрыта',                     'color' => 'blue'],
+            '36'      => ['label' => 'Управление питанием',               'color' => 'purple'],
+            '37'      => ['label' => 'Смена режима работы',               'color' => 'purple'],
+            '38'      => ['label' => 'Пожарная тревога',                  'color' => 'pink'],
+            '39'      => ['label' => 'Охранная тревога',                  'color' => 'pink'],
+            '40_41'   => ['label' => 'Таймаут прохода',                   'color' => 'orange'],
+            '48_49'   => ['label' => 'Совершён вход в шлюз',              'color' => 'blue'],
+            '50_51'   => ['label' => 'Заблокирован вход в шлюз (занят)',  'color' => 'orange'],
+            '52_53'   => ['label' => 'Разрешён вход в шлюз',             'color' => 'green'],
+            '54_55'   => ['label' => 'Заблокирован проход (Антипассбек)', 'color' => 'red'],
+            '64'      => ['label' => 'Hotel: изменение режима работы',    'color' => 'purple'],
+            '65'      => ['label' => 'Hotel: отработка карт',             'color' => 'purple'],
+            '85'      => ['label' => 'Идентификация ключа',               'color' => 'blue'],
+            '86'      => ['label' => 'Идентификация 7-байтного ключа',    'color' => 'blue'],
+            'unknown' => ['label' => 'Неизвестное событие',               'color' => 'gray'],
+        ];
+    }
+
+    public function detailModalData(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        /** @var GrapeslabsSkudEvent $item */
+        $eventData = is_array($item->event) ? $item->event : json_decode($item->event ?? '{}', true);
+        $person = $this->getPersonByCardNumber($eventData['card_number'] ?? null);
+
+        $typeKey  = $this->skudTypeKey((int) $item->type);
+        $typeOpt  = $this->skudTypeOptions()[$typeKey] ?? ['label' => 'Неизвестное событие', 'color' => 'gray'];
+
+        $photo = null;
+        if ($person && ! empty($person->photo[0])) {
+            $photo = \Illuminate\Support\Facades\Storage::disk('public')->url($person->photo[0]);
+        }
+
+        $subject = $this->getSubjectName($eventData);
+        $org     = $this->getOrganization($eventData);
+
+        $rows = [
+            ['k' => 'Id события',      'v' => 'EVT-' . str_pad((string) $item->id, 6, '0', STR_PAD_LEFT), 'mono' => true],
+            ['k' => 'Дата / время',   'v' => $item->datetime ? \Illuminate\Support\Carbon::parse($item->datetime)->format('d.m.Y, H:i:s') : '—', 'mono' => true],
+            ['k' => 'Тип события',     'badge' => ['label' => $typeOpt['label'], 'tone' => $typeOpt['color']]],
+            ['k' => 'ФИО / Имя',       'v' => $subject]
+                + ($person ? ['link' => $this->filteredIndexUrl(app(PersonResource::class), ['last_name' => $person->last_name])] : []),
+            ['k' => '№ удостоверения', 'v' => $this->getCertificateNumber($eventData), 'mono' => true],
+            ['k' => 'Ключ',            'v' => $eventData['card_number'] ?? '—', 'mono' => true],
+            ['k' => 'Организация',     'v' => $org]
+                + ($person && $org !== '—' ? ['link' => $this->filteredIndexUrl(app(OrganizationResource::class), ['short_name' => $org])] : []),
+            ['k' => 'Оборудование',    'v' => trim(($this->getControllerType($item->controller_id) ?? 'Оборудование') . ' · ' . ($item->controller->serial_number ?? '—'))],
+        ];
+
+        return [
+            'title'    => 'Событие СКУД',
+            'layout'   => 'portrait',
+            'photo'    => $photo,
+            'initials' => $person ? mb_substr($person->last_name ?? '', 0, 1) . mb_substr($person->first_name ?? '', 0, 1) : '',
+            'rows'     => $rows,
+        ];
     }
 
     /**

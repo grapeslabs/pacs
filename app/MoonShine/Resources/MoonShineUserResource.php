@@ -66,6 +66,14 @@ class MoonShineUserResource extends BaseModelResource
         return parent::activeActions()->only(Action::CREATE, Action::DELETE, Action::UPDATE);
     }
 
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить пользователя?',
+            'text'  => 'Учётная запись «' . ($item->name ?: 'Пользователь') . '» будет удалена.',
+        ];
+    }
+
     protected function indexFields(): iterable
     {
         return [

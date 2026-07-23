@@ -2,7 +2,6 @@
 
 namespace App\MoonShine\Resources;
 
-//use GrapesLabs\PinvideoSkud\Models\SkudEvent;
 use App\MoonShine\Fields\SelectField;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use App\Models\GrapeslabsSkudEvent;
@@ -34,6 +33,13 @@ class BarrierEventResource extends BaseModelResource
 {
     protected string $model = GrapeslabsSkudEvent::class;
     protected string $title = 'События автомобили';
+
+    public function indexSubtitle(): ?string
+    {
+        return 'События автомобилей на шлагбаумах';
+    }
+    protected bool $detailModal = true;
+    protected ?string $periodColumn = 'datetime';
 
     protected function activeActions(): ListOf
     {
@@ -476,6 +482,60 @@ class BarrierEventResource extends BaseModelResource
             'type' => ['required', 'string', 'max:50'],
             'event_id' => ['nullable', 'string', 'max:100'],
             'event' => ['nullable', 'array'],
+        ];
+    }
+
+    public function detailModalData(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        /** @var GrapeslabsSkudEvent $item */
+        $eventData = json_decode($item->event ?? '{}', true) ?: [];
+
+        $b64ToSrc = function (?string $b64): ?string {
+            if (empty($b64)) {
+                return null;
+            }
+            return str_contains($b64, 'base64,') ? $b64 : 'data:image/jpeg;base64,' . $b64;
+        };
+
+        $carPlate = SkudEventCarPlate::where('event_id', $item->id)->value('car_plate');
+        $car = $carPlate
+            ? Car::where('license_plate', $carPlate)->with(['brand', 'color', 'people', 'organization'])->first()
+            : null;
+
+        $brand = $car?->brand?->name;
+        $color = $car?->color?->name;
+        $person = ($car && $car->people->isNotEmpty())
+            ? $car->people->map(fn($p) => trim($p->last_name . ' ' . $p->first_name . ' ' . ($p->middle_name ?? '')))->implode(', ')
+            : null;
+        $org = $car?->organization?->short_name
+            ?? $car?->organization?->full_name
+            ?? ($car && $car->people->isNotEmpty() ? ($car->people->first()->organization?->short_name ?? $car->people->first()->organization?->full_name) : null);
+
+        $rows = [
+            ['k' => 'Дата, время',  'v' => $item->datetime ? \Illuminate\Support\Carbon::parse($item->datetime)->format('d.m.Y, H:i:s') : '—', 'mono' => true],
+            ['k' => 'Оборудование', 'v' => trim(($item->controller->serial_number ?? '—') . ($item->controller->type ? ' · ' . $item->controller->type : '')), 'mono' => true],
+            ['k' => 'Тип события',  'v' => $eventData['event'] ?? '—'],
+            ['k' => 'ГРЗ',          'v' => $carPlate ?: '—', 'mono' => true],
+        ];
+        if ($brand || $color) {
+            $rows[] = ['k' => 'Марка / цвет', 'v' => trim(($brand ?? '—') . ($color ? ' · ' . $color : ''))];
+        }
+        if ($person) {
+            $rows[] = ['k' => 'ФИО персоны', 'v' => $person];
+        }
+        if ($org) {
+            $rows[] = ['k' => 'Организация', 'v' => $org]
+                + ['link' => $this->filteredIndexUrl(app(OrganizationResource::class), ['short_name' => $org])];
+        }
+
+        return [
+            'title'   => 'Событие · шлагбаум',
+            'layout'  => 'gallery',
+            'gallery' => [
+                ['label' => 'Фото машины', 'image' => $b64ToSrc($eventData['image_car'] ?? null)],
+                ['label' => 'Фото номера', 'image' => $b64ToSrc($eventData['image_plate'] ?? null), 'plate' => $carPlate],
+            ],
+            'rows'    => $rows,
         ];
     }
 

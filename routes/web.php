@@ -10,6 +10,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\CustomFieldController;
 use App\Http\Controllers\DetailCardController;
+use App\Http\Controllers\DetailModalController;
 use App\Http\Controllers\PersonPhotoArchiveController;
 
 Route::prefix(config('moonshine.prefix', 'admin'))
@@ -17,6 +18,8 @@ Route::prefix(config('moonshine.prefix', 'admin'))
     ->group(function () {
         Route::get('detail-card/{resource}/{id}', [DetailCardController::class, 'show'])
             ->name('detail-card');
+        Route::get('detail-modal/{resource}/{id}', [DetailModalController::class, 'show'])
+            ->name('detail-modal');
     });
 
 

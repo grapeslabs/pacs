@@ -35,6 +35,13 @@ class ApiKeyField extends Field
             return '';
         }
 
+        // Telegram-токен вида "8734085105:AAF...": оставляем видимым ID бота до двоеточия.
+        if (str_contains($key, ':')) {
+            [$prefix, $secret] = explode(':', $key, 2);
+
+            return $prefix . ':' . str_repeat('•', $this->dots) . mb_substr($secret, -$this->visibleSuffix);
+        }
+
         $parts = explode('_', $key);
         $secret = array_pop($parts);
         $prefix = implode('_', $parts);

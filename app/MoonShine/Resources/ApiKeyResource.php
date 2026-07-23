@@ -7,6 +7,8 @@ use App\MoonShine\Fields\ApiKeyField;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
+use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Date;
@@ -26,6 +28,14 @@ class ApiKeyResource extends BaseModelResource
     protected string $title = 'Ключи API';
     protected ?string $editModalTitle = 'Редактирование ключа API';
 
+
+    public function deleteConfirmation(Model $item): array
+    {
+        return [
+            'title' => 'Удалить ключ API?',
+            'text'  => '«' . ($item->name ?: 'Ключ') . '» будет отозван. Интеграции с этим ключом перестанут работать.',
+        ];
+    }
 
     public function indexFields(): iterable
     {
@@ -120,7 +130,7 @@ class ApiKeyResource extends BaseModelResource
         ];
     }
 
-    public function modifyQueryBuilder($builder): \Illuminate\Contracts\Database\Eloquent\Builder
+    public function modifyQueryBuilder($builder): Builder
     {
         return $builder->orderBy('created_at', 'desc');
     }

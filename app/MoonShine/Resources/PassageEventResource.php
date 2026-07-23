@@ -20,9 +20,16 @@ class PassageEventResource extends BaseModelResource
 {
     protected string $model = CarPassageEvent::class;
     protected string $title = 'Отчёты проезда';
+
+    public function indexSubtitle(): ?string
+    {
+        return 'Проезды автомобилей через шлагбаумы';
+    }
     protected string $column = 'id';
     protected string $sortColumn = 'id';
     protected SortDirection $sortDirection = SortDirection::DESC;
+    protected bool $detailModal = true;
+    protected ?string $periodColumn = 'recognized_at';
 
     protected function activeActions(): ListOf
     {
@@ -82,6 +89,64 @@ class PassageEventResource extends BaseModelResource
                 }),
 
             Text::make('Правило', 'rule_name', fn($item) => $item->rule_name ?: '—'),
+        ];
+    }
+
+    public function detailModalData(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        /** @var CarPassageEvent $item */
+        $statusColors = [
+            'allowed'          => 'green',
+            'allowed_inactive' => 'gray',
+            'allowed_no_link'  => 'orange',
+            'allowed_offline'  => 'red',
+            'denied'           => 'red',
+            'in_db'            => 'blue',
+            'not_in_db'        => 'yellow',
+            'not_recognized'   => 'pink',
+        ];
+
+        $car    = $item->car;
+        $brand  = $car?->brand?->name;
+        $color  = $car?->color?->name;
+        $person = ($car && $car->people->isNotEmpty())
+            ? $car->people->map(fn($p) => trim($p->last_name . ' ' . $p->first_name))->implode(', ')
+            : null;
+
+        $plate = $item->plate_text
+            ? ($car?->license_plate ?: $item->plate_text)
+            : null;
+
+        $rows = [
+            ['k' => 'Дата и время', 'v' => $item->recognized_at ? $item->recognized_at->format('d.m.Y, H:i:s') : '—', 'mono' => true],
+            ['k' => 'Проезд',       'v' => $item->passage?->name ?? '—'],
+            ['k' => 'Направление',  'badge' => $item->direction === 'exit'
+                ? ['label' => 'Выезд', 'tone' => 'blue']
+                : ['label' => 'Въезд', 'tone' => 'green']],
+        ];
+        if ($item->status && isset(CarPassageEvent::STATUSES[$item->status])) {
+            $rows[] = ['k' => 'Тип события', 'badge' => [
+                'label' => CarPassageEvent::STATUSES[$item->status],
+                'tone'  => $statusColors[$item->status] ?? 'gray',
+            ]];
+        }
+        $rows[] = ['k' => 'ГРЗ', 'v' => $plate ?: '—', 'mono' => true];
+        if ($brand || $color) {
+            $rows[] = ['k' => 'Марка / цвет', 'v' => trim(($brand ?? '—') . ($color ? ' · ' . $color : ''))];
+        }
+        if ($person) {
+            $rows[] = ['k' => 'Персона', 'v' => $person];
+        }
+        $rows[] = ['k' => 'Правило', 'v' => $item->rule_name ?: '—'];
+
+        return [
+            'title'   => 'Событие проезда',
+            'layout'  => 'gallery',
+            'gallery' => [
+                ['label' => 'Кадр автомобиля', 'image' => $item->imageUrl()],
+                ['label' => 'Фото номера',     'image' => $item->plateImageUrl(), 'plate' => $plate],
+            ],
+            'rows'    => $rows,
         ];
     }
 
