@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CarColor;
 use App\MoonShine\Pages\SettingsPage;
+use App\MoonShine\Resources\ActuatorDeviceResource;
 use App\MoonShine\Resources\ApiKeyResource;
 use App\MoonShine\Resources\BarrierEventResource;
 use App\MoonShine\Resources\BarrierResource;
@@ -11,6 +12,7 @@ use App\MoonShine\Resources\BotResource;
 use App\MoonShine\Resources\CarBrandResource;
 use App\MoonShine\Resources\CarColorResource;
 use App\MoonShine\Resources\CarPassageRuleResource;
+use App\MoonShine\Resources\PersonPassageRuleResource;
 use App\MoonShine\Resources\CarResource;
 use App\MoonShine\Resources\ControllerResource;
 use App\MoonShine\Resources\EventReportResource;
@@ -51,7 +53,7 @@ class PermissionService
             ],
             'Данные СКУД'  => [
                 'icon' => file_get_contents(public_path('icons/Permissions/skud.svg')),
-                'classes' => [PersonResource::class, OrganizationResource::class, KeyResource::class]
+                'classes' => [PersonResource::class, OrganizationResource::class, KeyResource::class, PersonPassageRuleResource::class]
             ],
             'Боты'  => [
                 'icon' => file_get_contents(public_path('icons/Permissions/bots.svg')),
@@ -67,7 +69,7 @@ class PermissionService
             ],
             'Оборудование'  => [
                 'icon' => file_get_contents(public_path('icons/Permissions/devices.svg')),
-                'classes' => [TerminalResource::class, ControllerResource::class]
+                'classes' => [TerminalResource::class, ControllerResource::class, ActuatorDeviceResource::class]
             ],
             'Автомобили'  => [
                 'icon' => file_get_contents(public_path('icons/Permissions/cars.svg')),
