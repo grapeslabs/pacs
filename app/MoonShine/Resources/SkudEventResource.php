@@ -105,7 +105,7 @@ class SkudEventResource extends BaseModelResource
 
     public function indexFields(): iterable
     {
-        $personIcon = @file_get_contents(public_path('icons/person.svg')) ?: '';
+        $personIcon = $this->iconFile('person');
 
         return [
 

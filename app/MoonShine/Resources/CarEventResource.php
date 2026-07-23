@@ -65,7 +65,7 @@ class CarEventResource extends BaseModelResource
                 ->sortable(),
 
             AvatarField::make('Камера', 'camera_id')
-                ->icon(@file_get_contents(public_path('icons/menu-video.svg')) ?: '')
+                ->icon($this->iconFile('menu-video.svg'))
                 ->text(fn($item) => $this->streamNameByUid($item->camera_id))
                 ->subtext(fn($item) => $this->streamLocationByUid($item->camera_id))
                 ->deleted(fn($item) => $this->streamNameByUid($item->camera_id) === '—'),

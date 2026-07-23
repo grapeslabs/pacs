@@ -56,8 +56,8 @@ class GuestResource extends BaseModelResource
 
     public function detailSidebarData(Model $item): array
     {
-        $icPerson = @file_get_contents(public_path('icons/person.svg'))?:'';
-        $icCheck = @file_get_contents(public_path('icons/check.svg'))?:'';
+        $icPerson = $this->iconFile('person');
+        $icCheck = $this->iconFile('check');
 
         $photos = is_array($item->photo) ? $item->photo : [];
         $avatar = ! empty($photos[0]) ? Storage::disk('public')->url($photos[0]) : null;
@@ -93,7 +93,7 @@ class GuestResource extends BaseModelResource
 
         if (! blank($item->comment)) {
             $sections[] = [
-                'icon' => $this->commentIcon(),
+                'icon' => $this->iconFile('comment'),
                 'title' => 'Комментарий',
                 'text' => $item->comment,
             ];

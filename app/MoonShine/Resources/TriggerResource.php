@@ -95,9 +95,9 @@ class TriggerResource extends BaseModelResource
     {
         $item->loadMissing('bot');
 
-        $icBolt = @file_get_contents(public_path('icons/lightning.svg'))?:'';
-        $icBot = @file_get_contents(public_path('icons/bot.svg'))?:'';
-        $icGear = @file_get_contents(public_path('icons/gear.svg'))?:'';
+        $icBolt = $this->iconFile('lightning');
+        $icBot = $this->iconFile('bot');
+        $icGear = $this->iconFile('gear');
 
         $deviceLabel = $this->deviceTypeLabel($item->device_type);
         $deviceExists = $item->device_type === Trigger::DEVICE_CAMERA
@@ -219,7 +219,7 @@ class TriggerResource extends BaseModelResource
                     ")),
 
             AvatarField::make('Бот', 'bot_id')
-                ->icon(@file_get_contents(public_path('icons/bot.svg')) ?: '')
+                ->icon($this->iconFile('bot'))
                 ->text(fn($item) => $item->bot?->name ?? '—'),
 
             Switcher::make('Активность', 'is_active')

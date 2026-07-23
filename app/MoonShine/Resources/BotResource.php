@@ -45,8 +45,8 @@ class BotResource extends BaseModelResource
     {
         $item->loadMissing('chats');
 
-        $icBot = @file_get_contents(public_path('icons/bot.svg'))?:'';
-        $icBolt = @file_get_contents(public_path('icons/lightning.svg'))?:'';
+        $icBot = $this->iconFile('bot');
+        $icBolt = $this->iconFile('lightning');
 
         $service = Bot::SERVICES[$item->service] ?? $item->service;
 

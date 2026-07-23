@@ -52,10 +52,10 @@ class KeyResource extends BaseModelResource
     public function detailSidebarData(Model $item): array
     {
         $item->loadMissing('person.organization');
-        $icCheck = @file_get_contents(public_path('icons/check.svg'))?:'';
-        $icKey = @file_get_contents(public_path('icons/btn-addkey.svg'))?:'';
-        $icGear = @file_get_contents(public_path('icons/gear.svg'))?:'';
-        $icPerson = @file_get_contents(public_path('icons/person.svg'))?:'';
+        $icCheck = $this->iconFile('check');
+        $icKey = $this->iconFile('btn-addkey');
+        $icGear = $this->iconFile('gear');
+        $icPerson = $this->iconFile('person');
 
         $type = $item->type ?: '—';
         $active = (bool) $item->is_active;
@@ -91,8 +91,8 @@ class KeyResource extends BaseModelResource
             ];
         }
 
-        $icLockClosed = @file_get_contents(public_path('icons/lock.svg'))?:'';
-        $icLockOpen = @file_get_contents(public_path('icons/open.svg.svg'))?:'';
+        $icLockClosed = $this->iconFile('lock');
+        $icLockOpen = $this->iconFile('open.svg');
 
         $blockUrl = $this->getAsyncMethodUrl('toggleBlock', page: $this->getIndexPage(), params: ['item_id' => $item->getKey()]);
         $blockHtml = (string) ActionButton::make($active ? 'Заблокировать' : 'Разблокировать', $blockUrl)

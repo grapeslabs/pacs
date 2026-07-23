@@ -224,6 +224,39 @@ body {
     border-color: gray !important;
 }
 
+.btn.ds-rowbtn,
+.btn.ds-rowbtn:hover,
+.btn.ds-rowbtn:focus {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    color: #C7C0EB !important;
+    border-radius: 9px;
+    box-shadow: none !important;
+}
+.btn.ds-rowbtn:hover {
+    background: #F1F3FB !important;
+}
+.btn.ds-rowbtn > div {
+    width: 18px !important;
+    height: 18px !important;
+    color: #C7C0EB !important;
+}
+.btn.ds-rowbtn svg,
+.btn.ds-rowbtn:hover svg {
+    width: 18px;
+    height: 18px;
+    color: #C7C0EB !important;
+    stroke: #C7C0EB !important;
+}
+
 .choices {
     height: 42px !important;
     overflow: hidden !important;

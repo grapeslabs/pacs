@@ -32,8 +32,8 @@ class TerminalResource extends BaseModelResource
 
     public function detailSidebarData(Model $item): array
     {
-        $icTablet = @file_get_contents(public_path('icons/terminal.svg')) ?: '';
-        $icGear = @file_get_contents(public_path('icons/gear.svg')) ?: '';
+        $icTablet = $this->iconFile('terminal');
+        $icGear = $this->iconFile('gear');
 
         $typeLabel = $this->deviceTypeLabel($item->type);
 
