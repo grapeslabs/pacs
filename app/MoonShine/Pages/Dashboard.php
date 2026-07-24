@@ -64,10 +64,10 @@ class Dashboard extends Page
                 ])->columnSpan(6),
                 Column::make([
                     QuickActions::make([
-                        ['label' => 'Добавить персону', 'url' => $personUrl, 'icon' => '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8"></path><path d="M5 20a7 7 0 0 1 14 0"></path></svg>'],
-                        ['label' => 'Добавить ключ', 'url' => $keyUrl, 'icon' => '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 7a4 4 0 1 1-3.5 5.9L4 19.5V21H2.5v-1.5L9.1 13A4 4 0 0 1 14 7z"></path><path d="M15.5 9.5h.01"></path></svg>'],
-                        ['label' => 'Добавить камеру', 'url' => $streamUrl, 'icon' => '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h9A1.5 1.5 0 0 1 15 7.5v9A1.5 1.5 0 0 1 13.5 18h-9A1.5 1.5 0 0 1 3 16.5z"></path><path d="M15 10.5 21 7v10l-6-3.5"></path></svg>'],
-                        ['label' => 'Добавить триггер', 'url' => $triggerUrl, 'icon' => '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3 4 14h7l-1 7 9-11h-7z"></path></svg>'],
+                        ['label' => 'Добавить персону', 'url' => $personUrl, 'icon' => (string) file_get_contents(public_path('icons/person.svg'))],
+                        ['label' => 'Добавить ключ', 'url' => $keyUrl, 'icon' => (string) file_get_contents(public_path('icons/btn-addkey.svg'))],
+                        ['label' => 'Добавить камеру', 'url' => $streamUrl, 'icon' => (string) file_get_contents(public_path('icons/camera.svg'))],
+                        ['label' => 'Добавить триггер', 'url' => $triggerUrl, 'icon' => (string) file_get_contents(public_path('icons/lightning.svg'))],
                     ]),
                 ])->columnSpan(6),
             ]),

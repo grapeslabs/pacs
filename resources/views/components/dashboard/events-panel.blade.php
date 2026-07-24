@@ -8,9 +8,9 @@
 @endphp
 <div {{ $attributes }} style="position:relative;height:100%;min-height:360px;">
 <div style="position:absolute;inset:0;display:flex;flex-direction:column;border:1px solid #e3e7f5;background:#fff;
-            border-radius:16px;box-shadow:0 1px 3px rgba(27,26,42,0.05);overflow:hidden;">
+            border-radius:16px;box-shadow:0 1px 2px rgba(127,127,157,.05), 0 10px 30px rgba(127,127,157,.10);overflow:hidden;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e3e7f5;">
-        <h2 style="margin:0;font-size:1rem;font-weight:600;color:#1b1a2a;">События</h2>
+        <h2 style="margin:0;font-size:16px;font-weight:800;color:#1b1a2a;">События</h2>
         @if($allUrl)
             <a href="{{ $allUrl }}" style="display:inline-flex;align-items:center;gap:4px;font-size:0.875rem;font-weight:500;color:#6e63e6;text-decoration:none;">
                 Все отчёты
@@ -35,7 +35,7 @@
                 <div style="font-size:0.875rem;font-weight:500;color:#1b1a2a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $e['title'] }}</div>
                 <div style="font-size:0.75rem;color:#6b7088;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $e['location'] }} · {{ $e['time'] }}</div>
             </div>
-            <span style="flex-shrink:0;padding:4px 10px;border-radius:9999px;font-size:0.75rem;font-weight:500;
+            <span style="flex-shrink:0;padding:4px 10px;border-radius:4px;font-size:0.75rem;font-weight:500;
                          {{ $e['is_unknown'] ? 'background:#f6efd2;color:#b8860b;' : 'background:#eaf7ee;color:#2f8f4e;' }}">
                 {{ $e['status'] }}
             </span>

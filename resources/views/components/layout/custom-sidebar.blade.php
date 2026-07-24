@@ -14,19 +14,24 @@
         .pacs-nav-section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #74738C; }
         .pacs-nav-section-chevron { color: #5A5972; flex: 0 0 auto; }
         .pacs-nav-item {
+            position: relative;
             display: flex; align-items: center; gap: 12px; padding: 10px 12px; margin: 2px 0;
-            border-radius: 10px; color: #C3C2D4 !important; text-decoration: none !important;
+            border-radius: 10px; color: rgba(255,255,255,.82) !important; text-decoration: none !important;
             transition: background-color .15s ease, color .15s ease;
         }
-        .pacs-nav-item:hover { background-color: #2A2940; color: #FFFFFF !important; }
+        .pacs-nav-item:hover { background-color: rgba(142,107,240,.12); color: #FFFFFF !important; }
         .pacs-nav-item:active { background-color: #26243A; color: #FFFFFF !important; transform: scale(0.985); }
-        .pacs-nav-ico { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; flex: 0 0 auto; color: #9C9BB4; }
+        .pacs-nav-ico { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; flex: 0 0 auto; color: rgba(255,255,255,.66); }
         .pacs-nav-item:hover .pacs-nav-ico, .pacs-nav-item:active .pacs-nav-ico { color: #FFFFFF; }
         .pacs-nav-text { flex: 1 1 auto; font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .pacs-nav-badge { flex: 0 0 auto; min-width: 26px; text-align: center; padding: 2px 8px; border-radius: 999px; background: #2F2D43; color: #A9A8C0; font-size: 12px; font-weight: 600; }
-        .pacs-nav-item._is-active { background-color: #2E2C46; color: #FFFFFF !important; }
-        .pacs-nav-item._is-active .pacs-nav-ico { color: #FFFFFF; background: #4338CA; border-radius: 8px; }
-        .pacs-nav-item._is-active .pacs-nav-badge { background: #4338CA; color: #fff; }
+        .pacs-nav-badge { flex: 0 0 auto; min-width: 26px; text-align: center; padding: 2px 8px; border-radius: 999px; background: #2F2D43; color: rgba(255,255,255,.7); font-size: 12px; font-weight: 600; }
+        .pacs-nav-item._is-active { background: rgba(142,107,240,.18); color: #FFFFFF !important; box-shadow: inset 0 0 0 1px rgba(142,107,240,.34); }
+        .pacs-nav-item._is-active::before {
+            content: ""; position: absolute; left: -12px; top: 7px; bottom: 7px; width: 3px;
+            border-radius: 0 3px 3px 0; background: linear-gradient(180deg, #9B7DF5, #6972F0);
+        }
+        .pacs-nav-item._is-active .pacs-nav-ico { color: #B49CF7; }
+        .pacs-nav-item._is-active .pacs-nav-badge { background: rgba(155,125,245,.32); color: #fff; }
         .pacs-sidebar-foot { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px 20px; border-top: 1px solid #2B2940; }
         .pacs-sidebar-version { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6E6D85; }
         .pacs-sidebar-version b { color: #9C9BB4; font-weight: 700; }

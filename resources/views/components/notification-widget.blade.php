@@ -1,8 +1,9 @@
 @once
     <style>
         .pacs-notify { position: relative; }
-        .pacs-notify-bell { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; border: none; background: transparent; color: #6B7185; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+        .pacs-notify-bell { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: #6B7185; cursor: pointer; transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
         .pacs-notify-bell:hover { background: #F1F3FB; color: #2C3142; }
+        .pacs-notify-bell._open { background: #EFF1FF; border-color: #C4DCFF; }
         .pacs-notify-dot { position: absolute; top: 9px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: #6366F1; border: 2px solid #fff; }
         .pacs-notify-panel { position: absolute; right: 0; top: calc(100% + 10px); width: 390px; max-width: 92vw; background: #ffffff; border-radius: 16px; box-shadow: 0 14px 36px rgba(20, 23, 40, 0.16); border: 1px solid #EDEFF6; z-index: 100000; overflow: hidden; }
         .pacs-notify-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid #F0F2F8; }
@@ -18,10 +19,14 @@
         .pacs-notify-item:hover { background: #EEF1FB; }
         .pacs-notify-item._unread { background: #F7F8FE; }
         .pacs-notify-item._unread:hover { background: #E9EDFB; }
-        .pacs-notify-ico { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; flex: 0 0 auto; margin-top: 2px; }
+        .pacs-notify-ico { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; flex: 0 0 auto; margin-top: 2px; transition: background-color .12s ease; }
+        .pacs-notify-ico svg { width: 17px; height: 17px; }
         .pacs-notify-ico.error { background: #FEF2F2; color: #EF4444; }
         .pacs-notify-ico.warning { background: #FFFBEB; color: #F59E0B; }
         .pacs-notify-ico.info { background: #EEF2FF; color: #6366F1; }
+        .pacs-notify-item:hover .pacs-notify-ico.error { background: #FBDFDF; }
+        .pacs-notify-item:hover .pacs-notify-ico.warning { background: #FBEFC9; }
+        .pacs-notify-item:hover .pacs-notify-ico.info { background: #DFE6FB; }
         .pacs-notify-content { flex: 1 1 auto; min-width: 0; }
         .pacs-notify-item-title { font-size: 13.5px; font-weight: 600; color: #1F2433; line-height: 1.35; }
         .pacs-notify-item-desc { font-size: 12.5px; color: #7B8194; line-height: 1.4; margin-top: 2px; }
@@ -45,12 +50,8 @@
     </style>
 @endonce
 <div class="pacs-notify" x-data="pacsNotify({{ $unreadCount }})" @click.outside="open = false">
-    <button type="button" class="pacs-notify-bell" @click="open = !open" aria-label="Уведомления">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
-        </svg>
+    <button type="button" class="pacs-notify-bell" :class="{ '_open': open }" @click="open = !open" aria-label="Уведомления">
+        {!! file_get_contents(public_path('icons/notification.svg')) !!}
         <span class="pacs-notify-dot" x-show="unread > 0" x-cloak></span>
     </button>
 
@@ -73,11 +74,11 @@
                        @click.prevent="markRead($el, '{{ route('moonshine.notifications.read', $item['id']) }}')">
                         <span class="pacs-notify-ico {{ $item['type'] }}">
                             @if($item['type'] === 'error')
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+                                {!! file_get_contents(public_path('icons/notification-error.svg')) !!}
                             @elseif($item['type'] === 'warning')
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/></svg>
+                                {!! file_get_contents(public_path('icons/notification-warning.svg')) !!}
                             @else
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+                                {!! file_get_contents(public_path('icons/notification-info.svg')) !!}
                             @endif
                         </span>
 

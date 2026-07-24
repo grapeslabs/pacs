@@ -6,6 +6,7 @@ use App\Models\CarPassageEvent;
 use App\Models\Stream;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\AvatarField;
+use App\MoonShine\Fields\IconTextField;
 use App\MoonShine\Fields\LicensePlateField;
 use App\MoonShine\Fields\SelectField;
 use Illuminate\Contracts\Database\Eloquent\Builder;
@@ -64,10 +65,10 @@ class CarEventResource extends BaseModelResource
                 ->withTime()
                 ->sortable(),
 
-            AvatarField::make('Камера', 'camera_id')
-                ->icon($this->iconFile('menu-video'))
-                ->text(fn($item) => $this->streamNameByUid($item->camera_id))
-                ->subtext(fn($item) => $this->streamLocationByUid($item->camera_id))
+            IconTextField::make('Камера', 'camera_id')
+                ->text(fn($item) => $this->streamNameByUid($item->camera_id) === '—'
+                    ? 'Камера удалена'
+                    : $this->streamNameByUid($item->camera_id))
                 ->deleted(fn($item) => $this->streamNameByUid($item->camera_id) === '—'),
 
 

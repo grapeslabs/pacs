@@ -6,6 +6,7 @@ use App\Models\Person;
 use App\Models\Stream;
 use App\Models\VideoAnalyticReport;
 use App\MoonShine\Fields\AvatarField;
+use App\MoonShine\Fields\IconTextField;
 use App\MoonShine\Fields\SelectField;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
@@ -76,12 +77,8 @@ class PeopleReportResource extends BaseModelResource
                 ->withTime()
                 ->sortable(),
 
-            AvatarField::make('Камера', 'camera_id')
-                ->icon($this->iconFile('menu-video'))
+            IconTextField::make('Камера', 'camera_id')
                 ->text(fn($item) => $item->stream?->name ?? 'Камера удалена')
-                ->subtext(fn($item) => $item->stream?->location
-                    ? \Illuminate\Support\Str::limit($item->stream->location, 26)
-                    : null)
                 ->deleted(fn($item) => $item->stream === null),
 
             Text::make('Теги', null, function ($item) {

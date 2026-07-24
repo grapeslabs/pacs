@@ -17,6 +17,13 @@
         .pacs-header-divider { width: 1px; height: 28px; background: #E5E8F0; margin-left: 12px; margin-right: 24px; flex: 0 0 auto; }
         .pacs-header-crumbs { display: flex; align-items: center; min-width: 0; overflow: hidden; }
         .pacs-header-crumbs .breadcrumbs, .pacs-header-crumbs nav { display: flex; align-items: center; }
+        .pacs-crumbs { display: flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; }
+        .pacs-crumb { color: #6B7390 !important; font-size: 14px; font-weight: 600; text-decoration: none !important; overflow: hidden; text-overflow: ellipsis; }
+        a.pacs-crumb:hover { color: #4338CA !important; }
+        .pacs-crumb--home { display: inline-flex; align-items: center; flex: 0 0 auto; }
+        .pacs-crumb--home svg { width: 18px; height: 18px; display: block; }
+        .pacs-crumb-sep { display: inline-flex; align-items: center; flex: 0 0 auto; color: #A6ABC2; }
+        .pacs-crumb-sep svg { width: 14px; height: 14px; display: block; }
 
         .pacs-header-search { flex: 0 0 auto; width: 360px; max-width: 38vw; display: flex !important; margin-left: auto; }
         .pacs-header-search > * { width: 100%; max-width: none; }
@@ -65,7 +72,31 @@
         <div class="pacs-header-burger"><x-moonshine::layout.burger/></div>
         <a href="{{ $homeUrl }}" class="pacs-header-logo"><img src="{{ $logoUrl }}" alt="logo"></a>
         <span class="pacs-header-divider"></span>
-        <div class="pacs-header-crumbs">{!! $breadcrumbs !!}</div>
+        <div class="pacs-header-crumbs">
+            <nav class="pacs-crumbs" aria-label="Хлебные крошки">
+                <a href="{{ $homeUrl }}" class="pacs-crumb pacs-crumb--home" title="Главная">
+                    {!! file_get_contents(public_path('icons/home.svg')) !!}
+                </a>
+
+                @if(!empty($crumbSection))
+                    <span class="pacs-crumb-sep">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                    </span>
+                    <span class="pacs-crumb">{{ $crumbSection }}</span>
+                @endif
+
+                @foreach($crumbs as $c)
+                    <span class="pacs-crumb-sep">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                    </span>
+                    @if(!$loop->last && !empty($c['url']) && $c['url'] !== '#')
+                        <a href="{{ $c['url'] }}" class="pacs-crumb">{{ $c['label'] }}</a>
+                    @else
+                        <span class="pacs-crumb">{{ $c['label'] }}</span>
+                    @endif
+                @endforeach
+            </nav>
+        </div>
     </div>
 
     <div class="pacs-search-backdrop" x-show="mobileSearch" x-cloak @click="mobileSearch = false"></div>

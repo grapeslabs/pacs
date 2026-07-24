@@ -12,6 +12,7 @@ use App\Http\Controllers\CustomFieldController;
 use App\Http\Controllers\DetailCardController;
 use App\Http\Controllers\DetailModalController;
 use App\Http\Controllers\PersonPhotoArchiveController;
+use App\Http\Controllers\ProfileSettingsController;
 use App\Http\Controllers\SearchController;
 
 Route::prefix(config('moonshine.prefix', 'admin'))
@@ -83,6 +84,11 @@ Route::post("/person-photos/import", [PersonPhotoArchiveController::class, "impo
 Route::get("/person-photos/export-all", [PersonPhotoArchiveController::class, "exportAll"])->name(
     "person-photos.export-all",
 );
+
+Route::post("/profile-settings/personal", [ProfileSettingsController::class, "personal"])->name("profile-settings.personal");
+Route::post("/profile-settings/password", [ProfileSettingsController::class, "password"])->name("profile-settings.password");
+Route::post("/profile-settings/avatar", [ProfileSettingsController::class, "avatar"])->name("profile-settings.avatar");
+Route::post("/profile-settings/avatar/delete", [ProfileSettingsController::class, "avatarDelete"])->name("profile-settings.avatar-delete");
 
 Route::get("/test-person-skud", function () {
     \Log::info("🧪 TEST Person SKUD Integration Started");

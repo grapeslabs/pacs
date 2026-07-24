@@ -3,6 +3,7 @@
         .pacs-search { position: relative; width: 100%; max-width: 560px; }
         .pacs-search-field { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; background: #F4F6FC; border: 1px solid #EAEDF6; border-radius: 12px; transition: border-color .15s ease, background-color .15s ease; }
         .pacs-search-field:focus-within { background: #fff; border-color: #C7CEF3; }
+        .pacs-search._open .pacs-search-field { background: #EFF1FF !important; border-color: #C4DCFF !important; }
         .pacs-search-icon { color: #9AA0B4; flex: 0 0 auto; }
         .pacs-search-field input.pacs-search-input,
         .pacs-search-field input.pacs-search-input:focus,
@@ -32,6 +33,9 @@
         .pacs-search-sub { font-size: 12.5px; color: #8A90A6; line-height: 1.3; margin-top: 1px; }
         .pacs-search-hl { color: #4338CA; font-weight: 700; }
         .pacs-search-empty { padding: 22px 10px; text-align: center; color: #9AA0B4; font-size: 14px; }
+        .pacs-search-empty--result { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 32px 16px 36px; color: #6B7390; }
+        .pacs-search-empty-ico { display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: #F1F3FB; color: #9AA0B4; }
+        .pacs-search-empty-q { overflow-wrap: anywhere; }
         @media (max-width: 1024px) {
             .pacs-search-dropdown {
                 position: fixed; top: 76px; left: 8px; right: 8px;
@@ -42,6 +46,7 @@
 @endonce
 <div class="pacs-search"
      x-data="pacsSearch(@js($searchUrl))"
+     :class="{ '_open': open }"
      @click.outside="open = false">
     <div class="pacs-search-field">
         <svg class="pacs-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -64,7 +69,15 @@
         </template>
 
         <template x-if="!loading && !hasResults()">
-            <div class="pacs-search-empty">Ничего не найдено</div>
+            <div class="pacs-search-empty pacs-search-empty--result">
+                <span class="pacs-search-empty-ico">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+                    </svg>
+                </span>
+                <span class="pacs-search-empty-q">Ничего не найдено по «<span x-text="q.trim()"></span>»</span>
+            </div>
         </template>
 
         <template x-if="!loading && results.persons.length">

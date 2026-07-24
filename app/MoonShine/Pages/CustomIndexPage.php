@@ -17,9 +17,6 @@ use MoonShine\UI\Components\ActionGroup;
 use MoonShine\UI\Components\Heading;
 use MoonShine\UI\Components\Layout\Div;
 use MoonShine\UI\Components\Layout\Flex;
-use MoonShine\UI\Fields\File;
-use MoonShine\UI\Components\FormBuilder;
-use MoonShine\Support\Enums\FormMethod;
 
 class CustomIndexPage extends IndexPage
 {
@@ -28,8 +25,7 @@ class CustomIndexPage extends IndexPage
     public function getPageButtons(): array
     {
         $resource = $this->getResource();
-        $importButton = $this->getImportButtonIfNeeded($resource);
-        $exportButton = $this->getExportButtonIfNeeded($resource);
+        $exportImport = $this->getExportImportIfNeeded($resource);
 
         $filterSidebar = null;
         $filtersButton = null;
@@ -111,8 +107,7 @@ class CustomIndexPage extends IndexPage
                 $periodSegment,
                 Div::make()->style('flex: 1 1 auto;'),
                 $handlersGroup,
-                $importButton,
-                $exportButton,
+                $exportImport,
                 $this->getCustomCreateButton(),
             ])
                 ->itemsAlign('center')
@@ -230,40 +225,15 @@ class CustomIndexPage extends IndexPage
             ->icon('plus');
     }
 
-    protected function getImportButtonIfNeeded($resource): ?ActionButton
+    protected function getExportImportIfNeeded($resource): ?Div
     {
         if (!$resource instanceof PersonResource) {
             return null;
         }
 
-        return ActionButton::make('Импорт')
-            ->primary()
-            ->inModal(
-                title: 'Загрузка архива с фотографиями',
-                content: function () {
-                    return (string) FormBuilder::make(
-                        route('person-photos.import'),
-                        FormMethod::POST,
-                    )
-                        ->fields([
-                            File::make('ZIP-архив', 'archive')
-                                ->required()
-                                ->allowedExtensions(['zip']),
-                        ])
-                        ->submit('Загрузить', ['class' => 'btn-primary']);
-                },
-                name: 'import-person-photos',
-            );
-    }
-
-    protected function getExportButtonIfNeeded($resource): ?ActionButton
-    {
-        if (!$resource instanceof PersonResource) {
-            return null;
-        }
-
-        return ActionButton::make('Экспорт', route('person-photos.export-all'))
-            ->primary()
-            ->blank();
+        return Div::make()->customView('components.person-export-import', [
+            'exportUrl' => route('person-photos.export-all'),
+            'importUrl' => route('person-photos.import'),
+        ]);
     }
 }

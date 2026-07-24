@@ -14,7 +14,6 @@ use MoonShine\AssetManager\Js;
 use MoonShine\Laravel\Components\Fragment;
 use MoonShine\Laravel\Layouts\AppLayout;
 use MoonShine\Contracts\ColorManager\ColorManagerContract;
-use MoonShine\UI\Components\Breadcrumbs;
 use MoonShine\UI\Components\Layout\Body;
 use MoonShine\UI\Components\Layout\Content;
 use MoonShine\UI\Components\Layout\Div;
@@ -78,14 +77,12 @@ final class MoonShineLayout extends AppLayout
 
     protected function getFooterCopyright(): string
     {
-        return '© 2007-2026 Grapes labs';
+        return '';
     }
 
     protected function getFooterMenu(): array
     {
-        return [
-            Link::make('https://grapeslabs.ru', 'О нас')->blank(),
-        ];
+        return [];
     }
 
     protected function getFaviconComponent(): Favicon
@@ -113,9 +110,7 @@ final class MoonShineLayout extends AppLayout
                     UnsavedChangesModal::make(),
                     HeaderBar::make(
                         $this->getHomeUrl(),
-                        (string) Breadcrumbs::make($this->getPage()->getBreadcrumbs())
-                            ->prepend($this->getHomeUrl(), icon: 'home')
-                            ->render(),
+                        $this->getPage()->getBreadcrumbs(),
                     ),
                     Wrapper::make([
                         $this->getSidebarComponent(),

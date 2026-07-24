@@ -4,13 +4,14 @@
             .qa-label { display: none !important; }
             .qa-btn { justify-content: center !important; padding: 14px !important; }
         }
+        .qa-ico svg { width: 16px !important; height: 16px !important; display: block; }
     </style>
 @endonce
 <div {{ $attributes }}
      style="display:flex;flex-direction:column;height:100%;box-sizing:border-box;
             border:1px solid #e3e7f5;background:#fff;border-radius:18px;padding:20px;
-            box-shadow:0 1px 3px rgba(27,26,42,0.05);">
-    <h2 style="margin:0 0 12px;font-size:1rem;font-weight:600;color:#1b1a2a;">Быстрые действия</h2>
+            box-shadow:0 1px 2px rgba(127,127,157,.05), 0 10px 30px rgba(127,127,157,.10);">
+    <h2 style="margin:0 0 12px;font-size:16px;font-weight:800;color:#1b1a2a;">Быстрые действия</h2>
     <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         @foreach($actions as $a)
             <a href="{{ $a['url'] }}" class="qa-btn"
@@ -19,7 +20,7 @@
                       background:linear-gradient(135deg,#7e92f8 0%,#6e63e6 100%);
                       box-shadow:0 1px 3px rgba(27,26,42,0.10);">
                 <span style="display:flex;align-items:center;gap:10px;">
-                    <span style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,0.18);flex-shrink:0;color:#fff;">
+                    <span class="qa-ico" style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.18);flex-shrink:0;color:#fff;">
                         {!! $a['icon'] !!}
                     </span>
                     <span class="qa-label" style="font-size:0.875rem;font-weight:500;line-height:1.2;">{{ $a['label'] }}</span>

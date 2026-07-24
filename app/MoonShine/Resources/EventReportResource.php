@@ -6,6 +6,7 @@ use App\Models\Person;
 use App\Models\Stream;
 use App\Models\VideoAnalyticReport;
 use App\MoonShine\Fields\AvatarField;
+use App\MoonShine\Fields\IconTextField;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\SelectField;
 use Illuminate\Database\Eloquent\Builder;
@@ -74,12 +75,8 @@ class EventReportResource extends BaseModelResource
                     : null)
                 ->icon(fn($item) => $item->is_unknown ? $personIcon : null),
 
-            AvatarField::make('Камера', 'camera_id')
-                ->icon($this->iconFile('menu-video'))
+            IconTextField::make('Камера', 'camera_id')
                 ->text(fn($item) => $item->stream?->name ?? 'Камера удалена')
-                ->subtext(fn($item) => $item->stream?->location
-                    ? \Illuminate\Support\Str::limit($item->stream->location, 26)
-                    : null)
                 ->deleted(fn($item) => $item->stream === null),
 
             Image::make('Фото', '', fn ($item) => basename($item->data['snapshot_path'] ?? ''))

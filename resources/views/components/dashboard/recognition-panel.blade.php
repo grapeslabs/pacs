@@ -1,8 +1,8 @@
 <div {{ $attributes }}
-     style="display:flex;flex-direction:column;height:350px;box-sizing:border-box;border:1px solid #e3e7f5;background:#fff;border-radius:16px;box-shadow:0 1px 3px rgba(27,26,42,0.05);overflow:hidden;">
+     style="display:flex;flex-direction:column;height:350px;box-sizing:border-box;border:1px solid #e3e7f5;background:#fff;border-radius:16px;box-shadow:0 1px 2px rgba(127,127,157,.05), 0 10px 30px rgba(127,127,157,.10);overflow:hidden;">
     <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e3e7f5;">
-        <h2 style="margin:0;font-size:1rem;font-weight:600;color:#1b1a2a;">Распознавание лиц</h2>
-        <span style="padding:4px 10px;border-radius:9999px;font-size:0.75rem;font-weight:500;background:#eef1ff;color:#6e63e6;">
+        <h2 style="margin:0;font-size:16px;font-weight:800;color:#1b1a2a;">Распознавание лиц</h2>
+        <span style="padding:4px 10px;border-radius:4px;font-size:0.75rem;font-weight:500;background:#eef1ff;color:#6e63e6;">
             {{ $camerasCount }} камер
         </span>
     </div>
