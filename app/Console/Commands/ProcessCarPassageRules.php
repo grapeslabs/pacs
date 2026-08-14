@@ -7,6 +7,7 @@ use App\Models\ActuatorDevice;
 use App\Models\Car;
 use App\Models\CarPassageEvent;
 use App\Models\CarPassageRule;
+use App\Models\CarTag;
 use App\Models\Passage;
 use App\Models\Stream;
 use Illuminate\Console\Command;
@@ -115,7 +116,7 @@ class ProcessCarPassageRules extends Command
             ->get();
     }
 
-    protected function processPlate(object $plate, Collection $activeRules, Collection $activePassages): void
+    protected function processPlate(object $plate, Collection &$activeRules, Collection $activePassages): void
     {
         $recognizedId = (int) $plate->id;
 
@@ -129,6 +130,14 @@ class ProcessCarPassageRules extends Command
 
         $car    = $normalized !== '' ? Car::query()->where('license_plate', $normalized)->first() : null;
         $stream = ! empty($cameraUid) ? Stream::query()->where('uid', $cameraUid)->first() : null;
+
+        if ($car === null && $normalized !== '' && $stream !== null) {
+            $car = $this->autoCollectCar($stream, $normalized);
+
+            if ($car !== null) {
+                $activeRules = $this->getActiveRules();
+            }
+        }
 
         [$passage, $direction] = $this->findPassageAndDirection($activePassages, $cameraUid);
 
@@ -176,6 +185,48 @@ class ProcessCarPassageRules extends Command
             'plate_image_path'    => $plateImagePath,
             'recognized_at'       => $plate->created_at,
         ]);
+    }
+
+    protected function autoCollectCar(Stream $stream, string $normalized): ?Car
+    {
+        if (! data_get($stream->va_options, 'is_plate_autocollect')) {
+            return null;
+        }
+
+        if (Car::withTrashed()->where('license_plate', $normalized)->exists()) {
+            return null;
+        }
+
+        try {
+            $car = Car::query()->create([
+                'license_plate' => $normalized,
+                'source'        => Car::SOURCE_AUTO,
+            ]);
+
+            $tagIds = array_filter(array_map(
+                'intval',
+                (array) data_get($stream->va_options, 'plate_autocollect_tags', [])
+            ));
+
+            if ($tagIds !== []) {
+                $car->tags()->sync(CarTag::query()->whereIn('id', $tagIds)->pluck('id')->all());
+            }
+
+            Log::info('Car passage rules: car auto-collected', [
+                'plate'     => $normalized,
+                'stream_id' => $stream->id,
+                'tags'      => $tagIds,
+            ]);
+
+            return $car;
+        } catch (\Throwable $e) {
+            Log::error('Car passage rules: auto-collect failed', [
+                'plate'   => $normalized,
+                'message' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     protected function findPassageAndDirection(Collection $passages, ?string $cameraUid): array

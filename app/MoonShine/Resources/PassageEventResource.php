@@ -2,14 +2,20 @@
 
 namespace App\MoonShine\Resources;
 
+use App\Models\Car;
 use App\Models\CarPassageEvent;
 use App\Models\Passage;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\SelectField;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
+use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
+use MoonShine\Laravel\MoonShineRequest;
 use MoonShine\Support\Enums\SortDirection;
+use MoonShine\Support\Enums\ToastType;
 use MoonShine\Support\ListOf;
+use MoonShine\UI\Components\ActionButton;
+use MoonShine\UI\Components\FormBuilder;
 use MoonShine\UI\Fields\Date;
 use MoonShine\UI\Fields\DateRange;
 use MoonShine\UI\Fields\ID;
@@ -83,6 +89,76 @@ class PassageEventResource extends BaseModelResource
 
             Text::make('Правило', 'rule_name', fn($item) => $item->rule_name ?: '—'),
         ];
+    }
+
+    protected function indexButtons(): ListOf
+    {
+        return parent::indexButtons()->prepend($this->getIdentificationButton());
+    }
+
+    protected function getIdentificationButton(): ActionButton
+    {
+        return ActionButton::make(
+            '',
+            fn($item) => $this->getAsyncMethodUrl(
+                method: 'getIdentifyForm',
+                params: [
+                    'item_id' => $item->getKey(),
+                    '_component_name' => $this->getListComponentName(),
+                    '_async_form' => true,
+                ]
+            )
+        )
+            ->icon(file_get_contents(public_path('icons/btn-identify-car.svg')), true)
+            ->class('js-identify-car-button')
+            ->customAttributes([
+                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация автомобиля' })",
+            ])
+            ->async(selector: "#{$this->safeModalName}_content")
+            ->canSee(fn($item) => $item->car_id === null && ! empty($item->plate_text));
+    }
+
+    public function getIdentifyForm(MoonShineRequest $request): string
+    {
+        $itemId = $request->get('item_id');
+        $item = CarPassageEvent::find($itemId);
+
+        if (! $item) {
+            return "Запись #{$itemId} не найдена в базе данных";
+        }
+
+        return FormBuilder::make()
+            ->action($this->getAsyncMethodUrl('saveCar', null, ['item_id' => $item->getKey()]))
+            ->async()
+            ->fields([...app(CarResource::class)->formFields()])
+            ->fill(['license_plate' => $item->plate_text])
+            ->submit('Сохранить', ['class' => 'btn-primary'])
+            ->render();
+    }
+
+    public function saveCar(MoonShineRequest $request)
+    {
+        $request->merge([
+            'license_plate' => strtoupper(preg_replace('/\s+/', '', (string) $request->input('license_plate'))),
+        ]);
+
+        $data = $request->validate(app(CarResource::class)->rules(null));
+
+        $car = Car::query()->create([
+            'license_plate'   => $data['license_plate'],
+            'brand_id'        => $data['brand_id'] ?? null,
+            'color_id'        => $data['color_id'] ?? null,
+            'organization_id' => $data['organization_id'] ?? null,
+            'comment'         => $data['comment'] ?? null,
+            'source'          => Car::SOURCE_MANUAL,
+        ]);
+
+        $car->people()->sync($request->input('people_ids', []));
+        $car->tags()->sync($request->input('tags', []));
+
+        return MoonShineJsonResponse::make()
+            ->toast('Автомобиль добавлен в базу!', ToastType::SUCCESS)
+            ->redirect($this->getUrl());
     }
 
     public function search(): array

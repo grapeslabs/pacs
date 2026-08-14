@@ -17,6 +17,7 @@ use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Handlers\Handler;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\MoonShineRequest;
@@ -211,51 +212,26 @@ class UnknownReportResource extends BaseModelResource
     public function savePerson(MoonShineRequest $request)
     {
         $data = $request->all();
+        $report = VideoAnalyticReport::find($request->get('item_id'));
+        $photos = $this->collectIdentifyPhotos($request, $report);
+
         $person = Person::create([
-            'grapesva_uuid' => $data['grapesva_uuid'],
-            'last_name' => $data['last_name'],
-            'first_name' => $data['first_name'],
-            'middle_name' => $data['middle_name'],
-            'birth_date' => $data['birth_date'],
-            'certificate_number' => $data['certificate_number'],
+            'grapesva_uuid' => $data['grapesva_uuid'] ?? null,
+            'last_name' => $data['last_name'] ?? null,
+            'first_name' => $data['first_name'] ?? null,
+            'middle_name' => $data['middle_name'] ?? null,
+            'birth_date' => $data['birth_date'] ?? null,
+            'certificate_number' => $data['certificate_number'] ?? null,
             'organization_id' => $data['organization_id'] ?? null,
             'comment' => $data['comment'] ?? null,
+            'frozen_start' => $data['frozen_start'] ?? null,
+            'frozen_end' => $data['frozen_end'] ?? null,
+            'photo' => $photos,
         ]);
 
         if ($request->has('tags')) {
             $person->tags()->sync($request->get('tags'));
         }
-
-        $finalPhotos = [];
-
-        if ($request->has('hidden_photo')) {
-            foreach ($request->input('hidden_photo') as $filename) {
-                $sourcePath = 'thumbnails/' . basename($filename);
-                $newPath = 'person/photos/' . basename($filename);
-
-                if (Storage::disk('analytic')->exists($sourcePath)) {
-                    $content = Storage::disk('analytic')->get($sourcePath);
-                    Storage::disk('public')->put($newPath, $content);
-                    $finalPhotos[] = $newPath;
-                }
-                elseif (Storage::disk('public')->exists($newPath)) {
-                    $finalPhotos[] = $newPath;
-                }
-            }
-        }
-
-        if ($request->hasFile('photo')) {
-            $files = $request->file('photo');
-            $files = is_array($files) ? $files : [$files];
-
-            foreach ($files as $file) {
-                $path = $file->store('person/photos', 'public');
-                $finalPhotos[] = $path;
-            }
-        }
-
-        $person->photo = $finalPhotos;
-        $person->save();
 
         VideoAnalyticReport::query()->toBase()
             ->where('person_photobank_id', $person->grapesva_uuid)
@@ -264,6 +240,63 @@ class UnknownReportResource extends BaseModelResource
         return MoonShineJsonResponse::make()
             ->toast('Персона успешно идентифицирована!', ToastType::SUCCESS)
             ->redirect($this->getUrl());
+    }
+
+    protected function collectIdentifyPhotos(MoonShineRequest $request, ?VideoAnalyticReport $report): array
+    {
+        $photos = [];
+
+        if ($request->hasFile('photo')) {
+            $files = $request->file('photo');
+            $files = is_array($files) ? $files : [$files];
+
+            foreach ($files as $file) {
+                $photos[] = $file->store('person/photos', 'public');
+            }
+        }
+
+        foreach ((array) $request->input('hidden_photo', []) as $filename) {
+            $path = $this->copySnapshotToPersonPhotos((string) $filename);
+
+            if ($path !== null) {
+                $photos[] = $path;
+            }
+        }
+
+        if ($photos === [] && ! empty($report?->data['snapshot_path'])) {
+            $path = $this->copySnapshotToPersonPhotos((string) $report->data['snapshot_path']);
+
+            if ($path !== null) {
+                $photos[] = $path;
+            } else {
+                Log::warning('Идентификация персоны: снимок отчёта не найден на диске', [
+                    'report_id'     => $report->id,
+                    'snapshot_path' => $report->data['snapshot_path'],
+                ]);
+            }
+        }
+
+        return array_values(array_unique($photos));
+    }
+
+    protected function copySnapshotToPersonPhotos(string $filename): ?string
+    {
+        $basename = basename($filename);
+
+        if ($basename === '') {
+            return null;
+        }
+
+        $sourcePath = 'thumbnails/' . $basename;
+        $newPath = 'person/photos/' . $basename;
+
+        if (Storage::disk('analytic')->exists($sourcePath)) {
+            Storage::disk('public')->put($newPath, Storage::disk('analytic')->get($sourcePath));
+
+            return $newPath;
+        }
+
+        return Storage::disk('public')->exists($newPath) ? $newPath : null;
     }
 
     public function search(): array

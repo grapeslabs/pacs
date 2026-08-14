@@ -2,6 +2,7 @@
 
 namespace App\MoonShine\Resources;
 
+use App\Models\CarTag;
 use App\Models\Setting;
 use App\Models\Stream;
 use App\MoonShine\Decorations\FeatureBox;
@@ -12,6 +13,7 @@ use App\MoonShine\Fields\FeatureCheckbox;
 use App\MoonShine\Fields\FeatureField;
 use App\MoonShine\Fields\FeatureSlider;
 use App\MoonShine\Fields\FeatureSpoiler;
+use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Fields\SingleZonePreviewField;
 use App\MoonShine\Fields\MultiZonePreviewField;
 use App\MoonShine\Pages\SettingsPage;
@@ -151,7 +153,30 @@ class VideoStreamResource extends BaseModelResource
                                         ->default(75)
                                         ->min(0)
                                         ->max(100)
-                                        ->step(1),
+                                        ->step(1)
+                                        ->wrapperStyle('margin-bottom: 10px'),
+                                    FeatureCheckbox::make('Автоматический сбор ГРЗ', 'va_options->is_plate_autocollect'),
+                                    SelectField::make('Теги (Необязательно)', 'va_options->plate_autocollect_tags')
+                                        ->customWrapperAttributes(['class' => 'feature-visible-label'])
+                                        ->options(CarTag::select('id', 'name')->get())
+                                        ->multiple(true)
+                                        ->creatable(true, route('car-tags.store'))
+                                        ->nullable()
+                                        ->placeholder('Выберите теги')
+                                        ->changeFill(fn($item) => array_map(
+                                            'intval',
+                                            (array) data_get($item->va_options, 'plate_autocollect_tags', [])
+                                        ))
+                                        ->onApply(function ($item, $value) {
+                                            $options = $item->va_options ?? [];
+                                            $options['plate_autocollect_tags'] = array_values(
+                                                array_map('intval', (array) ($value ?: []))
+                                            );
+                                            $item->va_options = $options;
+
+                                            return $item;
+                                        })
+                                        ->showWhen('va_options->is_plate_autocollect', '=', true),
                                 ]),
                             ]:[]
                     ]),
@@ -177,7 +202,8 @@ class VideoStreamResource extends BaseModelResource
                 Checkbox::make('Детекция человека', 'va_options.is_human_motion_detection')
             ] : [],
             ...config('services.lpr.enabled') ? [
-                Checkbox::make('Распознавание ГРЗ', 'va_options.is_plate_recognition')
+                Checkbox::make('Распознавание ГРЗ', 'va_options.is_plate_recognition'),
+                Checkbox::make('Автоматический сбор ГРЗ', 'va_options.is_plate_autocollect')
             ]:[],
         ];
     }

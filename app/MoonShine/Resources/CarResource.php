@@ -244,6 +244,8 @@ class CarResource extends BaseModelResource
             }),
             BelongsToMany::make('Теги', 'tags', 'name', resource: CarTagResource::class)
                 ->inLine(' ', fn($model, $value) => Badge::make((string) $value, 'primary')),
+            Text::make('Распознаваний', 'passage_events_count')
+                ->sortable('passage_events_count'),
             BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
                 ->nullable()
                 ->sortable(),
@@ -408,15 +410,21 @@ class CarResource extends BaseModelResource
                     }
 
                     return $query->whereHas('tags', function ($q) use ($value) {
-                        $q->whereIn('tags.id', (array)$value);
+                        $q->whereIn('car_tags.id', (array)$value);
                     });
                 }),
+            SelectField::make('Тип добавления', 'source')
+                ->options(Car::SOURCES)
+                ->placeholder('Все')
+                ->nullable(),
             Text::make('Комментарий', 'comment'),
         ];
     }
 
     public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
     {
-        return parent::indexQuery()->with(['brand', 'color', 'organization', 'people', 'tags']);
+        return parent::indexQuery()
+            ->with(['brand', 'color', 'organization', 'people', 'tags'])
+            ->withCount('passageEvents');
     }
 }
