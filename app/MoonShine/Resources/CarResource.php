@@ -421,9 +421,9 @@ class CarResource extends BaseModelResource
         ];
     }
 
-    public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
+    protected function modifyQueryBuilder(Builder $builder): Builder
     {
-        return parent::indexQuery()
+        return $builder
             ->with(['brand', 'color', 'organization', 'people', 'tags'])
             ->withCount('passageEvents');
     }
