@@ -3,6 +3,7 @@ FROM php:8.4-fpm-alpine AS base
 ARG UID=1000
 ARG GID=1000
 ARG PHPREDIS_VERSION=6.2.0
+ARG FRPC_VERSION=0.71.0
 
 RUN apk add --no-cache \
     curl \
@@ -43,6 +44,17 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && rm -rf /tmp/phpredis \
     && apk del .build-deps \
     && docker-php-source delete
+
+RUN set -eux; \
+    FRPC_ARCH="$(case "$(uname -m)" in x86_64) echo amd64 ;; aarch64) echo arm64 ;; *) echo "$(uname -m)" ;; esac)"; \
+    curl -fsSL "https://github.com/fatedier/frp/releases/download/v${FRPC_VERSION}/frp_${FRPC_VERSION}_linux_${FRPC_ARCH}.tar.gz" \
+    | tar -xz -C /tmp \
+    && mv "/tmp/frp_${FRPC_VERSION}_linux_${FRPC_ARCH}/frpc" /usr/local/bin/frpc \
+    && chmod +x /usr/local/bin/frpc \
+    && rm -rf "/tmp/frp_${FRPC_VERSION}_linux_${FRPC_ARCH}"
+
+RUN printf '[supervisorctl]\nserverurl = http://127.0.0.1:9001\n' > /etc/supervisord.conf \
+    && chmod 644 /etc/supervisord.conf
 
 RUN delgroup dialout || true \
     && addgroup -g ${GID} --system app \

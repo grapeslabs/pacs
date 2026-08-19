@@ -139,7 +139,7 @@ class MenuService
                     ['label' => 'Пользователи', 'class' => MoonShineUserResource::class, 'icon' => $this->iconFile('persons'), 'model' => User::class],
                     ['label' => 'Роли', 'class' => MoonShineUserRoleResource::class, 'icon' => $this->iconFile('group'), 'model' => Role::class],
                     ['label' => 'Ключи API', 'class' => ApiKeyResource::class, 'icon' => $this->iconFile('key'), 'model' => ApiKey::class],
-                    ['label' => 'Настройки', 'class' => SettingsPage::class, 'icon' => $this->iconFile('gear'), 'feature' => 'services.ms.enabled'],
+                    ['label' => 'Настройки', 'class' => SettingsPage::class, 'icon' => $this->iconFile('gear')],
                     ['label' => 'Журнал логов', 'class' => LogViewerPage::class, 'icon' => $this->iconFile('logs')],
                 ],
             ],

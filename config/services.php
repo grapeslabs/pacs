@@ -59,4 +59,15 @@ return [
         "secret" => env("YACAPTCHA_SECRET"),
         "client" => env("YACAPTCHA_CLIENT"),
     ],
+    "frp" => [
+        "portal_url" => env("FRP_PORTAL_URL", "https://frp.grapespacs.ru"),
+        "server_addr" => env("FRP_SERVER_ADDR", "frp.grapespacs.ru"),
+        "server_port" => env("FRP_SERVER_PORT", 7000),
+        "local_host" => env("FRP_LOCAL_HOST", "app"),
+        "local_port" => env("FRP_LOCAL_PORT", 80),
+        "timeout" => env("FRP_TIMEOUT", 10),
+        "supervisor_url" => env("FRP_SUPERVISOR_URL", "http://horizon:9001"),
+        "supervisor_user" => env("SUPERVISOR_HTTP_USER"),
+        "supervisor_pass" => env("SUPERVISOR_HTTP_PASS"),
+    ],
 ];
