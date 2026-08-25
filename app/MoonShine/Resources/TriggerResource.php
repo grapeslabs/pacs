@@ -65,7 +65,7 @@ class TriggerResource extends BaseModelResource
 
         return ActionButton::make('', fn($item) => $this->getAsyncMethodUrl('sendTest', params: ['item_id' => $item->getKey()]))
             ->icon($plane, true)
-            ->class('js-test-button')
+            ->class(['js-test-button', 'ds-rowbtn'])
             ->customAttributes([
                 'title' => 'Отправить тестовое сообщение',
                 '@click.stop' => '',
@@ -380,7 +380,18 @@ class TriggerResource extends BaseModelResource
             TriggerContentField::make('Содержимое уведомления', 'data')
                 ->withoutWrapper()
                 ->onApply(function ($item) {
-                    $item->data = TriggerContentField::normalize(request('data', []));
+                    $data = TriggerContentField::normalize(request('data', []));
+
+                    $eventType = request('device_type') == Trigger::DEVICE_CAMERA
+                        ? request('event_type_camera')
+                        : request('event_type');
+
+                    if ($eventType === Trigger::EVENT_UNKNOWED) {
+                        $data = TriggerContentField::withoutPersonOnly($data);
+                    }
+
+                    $item->data = $data;
+
                     return $item;
                 }),
         ];

@@ -55,7 +55,7 @@ class ApiKeyResource extends BaseModelResource
                         return new \Illuminate\Support\HtmlString(
                             '<span style="display:inline-flex;align-items:center;padding:4px 11px;'
                             . 'border-radius:4px;background:#EAEDF8;color:#4E4E61;font-size:12px;'
-                            . 'font-weight:600;white-space:nowrap;">Бесконечно</span>'
+                            . 'font-weight:600;white-space:nowrap;">Бессрочно</span>'
                         );
                     }
                     return \Illuminate\Support\Carbon::parse($item->expires_at)->format('d.m.Y');

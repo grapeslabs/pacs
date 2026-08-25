@@ -263,7 +263,7 @@ class ActuatorDeviceResource extends BaseModelResource
             ->customAttributes([
                 'title' => $label,
                 '@click.stop' => '',
-                'class' => 'js-actuator-button',
+                'class' => 'js-actuator-button ds-rowbtn',
             ]);
 
         if ($capability !== null) {

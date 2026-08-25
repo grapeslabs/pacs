@@ -22,7 +22,7 @@
     $notResp = $system['cameras']['not_responding'] ?? 0;
 @endphp
 <div {{ $attributes }}
-     style="display:flex;flex-direction:column;height:350px;box-sizing:border-box;border:1px solid #e3e7f5;background:#fff;border-radius:16px;box-shadow:0 1px 2px rgba(127,127,157,.05), 0 10px 30px rgba(127,127,157,.10);overflow:hidden;">
+     style="display:flex;flex-direction:column;height:350px;box-sizing:border-box;border:1px solid #e3e7f5;background:#fff;border-radius:16px;box-shadow:0 1px 2px rgba(127,127,157,.05), 0 10px 30px rgba(127,127,157,.10);overflow:hidden;margin-top: unset">
     <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e3e7f5;">
         <h2 style="margin:0;font-size:16px;font-weight:800;color:#1b1a2a;">Состояние системы</h2>
         <span style="padding:4px 10px;border-radius:4px;font-size:0.75rem;font-weight:500;{{ $overall[1] }}">{{ $overall[0] }}</span>

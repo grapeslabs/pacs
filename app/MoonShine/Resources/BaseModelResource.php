@@ -577,6 +577,13 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
         return $button->customAttributes(['style' => 'display: none !important;']);
     }
 
+    protected function modifyEditButton(ActionButtonContract $button): ActionButtonContract
+    {
+        return $button
+            ->icon($this->iconFile('pencil'), true)
+            ->class('ds-rowbtn');
+    }
+
     public function trAttributes(): ?Closure
     {
         $hasDetail = $this->detailSidebar || $this->detailModal || $this->hasDetailView();

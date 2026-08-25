@@ -3,10 +3,41 @@
         mode: @js($mode),
         values: @js($values),
         template: @js($template),
+        personOnly: @js(array_values($personOnly)),
+        personLabels: @js(array_values(array_intersect_key($options, array_flip($personOnly)))),
+        eventType: @js($eventType),
+        get personAvailable() { return this.eventType !== 'unknowed'; },
+        available(key) { return this.personAvailable || this.personOnly.indexOf(key) === -1; },
+        dropUnavailable() {
+            if (this.personAvailable) return;
+            this.personOnly.forEach(key => { this.values[key] = false; });
+            this.personLabels.forEach(label => {
+                this.template = this.template.split('{' + label + '}').join('');
+            });
+            this.template = this.template.replace(/[ \t]{2,}/g, ' ');
+        },
         insert(token) {
             const t = '{' + token + '}';
             const sep = (this.template && ! /\s$/.test(this.template)) ? ' ' : '';
             this.template = this.template + sep + t;
+        },
+        init() {
+            const read = el => { if (el) this.eventType = el.value || ''; };
+            const root = this.$root;
+            const onChange = e => {
+                if (! root.isConnected) {
+                    document.removeEventListener('input', onChange, true);
+                    document.removeEventListener('change', onChange, true);
+                    return;
+                }
+                if (e.target && e.target.name === 'event_type_camera') {
+                    read(e.target);
+                    this.dropUnavailable();
+                }
+            };
+            document.addEventListener('input', onChange, true);
+            document.addEventListener('change', onChange, true);
+            this.$nextTick(() => read(document.querySelector('[name=\'event_type_camera\']')));
         }
      }">
 
@@ -33,7 +64,7 @@
     {{-- РЕЖИМ: чекбоксы --}}
     <div class="tc-grid" x-show="mode === 'fields'">
         @foreach($options as $key => $label)
-            <label class="tc-check">
+            <label class="tc-check" x-show="available(@js($key))">
                 <input type="checkbox" x-model="values['{{ $key }}']">
                 <span>{{ $label }}</span>
             </label>
@@ -44,7 +75,7 @@
     <div x-show="mode === 'template'" x-cloak style="display:none;">
         <div class="tc-chips">
             @foreach($options as $key => $label)
-                <button type="button" class="tc-chip" @click="insert(@js($label))">+ {{ $label }}</button>
+                <button type="button" class="tc-chip" x-show="available(@js($key))" @click="insert(@js($label))">+ {{ $label }}</button>
             @endforeach
         </div>
 

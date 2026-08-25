@@ -8,6 +8,7 @@
     x-data="{
         open: false,
         isDirty: false,
+        isSubmitting: false,
         modalId: '{{ $name }}',
         modalTitle: '{{ is_callable($title) ? $title() : $title }}',
         modalSubtitle: '{{ is_callable($subtitle) ? $subtitle() : $subtitle }}',
@@ -19,9 +20,13 @@
             this.open = !this.open;
             this.open ? this.registerInStack() : this.unregisterFromStack();
             this.toggleBodyScroll();
+            if(!this.open) {
+                this.isSubmitting = false;
+            }
         },
 
         tryClose() {
+            if (this.isSubmitting) return;
             if (this.isDirty) {
                 window.dispatchEvent(new CustomEvent('open-unsaved-modal', { detail: { id: this.modalId } }));
             } else {
@@ -31,19 +36,26 @@
 
         closeModal() {
             this.open = false;
-            setTimeout(() => (this.isDirty = false), 300);
+            setTimeout(() => {
+                this.isDirty = false;
+                this.isSubmitting = false;
+            }, 300);
             this.unregisterFromStack();
             this.toggleBodyScroll();
         },
 
         forceClose() {
             this.isDirty = false;
+            this.isSubmitting = false;
             this.closeModal();
         },
 
         saveAndClose() {
+            if (this.isSubmitting) return;
+
             const form = document.querySelector(`#${this.modalId}_content form`);
             if (form) {
+                this.isSubmitting = true;
                 form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
             }
         },
@@ -59,7 +71,12 @@
         init() {
             const c = document.getElementById(this.modalId + '_content');
             if (c) {
-                this.observer = new MutationObserver(() => this.syncTitleFromContent());
+                this.observer = new MutationObserver(() => {
+                    this.syncTitleFromContent();
+                    if (this.isSubmitting) {
+                        this.isSubmitting = false;
+                    }
+                });
                 this.observer.observe(c, { childList: true, subtree: true });
             }
         },
@@ -87,7 +104,15 @@
             toggleModal();
         }
     "
-    @toast.window="if(open && (event.detail.type === 'success' || event.detail.type === 'warning')) { forceClose(); }"
+    @toast.window="
+        if(open) {
+            if (event.detail.type === 'success' || event.detail.type === 'warning') {
+                forceClose();
+            } else if (event.detail.type === 'error') {
+                isSubmitting = false;
+            }
+        }
+    "
     @unsaved-discard.window="if($event.detail && $event.detail.id === modalId) { forceClose(); }"
 >
     <template x-teleport="body">
@@ -120,12 +145,19 @@
                             <h3 style="font-size: 19px; font-weight: 800; margin: 0; line-height: 1.4;" class="text-gray-900 dark:text-gray-100" x-text="modalTitle"></h3>
                             <p x-show="modalSubtitle" x-cloak style="font-size: 0.8125rem; color: #7F7F9D; margin: 0.125rem 0 0;" x-text="modalSubtitle"></p>
                         </div>
-                        <button @click="tryClose()" type="button" style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; background: transparent; border: none; border-radius: 50%; cursor: pointer; padding: 0.25rem; transition: background-color .15s;" class="text-gray-400 hover:text-gray-500 hover:bg-gray-100" onmouseover="this.style.backgroundColor='#F1F3FB'" onmouseout="this.style.backgroundColor='transparent'">
+                        <button @click="tryClose()"
+                                :disabled="isSubmitting"
+                                type="button"
+                                style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; background: transparent; border: none; border-radius: 50%; cursor: pointer; padding: 0.25rem; transition: background-color .15s;"
+                                class="text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                                onmouseover="if(!this.disabled) this.style.backgroundColor='#F1F3FB'"
+                                onmouseout="this.style.backgroundColor='transparent'">
                             <x-moonshine::icon icon="x-mark" size="6" />
                         </button>
                     </div>
 
-                    <div style="flex: 1 1 0%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; position: relative;">
+                    <div style="flex: 1 1 0%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; position: relative;"
+                         :style="isSubmitting ? { opacity: 0.6, pointerEvents: 'none' } : {}">
                         <div id="{{ $name }}_content" style="padding: 1.5rem;" @input="isDirty = true" @change="isDirty = true">
                             {{ $slot ?? '' }}
                         </div>
@@ -134,17 +166,28 @@
 
                     <div style="flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid #EAEDFB;">
                         <button @click="tryClose()"
+                                :disabled="isSubmitting"
                                 type="button"
-                                style="padding: 0.625rem 1.5rem; border-radius: 9999px; background-color: #ffffff; color: #4E4E61; cursor: pointer; font-weight: 600; border: 1px solid #D7D0EF; font-size: 0.875rem;">
+                                style="padding: 0.625rem 1.5rem; border-radius: 9999px; background-color: #ffffff; color: #4E4E61; cursor: pointer; font-weight: 600; border: 1px solid #D7D0EF; font-size: 0.875rem;"
+                                :style="isSubmitting ? { opacity: 0.5, cursor: 'not-allowed' } : {}">
                             Отмена
                         </button>
                         <button @click="saveAndClose()"
+                                :disabled="isSubmitting"
                                 type="button"
-                                style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.5rem; border-radius: 9999px; background-color: #6972F0; color: #ffffff; cursor: pointer; font-weight: 700; border: none; font-size: 0.875rem;">
-                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.5rem; border-radius: 9999px; background-color: #6972F0; color: #ffffff; cursor: pointer; font-weight: 700; border: none; font-size: 0.875rem; transition: all .2s;"
+                                :style="isSubmitting ? { opacity: 0.7, cursor: 'not-allowed' } : {}">
+
+                            <svg x-show="!isSubmitting" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M16.6673 5L7.50065 14.1667L3.33398 10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
-                            Сохранить
+
+                            <svg x-cloak x-show="isSubmitting" class="animate-spin" style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+
+                            <span x-text="isSubmitting ? 'Сохранение...' : 'Сохранить'"></span>
                         </button>
                     </div>
 

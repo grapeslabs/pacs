@@ -457,7 +457,41 @@ class PersonResource extends BaseModelResource
                 ->optionsIcon('tag')
                 ->placeholder('Введите тег')
                 ->options(Tag::select('id', 'name')->get())
-                ->multiple(true)
+                ->multiple(true),
+
+            SelectField::make('Статус', 'status_filter')
+                ->icon('check')
+                ->placeholder('Фильтрация по статусу')
+                ->options([
+                    'active' =>'Активен',
+                    'frozen' =>'Заморожен',
+                ])
+                ->nullable()
+                ->onApply(function (Builder $query, $value, $field) {
+                    if ($value === 'active' || $value === 'frozen') {
+                        $now = Carbon::now();
+
+                        $frozenCondition = function (Builder $q) use ($now) {
+                            $q->whereNotNull('frozen_start')
+                                ->where('frozen_start', '<=', $now)
+                                ->where(function (Builder $q2) use ($now) {
+                                    $q2->whereNull('frozen_end')
+                                        ->orWhere('frozen_end', '>=', $now);
+                                });
+                        };
+
+                        if ($value === 'frozen') {
+                            $query->where($frozenCondition);
+                        } else {
+                            $query->where(function (Builder $q) use ($frozenCondition) {
+                                $q->whereNull('frozen_start')
+                                    ->orWhereNot($frozenCondition);
+                            });
+                        }
+                    }
+
+                    return $query;
+                }),
         ];
     }
 
@@ -500,7 +534,7 @@ class PersonResource extends BaseModelResource
             )
         )
             ->icon(file_get_contents(public_path('icons/btn-addkey.svg')), true)
-            ->class('js-key-button')
+            ->class(['js-key-button', 'ds-rowbtn'])
             ->customAttributes([
                 '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Выдача ключа', submitLabel: 'Выдать ключ', submitIcon: 'addkey' })",
             ])

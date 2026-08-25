@@ -18,6 +18,7 @@ use App\MoonShine\Components\Dashboard\RecognitionPanel;
 use App\MoonShine\Components\Dashboard\StatCards;
 use App\MoonShine\Components\Dashboard\SystemStatus;
 use App\MoonShine\Components\Dashboard\WelcomeHero;
+use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\KeyResource;
 use App\MoonShine\Resources\PersonResource;
 use App\MoonShine\Resources\SkudEventResource;
@@ -42,6 +43,7 @@ class Dashboard extends Page
         $streamUrl = app(VideoStreamResource::class)->getUrl();
         $triggerUrl = app(TriggerResource::class)->getUrl();
         $skudUrl = app(SkudEventResource::class)->getUrl();
+        $eventReportUrl = app(EventReportResource::class)->getUrl();
 
         $user = auth('moonshine')->user();
         $rawName = trim((string) ($user->name ?? ''));
@@ -70,13 +72,13 @@ class Dashboard extends Page
                         ['label' => 'Добавить триггер', 'url' => $triggerUrl, 'icon' => (string) file_get_contents(public_path('icons/lightning.svg'))],
                     ]),
                 ])->columnSpan(6),
-            ]),
+            ])->style('margin-bottom: 40px;'),
 
-            StatCards::make($this->stats($vaEnabled, $streamUrl, $personUrl, $triggerUrl, $skudUrl)),
+            StatCards::make($this->stats($vaEnabled, $streamUrl, $personUrl, $triggerUrl, $skudUrl, $eventReportUrl)),
 
             Grid::make([
                 Column::make([
-                    EventsPanel::make($this->events($vaEnabled), $skudUrl),
+                    EventsPanel::make($this->events($vaEnabled), $eventReportUrl),
                 ])->columnSpan(4),
                 Column::make([
                     RecognitionPanel::make(
@@ -96,7 +98,7 @@ class Dashboard extends Page
         ];
     }
 
-    private function stats(bool $vaEnabled, string $streamUrl, string $personUrl, string $triggerUrl, string $skudUrl): array
+    private function stats(bool $vaEnabled, string $streamUrl, string $personUrl, string $triggerUrl, string $skudUrl, string $eventReportUrl): array
     {
         $recToday = $vaEnabled ? VideoAnalyticReport::whereDate('datetime', today())->count() : 0;
         $recYesterday = $vaEnabled ? VideoAnalyticReport::whereDate('datetime', today()->subDay())->count() : 0;
@@ -107,7 +109,7 @@ class Dashboard extends Page
         return [
             ['label' => 'Камеры онлайн', 'value' => Stream::count(), 'url' => $streamUrl,
                 'trend' => $this->delta(Stream::whereDate('created_at', today())->count())],
-            ['label' => 'Распознавания за сутки', 'value' => $recToday, 'url' => $skudUrl,
+            ['label' => 'Распознавания за сутки', 'value' => $recToday, 'url' => $eventReportUrl,
                 'trend' => $this->pctDelta($recToday, $recYesterday)],
             ['label' => 'События СКУД сегодня', 'value' => $skudToday, 'url' => $skudUrl,
                 'trend' => $this->pctDelta($skudToday, $skudYesterday)],

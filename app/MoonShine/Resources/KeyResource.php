@@ -189,8 +189,8 @@ class KeyResource extends BaseModelResource
     protected function blockButton(): ActionButtonContract
     {
         return ActionButton::make('', fn($item) => $this->getAsyncMethodUrl('toggleBlock', params: ['item_id' => $item->getKey()]))
-            ->icon('lock-closed')
-            ->class('js-block-button')
+            ->icon($this->iconFile('lock'), true)
+            ->class(['js-block-button', 'ds-rowbtn'])
             ->customAttributes([
                 'title' => 'Заблокировать / Разблокировать',
                 '@click.stop' => '',

@@ -31,6 +31,19 @@ class TriggerContentField extends Field
         'photo'     => 'Фото с камеры',
     ];
 
+    public const PERSON_ONLY = ['lfm', 'person_id', 'comment', 'photobank'];
+
+    public static function withoutPersonOnly(array $data): array
+    {
+        foreach (self::PERSON_ONLY as $key) {
+            $data[$key] = false;
+        }
+
+        return $data;
+    }
+
+    protected ?string $eventType = null;
+
     protected function viewData(): array
     {
         $data = $this->toValue();
@@ -44,11 +57,13 @@ class TriggerContentField extends Field
         }
 
         return [
-            'options'  => self::OPTIONS,
-            'values'   => $values,
-            'mode'     => (($data['mode'] ?? 'fields') === 'template') ? 'template' : 'fields',
-            'template' => (string) ($data['template'] ?? ''),
-            'column'   => $this->getColumn(),
+            'options'    => self::OPTIONS,
+            'personOnly' => self::PERSON_ONLY,
+            'eventType'  => (string) $this->eventType,
+            'values'     => $values,
+            'mode'       => (($data['mode'] ?? 'fields') === 'template') ? 'template' : 'fields',
+            'template'   => (string) ($data['template'] ?? ''),
+            'column'     => $this->getColumn(),
         ];
     }
 
@@ -58,6 +73,7 @@ class TriggerContentField extends Field
 
         $item = $casted?->getOriginal();
         $this->setValue($item instanceof Model && $item->exists && is_array($item->data) ? $item->data : []);
+        $this->eventType = $item instanceof Model && $item->exists ? (string) $item->event_type : null;
 
         return $this;
     }

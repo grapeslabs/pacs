@@ -192,13 +192,24 @@ body {
 .form-switcher {
     .form-switcher-toggler {
         background-color: #FFFFFF !important;
-        border: none !important;
+        border: 1px solid var(--gray-300) !important;
         box-shadow: none !important;
-        transition: background-color 0.2s;
+        transition: background-color 0.2s, border-color 0.2s;
     }
 
-    .form-checkbox:checked + .form-switcher-toggler {
+    .form-switcher-toggler::after {
+        border-color: var(--gray-300) !important;
+    }
+
+    .form-checkbox:checked + .form-switcher-toggler,
+    .peer:checked + .form-switcher-toggler {
         background-color: #7E92F8 !important;
+        border-color: #7E92F8 !important;
+    }
+
+    .form-checkbox:checked + .form-switcher-toggler::after,
+    .peer:checked + .form-switcher-toggler::after {
+        border-color: #FFFFFF !important;
     }
 }
 

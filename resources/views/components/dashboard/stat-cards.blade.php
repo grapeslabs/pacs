@@ -18,7 +18,7 @@
     </style>
 @endonce
 <div {{ $attributes }}
-     style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:20px;">
+     style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;">
     @foreach($cards as $c)
         @php $dir = $c['trend']['dir'] ?? 'none'; @endphp
         <a @if(!empty($c['url'])) href="{{ $c['url'] }}" @endif class="stat-card"

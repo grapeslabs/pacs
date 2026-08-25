@@ -10,9 +10,14 @@
         .pacs-sidebar-nav::-webkit-scrollbar { width: 6px; }
         .pacs-sidebar-nav::-webkit-scrollbar-thumb { background: #3A3856; border-radius: 10px; }
         .pacs-nav-section { margin-top: 14px; }
-        .pacs-nav-section-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; }
+
+        .pacs-nav-section-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; cursor: pointer; user-select: none; transition: opacity 0.15s ease; }
+        .pacs-nav-section-head:hover { opacity: 0.8; }
         .pacs-nav-section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #74738C; }
-        .pacs-nav-section-chevron { color: #5A5972; flex: 0 0 auto; }
+
+        .pacs-nav-section-chevron { color: #5A5972; flex: 0 0 auto; transition: transform 0.2s ease; }
+        .pacs-nav-section-chevron._is-closed { transform: rotate(-90deg); }
+
         .pacs-nav-item {
             position: relative;
             display: flex; align-items: center; gap: 12px; padding: 10px 12px; margin: 2px 0;
@@ -61,6 +66,7 @@
         }
     </style>
 @endonce
+
 <div class="pacs-sidebar" x-data="{ collapsed: $persist(false).as('pacs_sidebar_collapsed') }"
      :class="{ '_collapsed': collapsed }">
 
@@ -79,26 +85,28 @@
         </a>
 
         @foreach($sections as $section)
-            <div class="pacs-nav-section">
-                <div class="pacs-nav-section-head">
+            <div class="pacs-nav-section" x-data="{ sectionOpen: true }">
+                <div class="pacs-nav-section-head" @click="sectionOpen = !sectionOpen">
                     <span class="pacs-nav-section-title">{{ $section['label'] }}</span>
-                    <svg class="pacs-nav-section-chevron" width="16" height="16" viewBox="0 0 24 24"
+                    <svg class="pacs-nav-section-chevron" :class="!sectionOpen ? '_is-closed' : ''" width="16" height="16" viewBox="0 0 24 24"
                          fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
                          stroke-linejoin="round" aria-hidden="true">
                         <path d="m6 9 6 6 6-6"/>
                     </svg>
                 </div>
 
-                @foreach($section['items'] as $item)
-                    <a href="{{ $item['url'] }}"
-                       class="pacs-nav-item @if($item['active']) _is-active @endif">
-                        <span class="pacs-nav-ico">{!! $item['icon'] !!}</span>
-                        <span class="pacs-nav-text">{{ $item['label'] }}</span>
-                        @if(! is_null($item['badge']))
-                            <span class="pacs-nav-badge">{{ $item['badge'] }}</span>
-                        @endif
-                    </a>
-                @endforeach
+                <div x-show="sectionOpen || collapsed" x-collapse>
+                    @foreach($section['items'] as $item)
+                        <a href="{{ $item['url'] }}"
+                           class="pacs-nav-item @if($item['active']) _is-active @endif">
+                            <span class="pacs-nav-ico">{!! $item['icon'] !!}</span>
+                            <span class="pacs-nav-text">{{ $item['label'] }}</span>
+                            @if(! is_null($item['badge']))
+                                <span class="pacs-nav-badge">{{ $item['badge'] }}</span>
+                            @endif
+                        </a>
+                    @endforeach
+                </div>
             </div>
         @endforeach
     </nav>

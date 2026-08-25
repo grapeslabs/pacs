@@ -210,6 +210,7 @@ class VideoStreamResource extends BaseModelResource
             Grid::make([
                 Column::make([
                     CustomText::make('Название', 'name')
+                        ->placeholder('Например, Камера — главный вход')
                         ->required()
                         ->unique('streams', 'name'),
                 ])->columnSpan(12),
@@ -222,7 +223,9 @@ class VideoStreamResource extends BaseModelResource
                     ArchiveDuration::make('Длина архива', 'archive_time'),
                 ])->columnSpan(6),
                 Column::make([
-                    CustomText::make('Адрес потока(RTSP)', 'rtsp')->required()
+                    CustomText::make('Адрес потока(RTSP)', 'rtsp')
+                        ->placeholder('rtsp://login:password@192.168.1.10:554/stream1')
+                        ->required()
                         ->pattern('^rtsp:\/\/(([^\s\/:@]+)(:([^\s\/@]+))?@)?([^\s\/:]+)(?::([0-9]+))?(\/.*)?$'),
                 ])->columnSpan(12),
             ]),

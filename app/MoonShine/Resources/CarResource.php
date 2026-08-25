@@ -304,13 +304,48 @@ class CarResource extends BaseModelResource
     }
 
 
+    protected function licensePlateMaskJs(): string
+    {
+        return <<<'JS'
+        const el = $event.target;
+        const LAT = { A: "А", B: "В", E: "Е", K: "К", M: "М", H: "Н", O: "О", P: "Р", C: "С", T: "Т", Y: "У", X: "Х" };
+        const LETTERS = "АВЕКМНОРСТУХ";
+        const raw = el.value.toUpperCase();
+        const caretAt = el.selectionStart === null ? raw.length : el.selectionStart;
+        const typedBefore = raw.slice(0, caretAt).replace(/\s+/g, "").length;
+        const chars = raw.replace(/\s+/g, "").split("").map(ch => LAT[ch] || ch);
+        const out = [];
+        for (const ch of chars) {
+            if (out.length >= 9) break;
+            const pos = out.length;
+            if (pos === 0 || pos === 4 || pos === 5) {
+                if (LETTERS.indexOf(ch) !== -1) out.push(ch);
+            } else if (/[0-9]/.test(ch)) {
+                out.push(ch);
+            }
+        }
+        let formatted = out.slice(0, 1).join("");
+        if (out.length > 1) formatted += " " + out.slice(1, 4).join("");
+        if (out.length > 4) formatted += " " + out.slice(4, 6).join("");
+        if (out.length > 6) formatted += " " + out.slice(6, 9).join("");
+        let caret = 0;
+        let seen = 0;
+        while (caret < formatted.length && seen < typedBefore) {
+            if (formatted[caret] !== " ") seen++;
+            caret++;
+        }
+        value = formatted;
+        el.value = formatted;
+        $nextTick(() => el.setSelectionRange(caret, caret));
+        JS;
+    }
+
     /**
      * Очистка номера от пробелов и форматирование
      */
     protected function cleanLicensePlate(string $licensePlate): string
     {
-        // Убираем пробелы и приводим к верхнему регистру
-        return strtoupper(preg_replace('/\s+/', '', $licensePlate));
+        return mb_strtoupper(preg_replace('/\s+/u', '', $licensePlate) ?? '');
     }
 
     public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
@@ -365,26 +400,8 @@ class CarResource extends BaseModelResource
             CustomText::make('Госномер (ГРЗ)', 'license_plate')
                 ->required()
                 ->customAttributes([
-                    'x-on:input' => '
-                    let value = $event.target.value.toUpperCase();
-                    value = value.replace(/[^А-Я0-9\s]/g, "");
-                    let chars = value.replace(/\s/g, "").split("");
-                    let result = [];
-                    for (let i = 0; i < chars.length; i++) {
-                        if (i === 0) { if (/[А-Я]/.test(chars[i])) result.push(chars[i]); }
-                        else if (i >= 1 && i <= 3) { if (/[0-9]/.test(chars[i])) result.push(chars[i]); }
-                        else if (i >= 4 && i <= 5) { if (/[А-Я]/.test(chars[i])) result.push(chars[i]); }
-                        else if (i >= 6 && i <= 8) { if (/[0-9]/.test(chars[i])) result.push(chars[i]); }
-                    }
-                    let formatted = "";
-                    if (result.length > 0) formatted += result[0];
-                    if (result.length > 1) formatted += " " + result.slice(1, 4).join("");
-                    if (result.length > 4) formatted += " " + result.slice(4, 6).join("");
-                    if (result.length > 6) formatted += " " + result.slice(6, 9).join("");
-                    $event.target.value = formatted;
-                ',
-                    'placeholder' => 'А 123 БЦ 78',
-                    'maxlength' => '15',
+                    'x-on:input' => $this->licensePlateMaskJs(),
+                    'maxlength' => '12',
                 ])
                 ->placeholder('А 000 АА 777')
                 ->hint('Буквы А, В, Е, К, М, Н, О, Р, С, Т, У, Х и цифры')
@@ -485,26 +502,9 @@ class CarResource extends BaseModelResource
         return [
             CustomText::make('ГРЗ', 'license_plate')
                 ->customAttributes([
-                    'x-on:input' => '
-                    let value = $event.target.value.toUpperCase();
-                    value = value.replace(/[^А-Я0-9\s]/g, "");
-                    let chars = value.replace(/\s/g, "").split("");
-                    let result = [];
-                    for (let i = 0; i < chars.length; i++) {
-                        if (i === 0) { if (/[А-Я]/.test(chars[i])) result.push(chars[i]); }
-                        else if (i >= 1 && i <= 3) { if (/[0-9]/.test(chars[i])) result.push(chars[i]); }
-                        else if (i >= 4 && i <= 5) { if (/[А-Я]/.test(chars[i])) result.push(chars[i]); }
-                        else if (i >= 6 && i <= 8) { if (/[0-9]/.test(chars[i])) result.push(chars[i]); }
-                    }
-                    let formatted = "";
-                    if (result.length > 0) formatted += result[0];
-                    if (result.length > 1) formatted += " " + result.slice(1, 4).join("");
-                    if (result.length > 4) formatted += " " + result.slice(4, 6).join("");
-                    if (result.length > 6) formatted += " " + result.slice(6, 9).join("");
-                    $event.target.value = formatted;
-                ',
+                    'x-on:input' => $this->licensePlateMaskJs(),
                     'placeholder' => 'Фильтрация по ГРЗ',
-                    'maxlength' => '15',
+                    'maxlength' => '12',
                 ]),
             SelectField::make('Марка', 'brand_id')
                 ->options(CarBrand::query()->pluck('name', 'id')->toArray())
