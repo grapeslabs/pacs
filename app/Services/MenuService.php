@@ -63,6 +63,7 @@ class MenuService
     {
         return [
             [
+                'key' => 'video',
                 'label' => 'Видео',
                 'sectionIcon' => $this->iconFile('camera'),
                 'feature' => 'services.ms.enabled',
@@ -71,6 +72,7 @@ class MenuService
                 ],
             ],
             [
+                'key' => 'skud',
                 'label' => 'Данные СКУД',
                 'sectionIcon' => $this->iconFile('btn-addkey'),
                 'items' => [
@@ -85,6 +87,7 @@ class MenuService
                 ],
             ],
             [
+                'key' => 'automation',
                 'label' => 'Автоматизация',
                 'sectionIcon' => $this->iconFile('lightning'),
                 'feature' => 'services.va.enabled',
@@ -94,6 +97,7 @@ class MenuService
                 ],
             ],
             [
+                'key' => 'reports',
                 'label' => 'Отчёты',
                 'sectionIcon' => self::permIcon('reports'),
                 'items' => [
@@ -106,6 +110,7 @@ class MenuService
                 ],
             ],
             [
+                'key' => 'devices',
                 'label' => 'Оборудование',
                 'sectionIcon' => self::permIcon('devices'),
                 'items' => [
@@ -115,6 +120,7 @@ class MenuService
                 ],
             ],
             [
+                'key' => 'references',
                 'label' => 'Справочники',
                 'sectionIcon' => $this->iconFile('menu-references'),
                 'items' => [
@@ -123,6 +129,7 @@ class MenuService
                 ],
             ],
             [
+                'key' => 'management',
                 'label' => 'Управление',
                 'sectionIcon' => $this->iconFile('gear'),
                 'items' => [
@@ -171,7 +178,11 @@ class MenuService
             }
 
             if ($items !== []) {
-                $sections[] = ['label' => $section['label'], 'items' => $items];
+                $sections[] = [
+                    'key' => $section['key'],
+                    'label' => $section['label'],
+                    'items' => $items,
+                ];
             }
         }
 

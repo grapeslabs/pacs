@@ -85,7 +85,8 @@
         </a>
 
         @foreach($sections as $section)
-            <div class="pacs-nav-section" x-data="{ sectionOpen: true }">
+            <div class="pacs-nav-section"
+                 x-data="{ sectionOpen: $persist(true).as('pacs_nav_section_{{ $section['key'] }}') }">
                 <div class="pacs-nav-section-head" @click="sectionOpen = !sectionOpen">
                     <span class="pacs-nav-section-title">{{ $section['label'] }}</span>
                     <svg class="pacs-nav-section-chevron" :class="!sectionOpen ? '_is-closed' : ''" width="16" height="16" viewBox="0 0 24 24"
