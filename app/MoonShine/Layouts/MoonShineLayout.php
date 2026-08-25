@@ -6,6 +6,7 @@ namespace App\MoonShine\Layouts;
 
 use App\MoonShine\Components\CustomDeleteModal;
 use App\MoonShine\Components\SafeModal;
+use App\MoonShine\Pages\LogViewerPage;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Pages\Dashboard;
 use App\MoonShine\Resources\ActuatorDeviceResource;
@@ -152,6 +153,9 @@ final class MoonShineLayout extends AppLayout
                         ->icon('cog-8-tooth')
                         ->canSee(fn () => auth()->user()->hasPermission(SettingsPage::class, Ability::VIEW)),
                 ]:[],
+                MenuItem::make('Журнал логов', LogViewerPage::class)
+                    ->icon('document-text')
+                    ->canSee(fn () => auth()->user()->hasPermission(LogViewerPage::class, Ability::VIEW)),
             ])->icon(file_get_contents(public_path('icons/menu-settings.svg')),true),
             ...config('services.ms.enabled')?[
                 MenuItem::make('Видеопотоки', VideoStreamResource::class)

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models\User;
+use App\MoonShine\Pages\LogViewerPage;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Resources\CarEventResource;
 use App\MoonShine\Resources\EventReportResource;
@@ -95,6 +96,7 @@ class MoonShineServiceProvider extends ServiceProvider
             ])
             ->pages([
                 ...$config->getPages(),
+                LogViewerPage::class,
                 ...config('services.ms.enabled')?[SettingsPage::class]:[],
             ]);
         $config->authorizationRules(

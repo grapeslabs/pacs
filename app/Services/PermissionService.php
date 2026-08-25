@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CarColor;
+use App\MoonShine\Pages\LogViewerPage;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Resources\ApiKeyResource;
 use App\MoonShine\Resources\BarrierEventResource;
@@ -80,6 +81,10 @@ class PermissionService
             'Ключи API'  => [
                 'icon' => file_get_contents(public_path('icons/Permissions/apikeys.svg')),
                 'classes' => [ApiKeyResource::class]
+            ],
+            'Журнал логов'  => [
+                'icon' => file_get_contents(public_path('icons/Permissions/logs.svg')),
+                'classes' => [LogViewerPage::class]
             ],
         ];
     }

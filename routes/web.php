@@ -9,7 +9,9 @@ use App\Http\Controllers\ChatsController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\CustomFieldController;
+use App\Http\Controllers\LogViewerController;
 use App\Http\Controllers\PersonPhotoArchiveController;
+use MoonShine\Laravel\Http\Middleware\Authenticate as MoonShineAuthenticate;
 
 
 Route::prefix('tags')->group(function() {
@@ -29,6 +31,13 @@ Route::post("/field-validation", [CustomFieldController::class, "validate"])->na
 Route::prefix("settings")->group(function () {
     Route::post("store", [SettingsController::class, "store"])->name("settings.store");
 });
+
+Route::prefix("logs")
+    ->middleware(MoonShineAuthenticate::class)
+    ->group(function () {
+        Route::get("download", [LogViewerController::class, "download"])->name("logs.download");
+        Route::post("clear", [LogViewerController::class, "clear"])->name("logs.clear");
+    });
 
 Route::prefix("chats")->group(function () {
     Route::get("list", [ChatsController::class, "index"])->name("chats.index");
