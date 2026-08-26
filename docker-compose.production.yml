@@ -108,6 +108,7 @@ services:
       LOG_SOURCE: horizon
     networks:
       - laravel
+    entrypoint: ["php", "/var/www/html/artisan", "queue:work", "--sleep=1", "--tries=3", "--timeout=90"]
     logging: *default-logging
 
   events-processor:

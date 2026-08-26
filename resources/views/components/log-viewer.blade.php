@@ -79,15 +79,13 @@
             <form method="GET" action="{{ $state['page_url'] }}"
                   style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
 
-                <div style="display: flex; flex-direction: column; gap: 0.35rem; min-width: 220px;">
+                <div style="display: flex; flex-direction: column; gap: 0.35rem; min-width: 240px;">
                     <label style="font-size: 0.75rem; color: #94a3b8;">Источник</label>
-                    <select name="source" class="form-select" onchange="this.form.submit()">
-                        @foreach($sources as $key => $source)
-                            <option value="{{ $key }}" @selected($key === $state['source'])>
-                                {{ $source['label'] }}
-                            </option>
-                        @endforeach
-                    </select>
+                    {!! \App\MoonShine\Fields\SelectField::make('Источник', 'source')
+                        ->options(collect($sources)->map(fn (array $source): string => $source['label'])->all())
+                        ->setValue($state['source'] ? [$state['source']] : [])
+                        ->placeholder('Выберите источник')
+                        ->render() !!}
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 240px;">
@@ -240,3 +238,13 @@
         @endif
     </div>
 </div>
+
+<script>
+    document.addEventListener('change', function (event) {
+        const target = event.target;
+
+        if (target.tagName === 'INPUT' && target.type === 'hidden' && target.name === 'source' && target.value) {
+            target.closest('form')?.submit();
+        }
+    });
+</script>
