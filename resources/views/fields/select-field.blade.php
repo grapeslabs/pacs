@@ -159,14 +159,46 @@
     touched: false,
 
     init() {
+        if (!window.selectFieldsRegistry) {
+            window.selectFieldsRegistry = new Set();
+        }
+
+        window.selectFieldsRegistry.forEach(entry => {
+            if (!entry.el.isConnected) {
+                window.selectFieldsRegistry.delete(entry);
+            }
+        });
+
+        window.selectFieldsRegistry.add({
+            el: this.$el,
+            validateNow: () => this.validateNow(),
+        });
+
         if (!window.selectFieldsInitialized) {
             window.selectFieldsInitialized = true;
             document.addEventListener('submit', function(event) {
-                const errorField = document.querySelector('.select-error');
-                if (errorField) {
+                const form = event.target;
+                let firstInvalid = null;
+
+                window.selectFieldsRegistry.forEach(entry => {
+                    if (!entry.el.isConnected) {
+                        window.selectFieldsRegistry.delete(entry);
+                        return;
+                    }
+
+                    if (form instanceof HTMLFormElement && entry.el.closest('form') !== form) {
+                        return;
+                    }
+
+                    if (!entry.validateNow() && firstInvalid === null) {
+                        firstInvalid = entry.el;
+                    }
+                });
+
+                if (firstInvalid) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
-                    errorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }, true);
         }
@@ -219,6 +251,13 @@
         if (isRequired && this.selectedIds.length === 0) {
             this.error = isRequired.message;
         }
+    },
+
+    validateNow() {
+        this.touched = true;
+        this.validate();
+
+        return this.error === null;
     },
 
     get selectedOptions() { return this.selectedIds.map(id => this.options.find(o => o.id == id)).filter(Boolean); },
