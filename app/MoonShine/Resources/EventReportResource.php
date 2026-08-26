@@ -156,6 +156,10 @@ class EventReportResource extends BaseModelResource
                 ->placeholder('Тип распознавания')
                 ->nullable()
                 ->onApply(function (Builder $query, $value) {
+                    if (blank($value)) {
+                        return $query;
+                    }
+
                     return $query->where('is_unknown', $value === 'true');
                 }),
         ];

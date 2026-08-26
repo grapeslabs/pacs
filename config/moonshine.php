@@ -19,6 +19,7 @@ use App\MoonShine\Pages\LoginPage;
 use \MoonShine\Laravel\Forms\LoginForm;
 use \App\Http\Middleware\CheckDiskSpace;
 use \App\Http\Middleware\CheckCaptcha;
+use \App\Http\Middleware\CleanEmptyFilters;
 
 return [
     'title' => 'GRAPES PACS',
@@ -49,6 +50,7 @@ return [
 
     // Middleware
     'middleware' => [
+        CleanEmptyFilters::class,
         CheckCaptcha::class,
         EncryptCookies::class,
         AddQueuedCookiesToResponse::class,
