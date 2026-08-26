@@ -17,14 +17,18 @@ class ProcessEvents extends Command
     protected $signature = 'events:process-new';
     protected int $lockTimeout = 120;
 
+    protected int $heartbeatEvery = 300;
+
     public function handle(): int
     {
         $this->info('Служба обработки событий распознавания лиц запущена...');
+        Log::info('Служба обработки событий запущена');
+
         $iterations = 0;
         $maxIterations = 1000;
         while ($iterations < $maxIterations) {
             try {
-                $this->process();
+                $this->process($iterations);
             } catch (\Throwable $e) {
                 Log::error('Критическая ошибка: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             }
@@ -33,12 +37,22 @@ class ProcessEvents extends Command
         }
 
         $this->info('Плановый перезапуск воркера...');
+        Log::info('Плановый перезапуск службы обработки событий', ['iterations' => $iterations]);
+
         return 0;
     }
 
-    protected function process(): void
+    protected function process(int $iteration = 0): void
     {
         $triggers = Trigger::where('is_active', true)->get();
+
+        if ($iteration % $this->heartbeatEvery === 0) {
+            Log::info('Служба обработки событий активна', [
+                'active_triggers' => $triggers->count(),
+                'iteration' => $iteration,
+            ]);
+        }
+
         foreach ($triggers as $trigger) {
             $this->info("Обработка триггера ID {$trigger->id}");
             match ($trigger->device_type) {
@@ -75,6 +89,15 @@ class ProcessEvents extends Command
 
         $events_count = $events->count();
         $this->info("Найдено событий: {$events_count}");
+
+        if ($events_count > 0) {
+            Log::info('Найдены новые события распознавания', [
+                'trigger_id' => $trigger->id,
+                'stream' => $stream->name,
+                'event_type' => $trigger->event_type,
+                'count' => $events_count,
+            ]);
+        }
         $maxProcessedId = $lastId;
         foreach ($events->toArray() as $event) {
             $photos = [];
@@ -85,6 +108,15 @@ class ProcessEvents extends Command
                     $person = Person::find($event['person_photobank_id']);
                     $this->info("Персона: " . $person->getFullName() . "({$person->id}) | {$person->tags_list}");
                 }
+
+                Log::info('Обработка события распознавания', [
+                    'event_id' => $event['id'],
+                    'trigger_id' => $trigger->id,
+                    'stream' => $stream->name,
+                    'person' => isset($person) ? $person->getFullName() : null,
+                    'is_unknown' => (bool) $event['is_unknown'],
+                    'datetime' => $timestamp->format('d.m.Y H:i:s'),
+                ]);
                 $message = "Обнаружение!";
                 if (!empty($data['date'])) $message .= "\nДата: " . $timestamp->format('d.m.Y');
                 if (!empty($data['time'])) $message .= "\nВремя: " . $timestamp->format('H:i:s');
@@ -117,12 +149,29 @@ class ProcessEvents extends Command
                 }
                 try {
                    SendNotification::dispatch($bot->id, $message, $photos??null);
+
+                   Log::info('Уведомление поставлено в очередь', [
+                       'event_id' => $event['id'],
+                       'bot_id' => $bot->id,
+                       'photos' => count($photos),
+                   ]);
                 } catch (\Throwable $e) {
                     $this->error("Ошибка отправки в очередь: " . $e->getMessage());
+                    Log::error('Не удалось поставить уведомление в очередь', [
+                        'event_id' => $event['id'],
+                        'bot_id' => $bot->id ?? null,
+                        'error' => $e->getMessage(),
+                    ]);
                }
                 $maxProcessedId = $event['id'];
             } catch (\Throwable $e) {
-                $this->error("Ошибка обработки события ID {$event->id}: " . $e->getMessage());
+                $this->error("Ошибка обработки события ID {$event['id']}: " . $e->getMessage());
+                Log::error('Ошибка обработки события распознавания', [
+                    'event_id' => $event['id'],
+                    'trigger_id' => $trigger->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
             }
         }
         if ($maxProcessedId > $lastId) {

@@ -1,2 +1,4 @@
 person-photos
 thumbnails
+logs/*/*
+!logs/*/.gitkeep

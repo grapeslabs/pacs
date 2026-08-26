@@ -11,6 +11,11 @@ use App\Observers\StreamObserver;
 use App\Models\Key;
 use App\Observers\KeyObserver;
 use App\Services\Otp\OtpManager;
+use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
@@ -49,6 +54,30 @@ class AppServiceProvider extends ServiceProvider
         if (env('DOCKER_DOMAIN')) {
             URL::forceScheme('https');
         }
+
+        Queue::before(function (JobProcessing $event): void {
+            Log::info('Задание принято в обработку', [
+                'job' => $event->job->resolveName(),
+                'queue' => $event->job->getQueue(),
+                'attempt' => $event->job->attempts(),
+            ]);
+        });
+
+        Queue::after(function (JobProcessed $event): void {
+            Log::info('Задание выполнено', [
+                'job' => $event->job->resolveName(),
+                'queue' => $event->job->getQueue(),
+            ]);
+        });
+
+        Queue::failing(function (JobFailed $event): void {
+            Log::error('Задание завершилось ошибкой', [
+                'job' => $event->job->resolveName(),
+                'queue' => $event->job->getQueue(),
+                'attempt' => $event->job->attempts(),
+                'error' => $event->exception->getMessage(),
+            ]);
+        });
         $this->app->afterResolving(AssetManagerContract::class, function (AssetManagerContract $assets) {
             $assets->add([
                 InlineCss::make('<link rel="preload" href="/css/moonshine-custom.css" as="style">')

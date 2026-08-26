@@ -70,6 +70,9 @@ services:
       - storage:/var/www/html/storage
       - public_storage:/var/www/html/storage/app/public
       - lpr_events:/var/www/html/lpr/events:ro
+      - lpr_logs:/var/www/html/lpr/logs:ro
+      - analytic_server_logs:/var/www/html/analytic/logs/server:ro
+      - analytic_api_logs:/var/www/html/analytic/logs/api:ro
     depends_on:
       app-database:
         condition: service_healthy
@@ -85,6 +88,8 @@ services:
       - "ofelia.job-exec.demo-user.command=php /var/www/html/artisan demo:manage-demo-user"
     env_file:
       - .env
+    environment:
+      LOG_SOURCE: php
 
   horizon:
     image: ghcr.io/grapeslabs/pacs-horizon:${APP_VERSION}
@@ -100,8 +105,10 @@ services:
       - .env
     environment:
       TZ: Europe/Moscow
+      LOG_SOURCE: horizon
     networks:
       - laravel
+    entrypoint: ["php", "/var/www/html/artisan", "queue:work", "--sleep=1", "--tries=3", "--timeout=90"]
     logging: *default-logging
 
   events-processor:
@@ -117,6 +124,7 @@ services:
       - .env
     environment:
       TZ: Europe/Moscow
+      LOG_SOURCE: events
     networks:
       - laravel
     entrypoint: ["php", "/var/www/html/artisan", "events:process-new"]
@@ -136,6 +144,7 @@ services:
       - .env
     environment:
       TZ: Europe/Moscow
+      LOG_SOURCE: lpr-rules
     networks:
       - laravel
     entrypoint: ["php", "/var/www/html/artisan", "lpr:process-rules"]
@@ -237,6 +246,7 @@ services:
     volumes:
       - analytic_person_photos:/app/person_photos
       - analytic_thumbnails:/app/thumbnails
+      - analytic_api_logs:/app/logs
     depends_on:
       analytic-database:
         condition: service_healthy
@@ -263,6 +273,7 @@ services:
     volumes:
       - analytic_captured_images:/app/captured_images
       - analytic_thumbnails:/app/thumbnails
+      - analytic_server_logs:/app/logs
     depends_on:
       analytic-api:
         condition: service_started
@@ -331,7 +342,6 @@ services:
     depends_on:
       lpr-database:
         condition: service_healthy
-        required: false
     networks:
       - laravel
     logging: *default-logging
@@ -356,6 +366,8 @@ volumes:
   analytic_thumbnails:
   analytic_captured_images:
   analytic_person_photos:
+  analytic_server_logs:
+  analytic_api_logs:
   lpr_database:
   lpr_events:
   lpr_logs:
