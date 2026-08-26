@@ -105,6 +105,8 @@ class StreamObserver
     {
         $options = $stream->va_options ?? [];
 
+        $changed = false;
+
         if (empty($options['global_enable'])) {
             $options['is_face_detection'] = 0;
             $options['is_face_recognition'] = 0;
@@ -112,6 +114,15 @@ class StreamObserver
             if (config('services.lpr.enabled')) {
                 $options['is_plate_recognition'] = 0;
             }
+            $changed = true;
+        }
+
+        if (empty($options['is_plate_recognition']) && ! empty($options['is_plate_autocollect'])) {
+            $options['is_plate_autocollect'] = 0;
+            $changed = true;
+        }
+
+        if ($changed) {
             $stream->va_options = $options;
         }
     }

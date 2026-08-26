@@ -5,6 +5,17 @@
         display: none !important;
     }
 
+    .feature-box-wrapper .feature-visible-label {
+        gap: 4px;
+    }
+
+    .feature-box-wrapper .feature-visible-label > label.form-label {
+        display: block !important;
+        font-size: 12px;
+        color: #7F7F9D;
+        margin-bottom: 0;
+    }
+
     .feature-box-wrapper {
         background-color: #F4F6FB;
         border-radius: 16px;

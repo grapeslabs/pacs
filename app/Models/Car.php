@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -14,13 +15,27 @@ class Car extends Model
     protected $connection = 'pgsql';
     protected $table = 'cars';
 
+    public const SOURCE_MANUAL = 'manual';
+    public const SOURCE_AUTO   = 'auto';
+
+    public const SOURCES = [
+        self::SOURCE_AUTO   => 'Автоматически',
+        self::SOURCE_MANUAL => 'Вручную',
+    ];
+
     protected $fillable = [
         'license_plate',
         'brand_id',
         'color_id',
         'organization_id',
-        'comment'
+        'comment',
+        'source'
     ];
+
+    public function passageEvents(): HasMany
+    {
+        return $this->hasMany(CarPassageEvent::class, 'car_id');
+    }
 
     public function people(): BelongsToMany
     {

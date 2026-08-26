@@ -15,6 +15,7 @@ use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Resources\CarBrandResource;
 use App\MoonShine\Resources\CarColorResource;
 use App\MoonShine\Resources\OrganizationResource;
+use App\MoonShine\Resources\OrganizationResource;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Fields\Relationships\BelongsToMany;
 use MoonShine\UI\Components\Layout\Column;
@@ -382,6 +383,12 @@ class CarResource extends BaseModelResource
                     );
                 }),
             TagsField::make('Теги', 'tags', fn($item) => $item->tags->pluck('name')->all()),
+
+            Text::make('Распознаваний', 'passage_events_count')
+                ->sortable('passage_events_count'),
+            BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
+                ->nullable()
+                ->sortable(),
             Text::make('Комментарий', 'comment')
                 ->sortable(),
         ];
@@ -546,15 +553,21 @@ class CarResource extends BaseModelResource
                     }
 
                     return $query->whereHas('tags', function ($q) use ($value) {
-                        $q->whereIn('tags.id', (array)$value);
+                        $q->whereIn('car_tags.id', (array)$value);
                     });
                 }),
+            SelectField::make('Тип добавления', 'source')
+                ->options(Car::SOURCES)
+                ->placeholder('Все')
+                ->nullable(),
             Text::make('Комментарий', 'comment'),
         ];
     }
 
-    public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
+    protected function modifyQueryBuilder(Builder $builder): Builder
     {
-        return parent::indexQuery()->with(['brand', 'color', 'organization', 'people', 'tags']);
+        return $builder
+            ->with(['brand', 'color', 'organization', 'people', 'tags'])
+            ->withCount('passageEvents');
     }
 }

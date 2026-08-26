@@ -3,7 +3,6 @@
         position: relative;
     }
 
-    /* Ряд выбранных чипов над полем (multiple) */
     .ms-selected-chips {
         display: flex;
         flex-wrap: wrap;
@@ -32,7 +31,6 @@
         box-shadow: 0 0 0 0.2rem rgba(115, 129, 244, 0.25);
     }
 
-    /* Иконка-префикс поля */
     .ms-field-icon {
         display: flex;
         align-items: center;
@@ -65,7 +63,6 @@
 
     .multiselect-tag-remove:hover { color: #F04138; }
 
-    /* Выбранное значение внутри поля (single) */
     .ms-single-value {
         font-size: 15px;
         font-weight: 500;
@@ -219,14 +216,46 @@
     touched: false,
 
     init() {
+        if (!window.selectFieldsRegistry) {
+            window.selectFieldsRegistry = new Set();
+        }
+
+        window.selectFieldsRegistry.forEach(entry => {
+            if (!entry.el.isConnected) {
+                window.selectFieldsRegistry.delete(entry);
+            }
+        });
+
+        window.selectFieldsRegistry.add({
+            el: this.$el,
+            validateNow: () => this.validateNow(),
+        });
+
         if (!window.selectFieldsInitialized) {
             window.selectFieldsInitialized = true;
             document.addEventListener('submit', function(event) {
-                const errorField = document.querySelector('.select-error');
-                if (errorField) {
+                const form = event.target;
+                let firstInvalid = null;
+
+                window.selectFieldsRegistry.forEach(entry => {
+                    if (!entry.el.isConnected) {
+                        window.selectFieldsRegistry.delete(entry);
+                        return;
+                    }
+
+                    if (form instanceof HTMLFormElement && entry.el.closest('form') !== form) {
+                        return;
+                    }
+
+                    if (!entry.validateNow() && firstInvalid === null) {
+                        firstInvalid = entry.el;
+                    }
+                });
+
+                if (firstInvalid) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
-                    errorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }, true);
         }
@@ -285,6 +314,13 @@
     isSelected(option) {
         return this.selectedIds.includes(String(option.id)) || this.selectedIds.includes(Number(option.id));
     },
+    validateNow() {
+        this.touched = true;
+        this.validate();
+
+        return this.error === null;
+    },
+
     get selectedOptions() { return this.selectedIds.map(id => this.options.find(o => o.id == id)).filter(Boolean); },
     get filteredOptions() {
         let available = this.options;
@@ -339,7 +375,6 @@
      class="multiselect-wrapper"
      @click.outside="open = false"
 >
-    {{-- Multiple: выбранные чипы над полем (под лейблом) --}}
     <template x-if="multiple && selectedOptions.length > 0">
         <div class="ms-selected-chips">
             <template x-for="option in selectedOptions" :key="option.id">
@@ -354,9 +389,7 @@
     </template>
 
     <div @click="open = true; $nextTick(() => $refs.searchInput?.focus())" class="multiselect-box" :class="{ 'active': open, 'select-error': error !== null }">
-        {{-- Иконка-префикс поля --}}
         <span class="ms-field-icon" x-show="fieldIcon" x-html="fieldIcon"></span>
-
         {{-- Single: выбранное значение внутри поля (когда закрыто и не идёт поиск) --}}
         <template x-if="!multiple && selectedIds.length > 0">
             <span class="ms-single-value" x-show="!open || search === ''" x-text="selectedSingleLabel"></span>

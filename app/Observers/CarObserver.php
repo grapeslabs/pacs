@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Car;
+use App\Models\CarPassageEvent;
 use App\Services\VideoAnalyticLprService;
 use Illuminate\Support\Facades\Log;
 
@@ -14,6 +15,8 @@ class CarObserver
 
     public function created(Car $car): void
     {
+        $this->linkPassageEvents($car);
+
         if (!config('services.lpr.enabled')) {
             return;
         }
@@ -26,6 +29,14 @@ class CarObserver
 
     public function updated(Car $car): void
     {
+        if ($car->wasChanged('license_plate')) {
+            CarPassageEvent::query()
+                ->where('car_id', $car->id)
+                ->update(['car_id' => null]);
+
+            $this->linkPassageEvents($car);
+        }
+
         if (!config('services.lpr.enabled')) {
             return;
         }
@@ -69,5 +80,17 @@ class CarObserver
         if (empty($result['ok'])) {
             Log::warning('CarObserver: LPR car create failed on restore', ['plate' => $car->license_plate]);
         }
+    }
+
+    protected function linkPassageEvents(Car $car): void
+    {
+        if (empty($car->license_plate)) {
+            return;
+        }
+
+        CarPassageEvent::query()
+            ->whereNull('car_id')
+            ->whereRaw("upper(replace(plate_text, ' ', '')) = ?", [$car->license_plate])
+            ->update(['car_id' => $car->id]);
     }
 }
