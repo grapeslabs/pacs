@@ -9,6 +9,8 @@ use App\Http\Controllers\ChatsController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\CustomFieldController;
+use App\Http\Controllers\DetailCardController;
+use App\Http\Controllers\DetailModalController;
 use App\Http\Controllers\LogViewerController;
 use App\Http\Controllers\PersonPhotoArchiveController;
 use App\Http\Controllers\ProfileSettingsController;
@@ -42,9 +44,11 @@ Route::post("/field-validation", [CustomFieldController::class, "validate"])->na
 
 Route::get("/system-search", [SearchController::class, "index"])->name("system.search");
 
-Route::prefix("settings")->group(function () {
-    Route::post("store", [SettingsController::class, "store"])->name("settings.store");
-});
+Route::prefix("settings")
+    ->middleware(MoonShineAuthenticate::class)
+    ->group(function () {
+        Route::post("store", [SettingsController::class, "store"])->name("settings.store");
+    });
 
 Route::prefix("logs")
     ->middleware(MoonShineAuthenticate::class)

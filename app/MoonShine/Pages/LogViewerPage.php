@@ -6,7 +6,9 @@ namespace App\MoonShine\Pages;
 
 use App\MoonShine\Components\LogViewer;
 use App\Services\LogReaderService;
+use Illuminate\Support\Facades\Log;
 use MoonShine\Laravel\Enums\Ability;
+use MoonShine\Laravel\MoonShineAuth;
 use MoonShine\Laravel\Pages\Page;
 use Throwable;
 
@@ -19,7 +21,7 @@ class LogViewerPage extends Page
     protected function components(): iterable
     {
         abort_if(
-            !auth()->user()?->hasPermission(self::class, Ability::VIEW),
+            !MoonShineAuth::getGuard()->user()?->hasPermission(self::class, Ability::VIEW),
             403
         );
 
@@ -56,7 +58,12 @@ class LogViewerPage extends Page
                     'levels' => $levels,
                     'search' => $search,
                 ], $page);
-            } catch (Throwable $e) {}
+            } catch (Throwable $e) {
+                Log::warning('Журнал логов: не удалось прочитать источник', [
+                    'source' => $source,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return [

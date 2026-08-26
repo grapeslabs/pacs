@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\CarColor;
-use App\MoonShine\Pages\LogViewerPage;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Resources\ApiKeyResource;
 use App\MoonShine\Resources\BarrierEventResource;

@@ -46,7 +46,6 @@ use App\MoonShine\Resources\TerminalResource;
 use App\MoonShine\Resources\TriggerResource;
 use App\MoonShine\Resources\UnknownReportResource;
 use App\MoonShine\Resources\VideoStreamResource;
-use Illuminate\Support\Facades\Log;
 use MoonShine\Laravel\Enums\Ability;
 use MoonShine\Laravel\Pages\Page;
 
@@ -139,7 +138,7 @@ class MenuService
                     ['label' => 'Роли', 'class' => MoonShineUserRoleResource::class, 'icon' => $this->iconFile('group'), 'model' => Role::class],
                     ['label' => 'Ключи API', 'class' => ApiKeyResource::class, 'icon' => $this->iconFile('key'), 'model' => ApiKey::class],
                     ['label' => 'Настройки', 'class' => SettingsPage::class, 'icon' => $this->iconFile('gear'), 'feature' => 'services.ms.enabled'],
-                    ['label' => 'Журнал логов', 'class' => LogViewerPage::class, 'icon' => 'logs'],
+                    ['label' => 'Журнал логов', 'class' => LogViewerPage::class, 'icon' => $this->iconFile('logs')],
                 ],
             ],
         ];

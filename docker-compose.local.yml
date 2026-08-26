@@ -372,6 +372,7 @@ services:
     depends_on:
       lpr-database:
         condition: service_healthy
+        required: false
     networks:
       - laravel
     logging: *default-logging

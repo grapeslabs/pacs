@@ -4,6 +4,8 @@ namespace App\MoonShine\Pages;
 
 use App\Models\Setting;
 use MoonShine\Core\Pages\Page;
+use MoonShine\Laravel\Enums\Ability;
+use MoonShine\Laravel\MoonShineAuth;
 use MoonShine\UI\Components\FormBuilder;
 use MoonShine\UI\Components\Layout\Box;
 use MoonShine\UI\Components\Layout\Div;
@@ -17,6 +19,11 @@ class SettingsPage extends Page
 
     public function components(): array
     {
+        abort_if(
+            !MoonShineAuth::getGuard()->user()?->hasPermission(self::class, Ability::VIEW),
+            403
+        );
+
         $settings = Setting::whereIn('key', [
             'face_recognition',
             'drive_limit',
