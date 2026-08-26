@@ -124,6 +124,6 @@ class CarPassageRule extends Model
 
     public static function normalizePlate(string $plate): string
     {
-        return strtoupper(preg_replace('/\s+/', '', $plate) ?? '');
+        return mb_strtoupper(preg_replace('/\s+/u', '', $plate) ?? '');
     }
 }

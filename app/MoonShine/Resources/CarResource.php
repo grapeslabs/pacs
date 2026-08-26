@@ -15,7 +15,6 @@ use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Resources\CarBrandResource;
 use App\MoonShine\Resources\CarColorResource;
 use App\MoonShine\Resources\OrganizationResource;
-use App\MoonShine\Resources\OrganizationResource;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Fields\Relationships\BelongsToMany;
 use MoonShine\UI\Components\Layout\Column;
@@ -171,7 +170,7 @@ class CarResource extends BaseModelResource
     /**
      * Синхронизация автомобиля с Pingate контроллерами
      */
-    protected function syncCarWithPingateControllers(Car $car): void
+    public function syncCarWithPingateControllers(Car $car): void
     {
         try {
             // Получаем все Pingate контроллеры

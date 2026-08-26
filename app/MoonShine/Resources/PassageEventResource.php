@@ -179,8 +179,8 @@ class PassageEventResource extends BaseModelResource
                 ]
             )
         )
-            ->icon(file_get_contents(public_path('icons/btn-identify-car.svg')), true)
-            ->class('js-identify-car-button')
+            ->icon($this->iconFile('btn-identify-car'), true)
+            ->class(['js-identify-car-button', 'ds-rowbtn'])
             ->customAttributes([
                 '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация автомобиля' })",
             ])
@@ -209,10 +209,12 @@ class PassageEventResource extends BaseModelResource
     public function saveCar(MoonShineRequest $request)
     {
         $request->merge([
-            'license_plate' => strtoupper(preg_replace('/\s+/', '', (string) $request->input('license_plate'))),
+            'license_plate' => mb_strtoupper(preg_replace('/\s+/u', '', (string) $request->input('license_plate')) ?? ''),
         ]);
 
-        $data = $request->validate(app(CarResource::class)->rules(null));
+        $carResource = app(CarResource::class);
+
+        $data = $request->validate($carResource->rules(null));
 
         $car = Car::query()->create([
             'license_plate'   => $data['license_plate'],
@@ -225,6 +227,9 @@ class PassageEventResource extends BaseModelResource
 
         $car->people()->sync($request->input('people_ids', []));
         $car->tags()->sync($request->input('tags', []));
+        $car->rules()->sync($request->input('rule_ids', []));
+
+        $carResource->syncCarWithPingateControllers($car);
 
         return MoonShineJsonResponse::make()
             ->toast('Автомобиль добавлен в базу!', ToastType::SUCCESS)
