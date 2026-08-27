@@ -16,6 +16,7 @@ use App\Http\Controllers\PersonPhotoArchiveController;
 use App\Http\Controllers\ProfileSettingsController;
 use App\Http\Controllers\SearchController;
 use MoonShine\Laravel\Http\Middleware\Authenticate as MoonShineAuthenticate;
+use App\Http\Controllers\PresenceReportController;
 
 
 Route::prefix(config('moonshine.prefix', 'admin'))
@@ -49,6 +50,16 @@ Route::prefix("settings")
     ->group(function () {
         Route::post("store", [SettingsController::class, "store"])->name("settings.store");
     });
+
+Route::prefix("presence-report")->group(function () {
+    Route::post("generate", [PresenceReportController::class, "generate"])->name("presence-report.generate");
+    Route::get("status/{report}", [PresenceReportController::class, "status"])->name("presence-report.status");
+    Route::get("export/{report}", [PresenceReportController::class, "export"])->name("presence-report.export");
+});
+
+Route::prefix("settings")->group(function () {
+    Route::post("store", [SettingsController::class, "store"])->name("settings.store");
+});
 
 Route::prefix("logs")
     ->middleware(MoonShineAuthenticate::class)

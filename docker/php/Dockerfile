@@ -21,11 +21,12 @@ RUN sed -i "s/group = www-data/group = laravel/g" /usr/local/etc/php-fpm.d/www.c
 RUN echo "php_admin_flag[log_errors] = on" >> /usr/local/etc/php-fpm.d/www.conf
 
 RUN echo ${TZ} > /etc/timezone
-RUN set -eux; apk add --no-cache curl postgresql-dev libzip-dev zip supervisor git git-lfs gpg less openssh patch
+RUN set -eux; apk add --no-cache curl postgresql-dev libzip-dev zip supervisor git git-lfs gpg less openssh patch libpng-dev libjpeg-turbo-dev freetype-dev
 RUN git lfs install
 
 RUN docker-php-ext-configure pcntl --enable-pcntl
-RUN docker-php-ext-install pdo_mysql pdo_pgsql pcntl zip
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+RUN docker-php-ext-install pdo_mysql pdo_pgsql pcntl zip gd
 
 ARG PHPEXT_REDIS_VERSION=6.1.0
 RUN set -eux; \

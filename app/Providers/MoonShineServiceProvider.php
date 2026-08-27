@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Models\User;
 use App\MoonShine\Pages\LogViewerPage;
 use App\MoonShine\Pages\SettingsPage;
+use App\MoonShine\Pages\PresenceReportPage;
 use App\MoonShine\Resources\CarEventResource;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\PeopleReportResource;
@@ -100,6 +101,7 @@ class MoonShineServiceProvider extends ServiceProvider
                 ...$config->getPages(),
                 LogViewerPage::class,
                 ...config('services.ms.enabled')?[SettingsPage::class]:[],
+                ...config('services.va.enabled')?[PresenceReportPage::class]:[],
             ]);
         $config->authorizationRules(
             static function (ResourceContract $resource, Model $user, Ability $ability): bool {
