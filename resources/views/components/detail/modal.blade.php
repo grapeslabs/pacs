@@ -169,7 +169,7 @@
 
     .dm-gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
     .dm-gallery__label { font-weight: 700; font-size: 12px; color: #7F7F9D; margin-bottom: 6px; }
-    .dm-gallery__img { width: 100%; height: 180px; object-fit: cover; border-radius: 12px; background: #EAEDF8; display: block; }
+    .dm-gallery__img { width: 100%; height: 180px; object-fit: contain; border-radius: 12px; background: #EAEDF8; display: block; }
     .dm-gallery__plate {
         width: 100%; height: 180px; border-radius: 12px; background: #EAEDF8;
         display: flex; align-items: center; justify-content: center;

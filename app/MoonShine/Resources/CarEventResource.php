@@ -124,7 +124,12 @@ class CarEventResource extends BaseModelResource
             ? $people->map(fn($p) => $p->getFullName())->implode(', ')
             : null;
 
-        $serial = ! empty($item->controllers) ? implode(', ', (array) $item->controllers) : null;
+        $serial = collect((array) $item->controllers)
+            ->map(fn($c) => is_array($c)
+                ? ($c['name'] ?? $c['driver'] ?? $c['actuator_device_id'] ?? null)
+                : $c)
+            ->filter()
+            ->implode(', ') ?: null;
 
         $rows = [
             ['k' => 'Дата, время', 'v' => $item->recognized_at ? $item->recognized_at->format('d.m.Y, H:i:s') : '—', 'mono' => true],
@@ -176,7 +181,7 @@ class CarEventResource extends BaseModelResource
             ->icon($this->iconFile('btn-identify-car'), true)
             ->class(['js-identify-car-button', 'ds-rowbtn'])
             ->customAttributes([
-                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация автомобиля' })",
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация автомобиля' })",
             ])
             ->async(selector: "#{$this->safeModalName}_content")
             ->canSee(fn($item) => $item->car_id === null && ! empty($item->plate_text));
@@ -333,16 +338,16 @@ class CarEventResource extends BaseModelResource
             <img
                 src="$src"
                 style="max-width: 150px; max-height: 80px; border-radius: 4px; cursor: pointer; object-fit: cover;"
-                @click="open = true"
+                @click.stop="open = true"
                 title="Нажмите для увеличения"
                 loading="lazy"
             />
 
             <div x-show="open" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;"
-                 x-transition.opacity @click.self="open = false" @keydown.escape.window="open = false" x-cloak>
+                 x-transition.opacity @click.self.stop="open = false" @keydown.escape.window="open = false" x-cloak>
                 <div style="position: relative;">
                     <img src="$src" style="max-width: 90vw; max-height: 90vh; border-radius: 8px;">
-                    <button @click="open = false" style="position: absolute; top: -10px; right: -10px; background: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 20px;">×</button>
+                    <button @click.stop="open = false" style="position: absolute; top: -10px; right: -10px; background: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 20px;">×</button>
                 </div>
             </div>
         </div>

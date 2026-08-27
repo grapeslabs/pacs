@@ -116,7 +116,7 @@ class UnknownReportResource extends BaseModelResource
             ->icon($this->iconFile('user-plus'), true)
             ->class(['js-identify-button', 'ds-rowbtn'])
             ->customAttributes([
-                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' })",
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' })",
             ])
             ->async(selector: "#{$this->safeModalName}_content");
     }
@@ -146,7 +146,7 @@ class UnknownReportResource extends BaseModelResource
             ->async(selector: "#{$this->safeModalName}_content")
             ->customAttributes([
                 'class' => 'dm-btn dm-btn--primary',
-                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' }); \$dispatch('modal-toggled', { id: 'detail-modal' })",
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' }); \$dispatch('modal-toggled', { id: 'detail-modal' })",
             ]);
 
         return [

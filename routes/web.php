@@ -57,10 +57,6 @@ Route::prefix("presence-report")->group(function () {
     Route::get("export/{report}", [PresenceReportController::class, "export"])->name("presence-report.export");
 });
 
-Route::prefix("settings")->group(function () {
-    Route::post("store", [SettingsController::class, "store"])->name("settings.store");
-});
-
 Route::prefix("logs")
     ->middleware(MoonShineAuthenticate::class)
     ->group(function () {

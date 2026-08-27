@@ -206,7 +206,7 @@ class PersonResource extends BaseModelResource
             ->async(selector: "#{$this->safeModalName}_content")
             ->customAttributes([
                 'class' => 'ds-btn ds-btn--secondary',
-                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Выдача ключа', submitLabel: 'Выдать ключ', submitIcon: 'addkey' }); \$dispatch('modal-toggled', { id: 'detail-sidebar' })",
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Выдача ключа', submitLabel: 'Выдать ключ', submitIcon: 'addkey' }); \$dispatch('modal-toggled', { id: 'detail-sidebar' })",
             ]);
 
         $editHtml = $this->detailEditButtonHtml($item);

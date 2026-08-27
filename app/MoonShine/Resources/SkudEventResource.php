@@ -453,16 +453,16 @@ class SkudEventResource extends BaseModelResource
             <img
                 src="$src"
                 style="max-width: 50px; max-height: 50px; border-radius: 4px; cursor: pointer; object-fit: cover;"
-                @click="open = true"
+                @click.stop="open = true"
                 title="Нажмите для увеличения"
                 loading="lazy"
             />
 
             <div x-show="open" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;"
-                 x-transition.opacity @click.self="open = false" @keydown.escape.window="open = false" x-cloak>
+                 x-transition.opacity @click.self.stop="open = false" @keydown.escape.window="open = false" x-cloak>
                 <div style="position: relative;">
                     <img src="$src" style="max-width: 90vw; max-height: 90vh; border-radius: 8px;">
-                    <button @click="open = false" style="position: absolute; top: -10px; right: -10px; background: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 20px;">×</button>
+                    <button @click.stop="open = false" style="position: absolute; top: -10px; right: -10px; background: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 20px;">×</button>
                 </div>
             </div>
         </div>

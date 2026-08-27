@@ -54,6 +54,13 @@ else
     fi
 fi
 
+log "Starting queue worker..."
+if $DOCKER_COMPOSE up -d horizon; then
+    log "Queue worker started."
+else
+    error "Starting failed"
+fi
+
 if is_enabled "MEDIA_SERVER_ENABLED"; then
     log "Starting media-server..."
     $DOCKER_COMPOSE up -d media-server || warn "FAILED"
@@ -61,7 +68,7 @@ fi
 
 if is_enabled "ANALYTIC_ENABLED"; then
     log "Starting analytic services..."
-    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server media-server || warn "FAILED"
+    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server events-processor media-server || warn "FAILED"
 fi
 
 if is_enabled "LPR_ENABLED"; then

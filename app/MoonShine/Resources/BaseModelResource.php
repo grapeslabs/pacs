@@ -341,7 +341,7 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             ->async(selector: "#{$this->safeModalName}_content")
             ->customAttributes([
                 'class' => 'ds-btn ds-btn--primary',
-                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: '{$title}', subtitle: '{$subtitle}' }); \$dispatch('modal-toggled', { id: 'detail-sidebar' })",
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: '{$title}', subtitle: '{$subtitle}' }); \$dispatch('modal-toggled', { id: 'detail-sidebar' })",
             ]);
     }
 
