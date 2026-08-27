@@ -112,6 +112,14 @@ class GeneratePresenceReport implements ShouldQueue
         }
         $flush();
 
+        if ($uuidFilter !== null) {
+            foreach ($uuidFilter as $uuid) {
+                if (!isset($persons[$uuid])) {
+                    $persons[$uuid] = ['cells' => [], 'total_time' => 0, 'total_count' => 0];
+                }
+            }
+        }
+
         $personModels = Person::whereIn('grapesva_uuid', array_keys($persons))->get();
         $names = $personModels->mapWithKeys(fn ($p) => [$p->grapesva_uuid => $p->getFullName()]);
         $photos = $personModels->mapWithKeys(function ($p) {

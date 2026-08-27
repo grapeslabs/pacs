@@ -86,18 +86,30 @@
     modelId: '{{ $element->getData()?->getKey() ?? '' }}',
     csrfToken: '{{ csrf_token() }}',
     error: null,
+    touched: false,
     loading: false,
     timeout: null,
     init() {
+        window.cdfFields = window.cdfFields || [];
+        window.cdfFields.push(this);
+
         if (!window.customDateFieldsInitialized) {
             window.customDateFieldsInitialized = true;
             document.addEventListener('submit', function(event) {
-                const errorField = document.querySelector('.cdf-error');
-                if (errorField) {
+                window.cdfFields = (window.cdfFields || []).filter(f => document.contains(f.$el));
+
+                const fields = window.cdfFields.filter(f => event.target.contains(f.$el));
+                fields.forEach(f => {
+                    f.touched = true;
+                    f.validate();
+                });
+
+                const invalid = fields.find(f => f.error !== null);
+                if (invalid) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
-                    errorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    errorField.focus();
+                    invalid.$el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    invalid.$el.querySelector('input')?.focus();
                 }
             }, true);
         }
@@ -106,6 +118,7 @@
             this.validate();
         }
         this.$watch('value', () => {
+            this.touched = true;
             this.validate();
         });
     },
@@ -192,14 +205,14 @@
         <input {!! $element->getAttributes()->merge(['class' => 'cdf-input form-input', 'type' => 'date']) !!}
                name="{{ $element->getName() }}"
                x-model="value"
-               @blur="validate()"
-               :class="{'cdf-error': error !== null}"
+               @blur="touched = true; validate()"
+               :class="{'cdf-error': error !== null && touched}"
         />
         <div class="cdf-icon-wrapper">
             <template x-if="loading">
                 <div class="cdf-spinner"></div>
             </template>
-            <template x-if="error !== null && !loading">
+            <template x-if="error !== null && touched && !loading">
                 <div class="cdf-icon-error">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path
@@ -210,5 +223,5 @@
             </template>
         </div>
     </div>
-    <span class="cdf-error-msg" x-show="error !== null" x-text="error ?? ''"></span>
+    <span class="cdf-error-msg" x-show="error !== null && touched" x-text="error ?? ''"></span>
 </div>

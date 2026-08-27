@@ -36,7 +36,7 @@
                     <thead>
                         <tr>
                             <th rowspan="2" style="vertical-align:middle; text-align:center;">Фото</th>
-                            <th rowspan="2" style="vertical-align:middle;">Фамилия</th>
+                            <th rowspan="2" style="vertical-align:middle;">ФИО</th>
                             @foreach($periods as $p)
                                 <th colspan="2" style="text-align:center;">
                                     {{ $p['label'] }}
@@ -49,7 +49,7 @@
                         </tr>
                         <tr>
                             @foreach($periods as $p)
-                                <th style="text-align:center;">Время</th>
+                                <th style="text-align:center; border-radius: unset">Время</th>
                                 <th style="text-align:center;">кол-во</th>
                             @endforeach
                             <th style="text-align:center;">Время</th>
