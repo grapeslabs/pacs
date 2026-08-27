@@ -11,6 +11,8 @@ use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomNumber;
 use App\MoonShine\Components\PresenceReportComponent;
 use App\MoonShine\Fields\SelectField;
+use MoonShine\Laravel\Enums\Ability;
+use MoonShine\Laravel\MoonShineAuth;
 use MoonShine\Laravel\Pages\Page;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Components\FormBuilder;
@@ -31,6 +33,10 @@ class PresenceReportPage extends Page
 
     protected function components(): iterable
     {
+        abort_if(
+            !MoonShineAuth::getGuard()->user()?->hasPermission(self::class, Ability::VIEW),
+            403
+        );
         $cameras = Stream::query()->orderBy('name')->get()
             ->mapWithKeys(fn ($s) => [$s->uid => $s->name])
             ->toArray();

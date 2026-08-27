@@ -20,6 +20,7 @@ use App\Models\Trigger;
 use App\Models\User;
 use App\MoonShine\Pages\Dashboard;
 use App\MoonShine\Pages\LogViewerPage;
+use App\MoonShine\Pages\PresenceReportPage;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Resources\ActuatorDeviceResource;
 use App\MoonShine\Resources\ApiKeyResource;
@@ -108,6 +109,7 @@ class MenuService
                     ['label' => 'Отчёты по событиям', 'class' => EventReportResource::class, 'icon' => $this->iconFile('pulse'), 'feature' => 'services.va.enabled'],
                     ['label' => 'Отчёты по персонам', 'class' => PeopleReportResource::class, 'icon' => $this->iconFile('user-list'), 'feature' => 'services.va.enabled'],
                     ['label' => 'Отчёты по неизвестным', 'class' => UnknownReportResource::class, 'icon' => $this->iconFile('suspension'), 'feature' => 'services.va.enabled'],
+                    ['label' => 'Отчёт по пребыванию', 'class' => PresenceReportPage::class, 'icon' => $this->iconFile('document'), 'feature' => 'services.va.enabled'],
                 ],
             ],
             [
