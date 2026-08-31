@@ -30,7 +30,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     zip \
     gd \
     && mkdir -p /tmp/phpredis \
-    && curl -fsSL "https://github.com/phpredis/phpredis/archive/refs/tags/${PHPREDIS_VERSION}.tar.gz" \
+    && curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 \
+    "https://codeload.github.com/phpredis/phpredis/tar.gz/${PHPREDIS_VERSION}" \
     | tar -xz -C /tmp/phpredis --strip-components=1 \
     && cd /tmp/phpredis \
     && phpize \
