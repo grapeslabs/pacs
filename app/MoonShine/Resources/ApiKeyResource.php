@@ -3,11 +3,13 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\ApiKey;
+use App\MoonShine\Fields\ApiKeyField;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
+use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use MoonShine\Laravel\Resources\ModelResource;
-use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Date;
 use MoonShine\UI\Fields\Checkbox;
@@ -24,21 +26,17 @@ class ApiKeyResource extends BaseModelResource
 {
     protected string $model = ApiKey::class;
     protected string $title = 'Ключи API';
+    protected ?string $editModalTitle = 'Редактирование ключа API';
 
 
-    public function indexButtons(): ListOf
+    public function deleteConfirmation(Model $item): array
     {
-        return parent::indexButtons()
-            ->prepend(
-                ActionButton::make(
-                    '',
-                    fn($item) => "javascript:navigator.clipboard.writeText('{$item->key}').then(() => dispatchEvent(new CustomEvent('toast', {detail: {type: 'success', text: 'Ключ скопирован'}})))"
-                )
-                    ->class('js-copy-button')
-                    ->icon('clipboard')
-                    ->showInLine()
-            );
+        return [
+            'title' => 'Удалить ключ API?',
+            'text'  => '«' . ($item->name ?: 'Ключ') . '» будет отозван. Интеграции с этим ключом перестанут работать.',
+        ];
     }
+
     public function indexFields(): iterable
     {
         return [
@@ -51,8 +49,17 @@ class ApiKeyResource extends BaseModelResource
                 ->format('d.m.Y H:i')
                 ->sortable(),
 
-            Date::make('Срок действия', 'expires_at')
-                ->format('d.m.Y')
+            Preview::make('Срок действия', 'expires_at')
+                ->changeFill(function ($item) {
+                    if (blank($item->expires_at)) {
+                        return new \Illuminate\Support\HtmlString(
+                            '<span style="display:inline-flex;align-items:center;padding:4px 11px;'
+                            . 'border-radius:4px;background:#EAEDF8;color:#4E4E61;font-size:12px;'
+                            . 'font-weight:600;white-space:nowrap;">Бессрочно</span>'
+                        );
+                    }
+                    return \Illuminate\Support\Carbon::parse($item->expires_at)->format('d.m.Y');
+                })
                 ->sortable(),
 
             Switcher::make('Активен', 'is_active')
@@ -62,7 +69,7 @@ class ApiKeyResource extends BaseModelResource
                 ->setLabel('')
                 ->sortable(),
 
-            Text::make('Ключ', 'key'),
+            ApiKeyField::make('Ключ', 'key'),
 
         ];
     }
@@ -74,8 +81,8 @@ class ApiKeyResource extends BaseModelResource
                 ->required()
                 ->placeholder('Введите название ключа'),
 
-            Checkbox::make('Бессрочный', 'is_unlimited')
-                ->setValue(false),
+            Switcher::make('Бессрочный', 'is_unlimited')
+                ->default(false),
 
             CustomDate::make('Срок действия', 'expires_at')
                 ->after(Carbon::now(), 'Срок действия не может быть в прощлом')
@@ -132,7 +139,7 @@ class ApiKeyResource extends BaseModelResource
         ];
     }
 
-    public function modifyQueryBuilder($builder): \Illuminate\Contracts\Database\Eloquent\Builder
+    public function modifyQueryBuilder($builder): Builder
     {
         return $builder->orderBy('created_at', 'desc');
     }

@@ -32,6 +32,122 @@ class BotResource extends BaseModelResource
 {
     protected string $model = Bot::class;
     protected string $title = 'Боты';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('бот', 'бота', 'ботов');
+    }
+    protected ?string $editModalTitle = 'Редактирование бота';
+    protected bool $detailSidebar = true;
+    protected ?string $createLabel = 'Добавить бота';
+
+    public function detailSidebarData(Model $item): array
+    {
+        $item->loadMissing('chats');
+
+        $icBot = $this->iconFile('bot');
+        $icBolt = $this->iconFile('lightning');
+
+        $service = Bot::SERVICES[$item->service] ?? $item->service;
+
+        $recipients = $item->chats
+            ->map(fn($c) => trim(($c->name ?: 'Чат') . ' · ' . $c->chat_id))
+            ->all();
+        $recipientsHtml = empty($recipients)
+            ? '—'
+            : '<div class="ds-tags">'
+                . collect($recipients)->map(fn($r) => '<span class="ds-tag">' . e($r) . '</span>')->implode('')
+                . '</div>';
+
+        $sections = [
+            [
+                'icon' => $icBot,
+                'title' => 'Параметры подключения',
+                'single' => true,
+                'fields' => [
+                    ['label' => 'Сервис', 'value' => $service],
+                    ['label' => 'Токен', 'value' => $this->maskToken((string) $item->token)],
+                    ['label' => 'Получатели', 'full' => true, 'value_html' => $recipientsHtml],
+                    ['label' => 'API URL', 'value' => blank($item->api_url) ? 'Стандартный' : $item->api_url],
+                ],
+            ],
+        ];
+
+        $triggers = \App\Models\Trigger::query()->where('bot_id', $item->getKey())->get();
+        $triggerRes = app(TriggerResource::class);
+        if ($triggers->isNotEmpty()) {
+            $sections[] = [
+                'icon' => $icBolt,
+                'title' => 'Связанные триггеры · ' . $triggers->count(),
+                'items' => $triggers->map(fn($t) => [
+                    'title' => $t->name,
+                    'subtitle' => $this->eventLabel($t->event_type),
+                    'actions' => [$this->detailChevronTo($triggerRes, $t->getKey())],
+                ])->all(),
+            ];
+        }
+
+        $badges = [];
+        $triggersCount = $triggers->count();
+        if ($triggersCount > 0) {
+            $badges[] = [
+                'text' => $triggersCount . ' ' . $this->pluralTriggers($triggersCount),
+                'icon' => $icBolt,
+                'url' => $this->filteredIndexUrl($triggerRes, ['bot_id' => $item->getKey()]),
+            ];
+        }
+
+        return [
+            'title' => 'Карточка бота',
+            'subtitle' => 'Бот · ' . $service,
+            'hero' => [
+                'title' => $item->name,
+                'subtitle' => 'Бот · ' . $service,
+                'icon' => $icBot,
+                'badges' => $badges,
+            ],
+            'sections' => $sections,
+            'footer' => [
+                ['spacer' => true],
+                ['html' => $this->detailEditButtonHtml($item)],
+            ],
+        ];
+    }
+
+    private function pluralTriggers(int $n): string
+    {
+        $mod10 = $n % 10;
+        $mod100 = $n % 100;
+        if ($mod10 === 1 && $mod100 !== 11) {
+            return 'триггер';
+        }
+        if ($mod10 >= 2 && $mod10 <= 4 && ($mod100 < 12 || $mod100 > 14)) {
+            return 'триггера';
+        }
+        return 'триггеров';
+    }
+
+    private function maskToken(string $token): string
+    {
+        if (mb_strlen($token) <= 12) {
+            return $token;
+        }
+
+        return mb_substr($token, 0, 6) . '••••••' . mb_substr($token, -4);
+    }
+
+    private function eventLabel(?string $type): string
+    {
+        return [
+            'knowed' => 'Появление известного лица',
+            'unknowed' => 'Появление неизвестного лица',
+            'income' => 'Вход',
+            'outcome' => 'Выход',
+            'manual' => 'Открыто вручную',
+            'denied' => 'Отказано',
+        ][$type] ?? (string) $type;
+    }
+
     protected function pages(): array
     {
         return [
@@ -50,7 +166,7 @@ class BotResource extends BaseModelResource
     private function syncChats(Model $item): void
     {
         $request = request()->all();
-        $chatsData = collect($request['chats'])
+        $chatsData = collect($request['chats'] ?? [])
             ->filter(fn($row) => !empty($row['chat_id']));
         $newChatIds = $chatsData->pluck('chat_id')->toArray();
         $item->chats()->whereNotIn('chat_id', $newChatIds)->delete();
@@ -62,30 +178,35 @@ class BotResource extends BaseModelResource
         }
     }
 
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить бота?',
+            'text'  => '«' . ($item->name ?: 'Бот') . '» будет удалён. Триггеры, использующие его, перестанут отправлять уведомления.',
+        ];
+    }
+
     // Поля для индексной страницы
     public function indexFields(): iterable
     {
         return [
-            ID::make()->sortable(),
             Text::make('Название', 'name')
                 ->sortable(),
-            Select::make('Сервис', 'service')
-                ->options(Bot::SERVICES)
-                ->sortable(),
-            Text::make('Токен', 'token')
-                ->sortable(),
-            Url::make('API URL', 'api_url')
-                ->sortable(),
+            \App\MoonShine\Fields\TagsField::make('Сервис', 'service', fn($item) => array_filter([
+                Bot::SERVICES[$item->service] ?? $item->service,
+            ])),
+            \App\MoonShine\Fields\ApiKeyField::make('Токен', 'token'),
+            \App\MoonShine\Fields\RecipientsField::make('Получатели', 'chats', fn($item) => $item->chats->pluck('name')->all()),
+            \App\MoonShine\Fields\CountField::make('Триггеры', 'id', fn($item) => \App\Models\Trigger::query()->where('bot_id', $item->id)->count()),
         ];
     }
 
-    // Поля для формы создания/редактирования
     public function formFields(): iterable
     {
-        $item = $this->getItem();
+        $linkIcon = file_get_contents(public_path('icons/link.svg'));
+        $keyIcon = file_get_contents(public_path('icons/btn-addkey.svg'));
 
         return [
-            // Основные поля
             CustomText::make('Название', 'name')
                 ->unique('bots', 'name', 'Бот с таким названием уже существует')
                 ->required(),
@@ -97,14 +218,16 @@ class BotResource extends BaseModelResource
             CustomText::make('Токен', 'token')
                 ->pattern('/^[0-9]{8,10}:[a-zA-Z0-9_-]{35}$/')
                 ->required()
-                ->hint('Для Telegram: получить у @BotFather'),
+                ->hint('Для Telegram: получить у @BotFather')
+                ->leadingIcon($keyIcon),
 
             CustomText::make('API URL', 'api_url')
                 ->pattern('/^https?:\/\//i')
-                ->hint('Оставьте пустым для использования стандартного API'),
+                ->hint('Оставьте пустым для использования стандартного API')
+                ->leadingIcon($linkIcon),
 
-            BotChatsField::make('Чаты', 'chats')
-                ->serviceField('select[name="service"]')
+            BotChatsField::make('Получатели (чаты / каналы)', 'chats')
+                ->serviceField('input[name="service"]')
                 ->tokenField('input[name="token"]')
                 ->apiUrlField('input[name="api_url"]')
                 ->onApply(function ($item) { return $item; }),

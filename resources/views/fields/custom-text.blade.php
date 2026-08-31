@@ -12,28 +12,63 @@
 
     .ctf-input {
         width: 100%;
-        border-radius: 0.5rem;
-        border: 1px solid #d1d5db;
+        height: 46px;
+        border-radius: 12px;
+        border: 1.5px solid #D7DBEF;
         padding: 0.5rem 2rem 0.5rem 0.75rem;
-        background-color: transparent;
+        background-color: #fff;
         transition: all 0.2s;
         outline: none;
     }
 
+    .ctf-input:hover {
+        border-color: #7381F4;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(115, 129, 244, .18);
+    }
+
+    .ctf-wrapper--lead .ctf-input {
+        padding-left: 2.5rem !important;
+    }
+
+    .ctf-lead {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #A1A5B7;
+        pointer-events: none;
+    }
+
+    .ctf-lead svg {
+        width: 1.05rem;
+        height: 1.05rem;
+    }
+
     .ctf-input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 1px #3b82f6;
+        border-color: #7381F4;
+        box-shadow: 0 0 0 3px rgba(115, 129, 244, .18);
     }
 
     .ctf-input.ctf-error {
-        border-color: #ef4444 !important;
-        box-shadow: 0 0 0 1px #ef4444 !important;
+        border-color: #F04138 !important;
+        box-shadow: 0 0 0 1px #F04138 !important;
     }
 
     .ctf-error-msg {
-        color: #ef4444;
+        color: #F04138;
         font-size: 0.875rem;
         margin-top: 0.25rem;
+        display: block;
+    }
+
+    .ctf-hint {
+        color: #A1A5B7;
+        font-size: 0.75rem;
+        margin-top: 0.375rem;
         display: block;
     }
 
@@ -51,13 +86,13 @@
         width: 1rem;
         height: 1rem;
         border: 2px solid #e5e7eb;
-        border-top-color: #3b82f6;
+        border-top-color: #7381F4;
         border-radius: 50%;
         animation: ctf-spin 1s linear infinite;
     }
 
     .ctf-icon-error {
-        color: #ef4444;
+        color: #F04138;
         font-weight: bold;
         font-size: 1.1rem;
         user-select: none;
@@ -73,15 +108,36 @@
     }
 </style>
 
+@php
+    $ctfIsPhone = collect($element->getCustomClientRules())->contains(fn ($r) => ($r['type'] ?? '') === 'phone');
+@endphp
 <div x-data="{
     rules: {{ json_encode($element->getCustomClientRules()) }},
     value: '{{ addslashes((string) $element->getValue()) }}',
     modelId: '{{ $element->getData()?->getKey() ?? '' }}',
     csrfToken: '{{ csrf_token() }}',
+    isPhone: {{ $ctfIsPhone ? 'true' : 'false' }},
     error: null,
     loading: false,
     timeout: null,
+    maskPhone() {
+        let raw = String(this.value).replace(/\D/g, '');
+        if (raw === '') { this.value = ''; return; }
+        let d = raw;
+        if (d.startsWith('8')) d = '7' + d.slice(1);
+        if (!d.startsWith('7')) d = '7' + d;
+        d = d.slice(0, 11);
+        let rest = d.slice(1);
+        let out = '+7';
+        if (rest.length) out += '(' + rest.slice(0, 3);
+        if (rest.length >= 3) out += ')';
+        if (rest.length > 3) out += rest.slice(3, 6);
+        if (rest.length > 6) out += '-' + rest.slice(6, 8);
+        if (rest.length > 8) out += '-' + rest.slice(8, 10);
+        this.value = out;
+    },
     init() {
+        if (this.isPhone && this.value) { this.maskPhone(); }
         if (!window.textFieldsInitialized) {
             window.textFieldsInitialized = true;
             document.addEventListener('submit', function(event) {
@@ -173,12 +229,16 @@
             this.loading = false;
         }
     }
-}" class="ctf-wrapper" x-cloak>
+}" class="ctf-wrapper{{ method_exists($element, 'getLeadingIcon') && $element->getLeadingIcon() ? ' ctf-wrapper--lead' : '' }}" x-cloak>
     <div class="ctf-input-container">
+        @if(method_exists($element, 'getLeadingIcon') && $element->getLeadingIcon())
+            <span class="ctf-lead">{!! $element->getLeadingIcon() !!}</span>
+        @endif
         <input {!! $element->getAttributes()->merge(['class' => 'ctf-input form-input']) !!}
                type="text"
                name="{{ $element->getName() }}"
                x-model="value"
+               @if($ctfIsPhone) @input="maskPhone()" inputmode="tel" placeholder="+7(___)___-__-__" @endif
                @blur="validate()"
                :class="{'ctf-error': error !== null}"
         />
@@ -198,4 +258,7 @@
         </div>
     </div>
     <span class="ctf-error-msg" x-show="error !== null" x-text="error ?? ''"></span>
+    @if(method_exists($element, 'getCustomHint') && $element->getCustomHint())
+        <span class="ctf-hint" x-show="error === null">{{ $element->getCustomHint() }}</span>
+    @endif
 </div>

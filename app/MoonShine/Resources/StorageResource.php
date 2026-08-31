@@ -22,6 +22,7 @@ class StorageResource extends BaseModelResource
 {
     protected string $model = Storage::class;
     protected string $title = 'Хранилища';
+    protected ?string $editModalTitle = 'Редактирование хранилища';
     protected string $column = 'name';
 
     protected function activeActions(): ListOf
@@ -53,7 +54,7 @@ class StorageResource extends BaseModelResource
             Select::make('Тип', 'type')
                 ->options(Storage::$types)
                 ->required(),
-            Textarea::make('Комментарий', 'comment'),
+            Textarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию'),
             Divider::make('Параметры хранилища'),
             //s3
             CustomText::make('Шлюз', 's3_endpoint')

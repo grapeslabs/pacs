@@ -112,24 +112,6 @@ class EquipmentResource extends BaseModelResource
         ];
     }
 
-    public function detailFields(): iterable
-    {
-        return [
-            ID::make(),
-            Text::make('Название', 'name'),
-            Text::make('Тип оборудования', 'type')
-                ->setValue(fn($item) => $item->type_label),
-            Text::make('Модель', 'model'),
-            Text::make('Серийный номер', 'serial_number'),
-            Text::make('Статус', 'status')
-                ->setValue(fn($item) => $item->status_label),
-            Text::make('Местоположение', 'location'),
-            CustomTextarea::make('Описание', 'description'),
-            Json::make('Характеристики', 'specifications')
-                ->keyValue('Параметр', 'Значение'),
-        ];
-    }
-
     public function rules($item): array
     {
         return [

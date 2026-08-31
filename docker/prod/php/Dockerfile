@@ -10,17 +10,25 @@ RUN apk add --no-cache \
     libzip \
     zip \
     supervisor \
+    libpng \
+    libjpeg-turbo \
+    freetype \
     && apk add --no-cache --virtual .build-deps \
     $PHPIZE_DEPS \
     postgresql-dev \
     libzip-dev \
-    linux-headers
+    linux-headers \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev
 
-RUN docker-php-ext-install -j$(nproc) \
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
     pdo_mysql \
     pdo_pgsql \
     pcntl \
     zip \
+    gd \
     && mkdir -p /tmp/phpredis \
     && curl -fsSL "https://github.com/phpredis/phpredis/archive/refs/tags/${PHPREDIS_VERSION}.tar.gz" \
     | tar -xz -C /tmp/phpredis --strip-components=1 \

@@ -20,6 +20,7 @@ class TelegramBotResource extends BaseModelResource
 {
     protected string $model = TelegramBot::class;
     protected string $title = 'Telegram Боты';
+    protected ?string $editModalTitle = 'Редактирование Telegram-бота';
     protected function pages(): array
     {
         return [

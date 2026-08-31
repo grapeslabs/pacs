@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Person;
 use App\Models\SkudCommand;
 use App\Models\GrapeslabsSkudController;
+use App\Services\ControllerAccessService;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use Carbon\Carbon;
 use App\Services\VideoAnalyticService;
@@ -21,11 +22,14 @@ class PersonObserver
 
     protected VideoAnalyticService $vas;
 
+    protected ControllerAccessService $access;
+
     protected array $deletedRfidKeysCache = [];
 
-    public function __construct(VideoAnalyticService $vas)
+    public function __construct(VideoAnalyticService $vas, ControllerAccessService $access)
     {
         $this->vas = $vas;
+        $this->access = $access;
     }
 
     public function created(Person $person): void
@@ -43,13 +47,10 @@ class PersonObserver
 
         if (!$this->isCurrentlyFrozen($person->frozen_start, $person->frozen_end)) {
             $faceKey = $this->createFaceKey($person, $person->photo);
-            $this->syncWithControllers($this->getFaceControllers(), [$faceKey], [], "add person face {$person->id}");
+            $this->syncWithControllers($this->access->faceControllersForPerson($person), [$faceKey], [], "add person face {$person->id}");
 
-            $rfidCardsAdd = $person->keys->map(fn($k) => ['card' => (string)$k->key, 'flags' => 0, 'tz' => 255])->values()->toArray();
-            if (!empty($rfidCardsAdd)) {
-                foreach ($this->getRfidControllers() as $controller) {
-                    $this->createSkudCommand($controller->id, Carbon::now(), 'add_cards', ['cards' => $rfidCardsAdd]);
-                }
+            foreach ($this->access->rfidCardCommandsFor($person) as $controllerId => $cards) {
+                $this->createSkudCommand($controllerId, Carbon::now(), 'add_cards', ['cards' => $cards]);
             }
         }
 
@@ -63,25 +64,20 @@ class PersonObserver
         $wasFrozen = $this->isCurrentlyFrozen($person->getOriginal('frozen_start'), $person->getOriginal('frozen_end'));
         $isFrozen = $this->isCurrentlyFrozen($person->frozen_start, $person->frozen_end);
 
-        $faceControllers = $this->getFaceControllers();
-        $rfidControllers = $this->getRfidControllers();
         $uid = $person->key_uid ?? $person->getSkudUid();
 
         if ($person->wasChanged(['frozen_start', 'frozen_end'])) {
             if (!$wasFrozen && $isFrozen) {
-                foreach ($faceControllers as $controller) {
+                foreach ($this->access->faceControllersForPerson($person) as $controller) {
                     $this->createSkudCommand($controller->id, Carbon::now(), 'del_persons', ['persons' => [['person' => $uid]]]);
                 }
 
-                $rfidCardsDel = $person->keys->map(fn($k) => ['card' => (string)$k->key])->values()->toArray();
-                if (!empty($rfidCardsDel)) {
-                    foreach ($rfidControllers as $controller) {
-                        $this->createSkudCommand($controller->id, Carbon::now(), 'del_cards', ['cards' => $rfidCardsDel]);
-                    }
+                foreach ($this->access->rfidCardDeletesFor($person) as $controllerId => $cards) {
+                    $this->createSkudCommand($controllerId, Carbon::now(), 'del_cards', ['cards' => $cards]);
                 }
             } elseif ($wasFrozen && !$isFrozen) {
                 $imagesBase64 = $this->getImagesData($person->photo, true);
-                foreach ($faceControllers as $controller) {
+                foreach ($this->access->faceControllersForPerson($person) as $controller) {
                     $this->createSkudCommand($controller->id, Carbon::now(), 'add_persons', [
                         'persons' => [[
                             'person' => $uid,
@@ -91,17 +87,15 @@ class PersonObserver
                     ]);
                 }
 
-                $rfidCardsAdd = $person->keys->map(fn($k) => ['card' => (string)$k->key, 'flags' => 0, 'tz' => 255])->values()->toArray();
-                if (!empty($rfidCardsAdd)) {
-                    foreach ($rfidControllers as $controller) {
-                        $this->createSkudCommand($controller->id, Carbon::now(), 'add_cards', ['cards' => $rfidCardsAdd]);
-                    }
+                foreach ($this->access->rfidCardCommandsFor($person) as $controllerId => $cards) {
+                    $this->createSkudCommand($controllerId, Carbon::now(), 'add_cards', ['cards' => $cards]);
                 }
             }
         }
 
         if ($person->wasChanged('photo') && !$isFrozen) {
             $this->updateVas($person);
+            $faceControllers = $this->access->faceControllersForPerson($person);
             $keysToClear = !empty($person->getOriginal('photo')) ? [$this->createFaceKey($person, $person->getOriginal('photo'))] : [];
             $this->syncWithControllers($faceControllers, [$this->createFaceKey($person, $person->photo)], $keysToClear, "update person photo {$person->id}");
         }
@@ -165,11 +159,9 @@ class PersonObserver
         $start = $person->frozen_start ? Carbon::parse($person->frozen_start) : null;
         $end = $person->frozen_end ? Carbon::parse($person->frozen_end) : null;
 
-        $faceControllers = $this->getFaceControllers();
-        $rfidControllers = $this->getRfidControllers();
-
-        $rfidCardsAdd = $person->keys->map(fn($key) => ['card' => (string)$key->key, 'flags' => 0, 'tz' => 255])->values()->toArray();
-        $rfidCardsDel = $person->keys->map(fn($key) => ['card' => (string)$key->key])->values()->toArray();
+        $faceControllers = $this->access->faceControllersForPerson($person);
+        $rfidCardsAddMap = $this->access->rfidCardCommandsFor($person);
+        $rfidCardsDelMap = $this->access->rfidCardDeletesFor($person);
         $imagesBase64 = $this->getImagesData($person->photo, true);
 
         if ($start && $start->isFuture()) {
@@ -178,12 +170,10 @@ class PersonObserver
                     'persons' => [ ['person' => $uid] ]
                 ]);
             }
-            if (!empty($rfidCardsDel)) {
-                foreach ($rfidControllers as $controller) {
-                    $this->createSkudCommand($controller->id, $start, 'del_cards', [
-                        'cards' => $rfidCardsDel
-                    ]);
-                }
+            foreach ($rfidCardsDelMap as $controllerId => $cards) {
+                $this->createSkudCommand($controllerId, $start, 'del_cards', [
+                    'cards' => $cards
+                ]);
             }
         }
 
@@ -197,14 +187,33 @@ class PersonObserver
                     ]]
                 ]);
             }
-            if (!empty($rfidCardsAdd)) {
-                foreach ($rfidControllers as $controller) {
-                    $this->createSkudCommand($controller->id, $end, 'add_cards', [
-                        'cards' => $rfidCardsAdd
-                    ]);
-                }
+            foreach ($rfidCardsAddMap as $controllerId => $cards) {
+                $this->createSkudCommand($controllerId, $end, 'add_cards', [
+                    'cards' => $cards
+                ]);
             }
         }
+    }
+
+    public function reconcilePersonFace(Person $person): void
+    {
+        if ($this->isCurrentlyFrozen($person->frozen_start, $person->frozen_end)) {
+            return;
+        }
+
+        $allFace = GrapeslabsSkudController::where('type', 'pinterm')->get();
+        if ($allFace->isEmpty()) {
+            return;
+        }
+
+        $allowedIds = $this->access->faceControllersForPerson($person)->pluck('id')->all();
+        $allowed = $allFace->whereIn('id', $allowedIds);
+        $disallowed = $allFace->whereNotIn('id', $allowedIds);
+
+        $faceKey = $this->createFaceKey($person, $person->photo);
+
+        $this->syncWithControllers($allowed, [$faceKey], [], "reconcile face person {$person->id}");
+        $this->syncWithControllers($disallowed, [], [$faceKey], "reconcile face person {$person->id}");
     }
 
     protected function createSkudCommand(int $controllerId, Carbon $executeAt, string $operation, array $payload): void

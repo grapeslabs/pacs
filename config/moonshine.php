@@ -16,15 +16,14 @@ use App\Models\User;
 use App\MoonShine\Pages\Dashboard;
 use MoonShine\Laravel\Pages\ErrorPage;
 use App\MoonShine\Pages\LoginPage;
-use MoonShine\Laravel\Pages\ProfilePage;
 use \MoonShine\Laravel\Forms\LoginForm;
 use \App\Http\Middleware\CheckDiskSpace;
 use \App\Http\Middleware\CheckCaptcha;
 
 return [
     'title' => 'GRAPES PACS',
-    'logo' => '/images/logo.svg',
-    'logo_small' => '/images/logo.svg',
+    'logo' => '/icons/logo.svg',
+    'logo_small' => '/icons/logo_small.svg',
     'ui' => [
         'theme' => 'light', // Принудительно светлая тема
         'dark_mode' => false, // Отключаем темный режим
@@ -93,7 +92,7 @@ return [
 
     'pages' => [
         'dashboard' => App\MoonShine\Pages\Dashboard::class,
-        'profile' => ProfilePage::class,
+        'profile' => \App\MoonShine\Pages\ProfilePage::class,
         'login' => \App\MoonShine\Pages\LoginPage::class,
         'error' => ErrorPage::class,
     ],

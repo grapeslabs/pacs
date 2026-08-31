@@ -26,6 +26,7 @@ class InviterResource extends BaseModelResource
 {
     protected string $model = Inviter::class;
     protected string $title = 'Приглашающие';
+    protected ?string $editModalTitle = 'Редактирование приглашающего';
     protected function pages(): array
     {
         return [
@@ -231,10 +232,16 @@ class InviterResource extends BaseModelResource
                 ->nullable()
                 ->placeholder('Фильтрация по персоне'),
             SelectField::make('Организация', 'person.organization_id')
+                ->icon('magnifier')
+                ->optionsIcon('organization')
                 ->options(
                     Organization::query()
                         ->get()
-                        ->pluck('short_name', 'id')
+                        ->map(fn($o) => [
+                            'id'      => $o->id,
+                            'name'    => $o->short_name,
+                            'subtext' => $o->inn ? 'ИНН ' . $o->inn : null,
+                        ])
                         ->toArray()
                 )
                 ->nullable()
@@ -245,6 +252,9 @@ class InviterResource extends BaseModelResource
                     });
                 }),
             SelectField::make('Теги', 'person.tags')
+                ->icon('tag')
+                ->optionsIcon('tag')
+                ->placeholder('Введите тег')
                 ->multiple()
                 ->options(
                     Tag::query()

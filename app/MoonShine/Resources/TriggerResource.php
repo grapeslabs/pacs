@@ -6,12 +6,19 @@ use App\Models\Bot;
 use App\Models\Stream;
 use App\Models\Tag;
 use App\Models\Trigger;
+use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomText;
-use App\MoonShine\Fields\Select2Field;
+use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\SelectField;
+use App\MoonShine\Fields\TriggerContentField;
 use Closure;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use MoonShine\UI\Components\ActionButton;
+use MoonShine\Laravel\MoonShineRequest;
+use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
+use MoonShine\Support\Enums\ToastType;
 use MoonShine\Contracts\UI\ActionButtonContract;
 use MoonShine\Contracts\UI\Collection\TableRowsContract;
 use MoonShine\Laravel\Enums\Action;
@@ -31,54 +38,173 @@ class TriggerResource extends BaseModelResource
 {
     protected string $model = Trigger::class;
     protected string $title = 'Триггеры';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('триггер', 'триггера', 'триггеров');
+    }
+    protected ?string $editModalTitle = 'Редактирование триггера';
     protected string $column = 'name';
+    protected bool $detailSidebar = true;
+    protected ?string $createLabel = 'Добавить триггер';
 
     protected function activeActions(): ListOf
     {
         return parent::activeActions()->except(Action::VIEW);
     }
 
+    protected function indexButtons(): ListOf
+    {
+        return parent::indexButtons()->prepend($this->testMessageButton());
+    }
+
+    /** Кнопка-иконка «Отправить тестовое сообщение» через бота триггера. */
+    protected function testMessageButton(): \MoonShine\Contracts\UI\ActionButtonContract
+    {
+        $plane = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 4 3 11l6 2 2 6 4-6 6-9z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+
+        return ActionButton::make('', fn($item) => $this->getAsyncMethodUrl('sendTest', params: ['item_id' => $item->getKey()]))
+            ->icon($plane, true)
+            ->class(['js-test-button', 'ds-rowbtn'])
+            ->customAttributes([
+                'title' => 'Отправить тестовое сообщение',
+                '@click.stop' => '',
+            ])
+            ->async()
+            ->canSee(fn($item) => (bool) $item->bot_id);
+    }
+
+    public function sendTest(MoonShineRequest $request): MoonShineJsonResponse
+    {
+        $trigger = Trigger::query()->with('bot')->find($request->get('item_id'));
+
+        if (! $trigger || ! $trigger->bot) {
+            return MoonShineJsonResponse::make()->toast('Бот не привязан к триггеру', ToastType::ERROR);
+        }
+
+        try {
+            $trigger->bot->sendBroadcast('Тестовое сообщение от триггера «' . $trigger->name . '»');
+
+            return MoonShineJsonResponse::make()->toast('Тестовое сообщение отправлено', ToastType::SUCCESS);
+        } catch (\Throwable $e) {
+            return MoonShineJsonResponse::make()->toast('Ошибка отправки: ' . $e->getMessage(), ToastType::ERROR);
+        }
+    }
+
+    public function detailSidebarData(Model $item): array
+    {
+        $item->loadMissing('bot');
+
+        $icBolt = $this->iconFile('lightning');
+        $icBot = $this->iconFile('bot');
+        $icGear = $this->iconFile('gear');
+
+        $deviceLabel = $this->deviceTypeLabel($item->device_type);
+        $deviceExists = $item->device_type === Trigger::DEVICE_CAMERA
+            ? (bool) Stream::find($item->device_id)
+            : (bool) SkudController::find($item->device_id);
+        $deviceName = match ($item->device_type) {
+            Trigger::DEVICE_CAMERA => Stream::find($item->device_id)?->name,
+            default => SkudController::find($item->device_id)?->serial_number,
+        } ?? 'Устройство удалено';
+
+        $active = (bool) $item->is_active;
+
+        $deviceValue = $deviceExists ? trim($deviceName . ' · ' . $deviceLabel) : $deviceName;
+
+        $sections = [
+            [
+                'icon' => $icGear,
+                'title' => 'Конфигурация',
+                'single' => true,
+                'fields' => [
+                    ['label' => 'Устройство', 'full' => true, 'value' => $deviceValue],
+                    ['label' => 'Событие', 'full' => true, 'value' => $this->eventLabel($item->event_type)],
+                    ['label' => 'Бот', 'full' => true, 'value' => $item->bot?->name ?? '—'],
+                ],
+            ],
+        ];
+
+        $badges = [
+            $active
+                ? ['text' => 'Включён']
+                : ['text' => 'Выключен', 'tone' => 'muted'],
+        ];
+        if ($item->bot) {
+            $badges[] = [
+                'text' => $item->bot->name,
+                'icon' => $icBot,
+                'url' => $this->filteredIndexUrl(app(BotResource::class), ['name' => $item->bot->name]),
+            ];
+        }
+
+        return [
+            'title' => 'Карточка триггера',
+            'subtitle' => 'Триггер · ' . $deviceLabel,
+            'hero' => [
+                'title' => $item->name,
+                'subtitle' => 'Триггер · ' . $deviceLabel,
+                'icon' => $icBolt,
+                'badges' => $badges,
+            ],
+            'sections' => $sections,
+            'footer' => [
+                ['spacer' => true],
+                ['html' => $this->detailEditButtonHtml($item)],
+            ],
+        ];
+    }
+
+    private function deviceTypeLabel(?string $type): string
+    {
+        return [
+            Trigger::DEVICE_CAMERA => 'Камера',
+            Trigger::DEVICE_TERMINAL => 'Терминал доступа',
+            Trigger::DEVICE_BARIER => 'Шлагбаум',
+            Trigger::DEVICE_CONTROLLER => 'Контроллер СКУД',
+        ][$type] ?? (string) $type;
+    }
+
+    private function eventLabel(?string $type): string
+    {
+        return [
+            Trigger::EVENT_KNOWED => 'Появление известного лица',
+            Trigger::EVENT_UNKNOWED => 'Появление неизвестного лица',
+            Trigger::EVENT_INCOME => 'Вход',
+            Trigger::EVENT_OUTCOME => 'Выход',
+            Trigger::EVENT_MANUAL => 'Открыто вручную',
+            Trigger::EVENT_DENIED => 'Отказано',
+        ][$type] ?? (string) $type;
+    }
+
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить триггер?',
+            'text'  => '«' . ($item->name ?: 'Триггер') . '» будет удалён.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
-            ID::make()
-                ->sortable(),
-
             Text::make('Название', 'name')
                 ->sortable(),
 
-            Select::make('Тип устройства', 'device_type')
-                ->options([
-                    Trigger::DEVICE_CAMERA => 'Камера',
-                    Trigger::DEVICE_TERMINAL => 'Терминал доступа',
-                    Trigger::DEVICE_BARIER => 'Шлагбаум',
-                    Trigger::DEVICE_CONTROLLER => 'Контроллер СКУД',
-                ])
-                ->sortable(fn (Builder $query, string $column, string $direction) => $query->orderByRaw("
-                    CASE $column
-                        WHEN '" . Trigger::DEVICE_CAMERA . "' THEN 'Камера'
-                        WHEN '" . Trigger::DEVICE_CONTROLLER . "' THEN 'Контроллер СКУД'
-                        WHEN '" . Trigger::DEVICE_TERMINAL . "' THEN 'Терминал доступа'
-                        WHEN '" . Trigger::DEVICE_BARIER . "' THEN 'Шлагбаум'
-                        ELSE $column
-                    END $direction
-                ")),
+            AvatarField::make('Устройство', 'device_id')
+                ->icon(fn($item) => $this->deviceIconSvg($item->device_type))
+                ->text(fn($item) => $this->resolveDevice($item)['name'] ?: ('Устройство #' . $item->device_id))
+                ->subtext(fn($item) => $this->resolveDevice($item)['exists'] ? $this->deviceTypeLabel($item->device_type) : 'Устройство удалено')
+                ->deleted(fn($item) => ! $this->resolveDevice($item)['exists']),
 
-            Text::make('Устройство', 'device_id', function ($item) {
-                return match($item->device_type) {
-                    Trigger::DEVICE_CAMERA => Stream::find($item->device_id)->name??'Устройство удалено',
-                    default => SkudController::find($item->device_id)?->serial_number,
-                };
-            }),
-
-            Select::make('Событие', 'event_type')
+            ColoredSelectField::make('Событие', 'event_type', fn($item) => $item->event_type)
                 ->options([
-                    Trigger::EVENT_KNOWED => 'Появление известного лица',
-                    Trigger::EVENT_UNKNOWED => 'Появление неизвестного лица',
-                    Trigger::EVENT_INCOME => 'Вход',
-                    Trigger::EVENT_OUTCOME => 'Выход',
-                    Trigger::EVENT_MANUAL => 'Открыто вручную',
-                    Trigger::EVENT_DENIED => 'Отказано',
+                    Trigger::EVENT_KNOWED   => ['label' => 'Появление известного лица', 'color' => 'green'],
+                    Trigger::EVENT_UNKNOWED => ['label' => 'Появление неизвестного лица', 'color' => 'yellow'],
+                    Trigger::EVENT_INCOME   => ['label' => 'Вход', 'color' => 'gray'],
+                    Trigger::EVENT_OUTCOME  => ['label' => 'Выход', 'color' => 'gray'],
+                    Trigger::EVENT_MANUAL   => ['label' => 'Открыто вручную', 'color' => 'blue'],
+                    Trigger::EVENT_DENIED   => ['label' => 'Отказано', 'color' => 'red'],
                 ])
                 ->sortable(fn (Builder $query, string $column, string $direction) => $query->orderByRaw("
                         CASE $column
@@ -92,25 +218,51 @@ class TriggerResource extends BaseModelResource
                         END $direction
                     ")),
 
+            AvatarField::make('Бот', 'bot_id')
+                ->icon($this->iconFile('bot'))
+                ->text(fn($item) => $item->bot?->name ?? '—'),
+
             Switcher::make('Активность', 'is_active')
                 ->updateOnPreview()
                 ->sortable(),
-
-            BelongsTo::make('Бот', 'bot', 'name', resource: BotResource::class)
-                ->sortable(function (Builder $query, string $column, string $direction) {
-                    return $query->orderBy(
-                        Bot::select('name')
-                            ->whereColumn('bots.id', 'triggers.bot_id')
-                            ->limit(1),
-                        $direction
-                    );
-                })
         ];
+    }
+
+    private array $deviceCache = [];
+
+    private function resolveDevice($item): array
+    {
+        $key = $item->device_type . ':' . $item->device_id;
+        if (! isset($this->deviceCache[$key])) {
+            if ($item->device_type === Trigger::DEVICE_CAMERA) {
+                $model = Stream::find($item->device_id);
+                $name = $model?->name;
+            } else {
+                $model = SkudController::find($item->device_id);
+                $name = $model?->serial_number;
+            }
+            $this->deviceCache[$key] = ['exists' => (bool) $model, 'name' => $name];
+        }
+
+        return $this->deviceCache[$key];
+    }
+
+    private function deviceIconSvg(?string $type): string
+    {
+        $file = match ($type) {
+            Trigger::DEVICE_CAMERA   => 'menu-video.svg',
+            Trigger::DEVICE_TERMINAL => 'terminal.svg',
+            Trigger::DEVICE_BARIER   => 'gate.svg',
+            default                  => 'controller.svg',
+        };
+
+        return @file_get_contents(public_path('icons/' . $file)) ?: '';
     }
 
     public function formFields(): iterable
     {
         $item = $this->getItem();
+        $magnifierIcon = file_get_contents(public_path('icons/magnifier.svg'));
 
         return [
             ID::make(),
@@ -144,7 +296,8 @@ class TriggerResource extends BaseModelResource
                     }
                     return $item;
                 })
-                ->setValue($item->device_id ?? null),
+                ->setValue($item->device_id ?? null)
+                ->icon($magnifierIcon),
 
             SelectField::make('Устройство', 'device_id_terminal')
                 ->options(SkudController::query()->where('type', 'pinterm')->pluck('serial_number', 'id')->toArray())
@@ -155,7 +308,8 @@ class TriggerResource extends BaseModelResource
                     }
                     return $item;
                 })
-                ->setValue($item->device_id ?? null),
+                ->setValue($item->device_id ?? null)
+                ->icon($magnifierIcon),
 
             SelectField::make('Устройство', 'device_id_barier')
                 ->options(SkudController::query()->where('type', 'pingate')->pluck('serial_number', 'id')->toArray())
@@ -166,7 +320,8 @@ class TriggerResource extends BaseModelResource
                     }
                     return $item;
                 })
-                ->setValue($item->device_id ?? null),
+                ->setValue($item->device_id ?? null)
+                ->icon($magnifierIcon),
 
             SelectField::make('Устройство', 'device_id_controller')
                 ->options(SkudController::query()->whereIn('type', ['z5rweb', 'ironlogic'])->pluck('serial_number', 'id')->toArray())
@@ -177,7 +332,9 @@ class TriggerResource extends BaseModelResource
                     }
                     return $item;
                 })
-                ->setValue($item->device_id ?? null),
+                ->setValue($item->device_id ?? null)
+                ->icon($magnifierIcon),
+
 
             SelectField::make('Событие', 'event_type')
                 ->options([
@@ -208,50 +365,35 @@ class TriggerResource extends BaseModelResource
                 })
                 ->setValue($item->event_type ?? null),
 
+            SelectField::make('Теги', 'tags')
+                ->icon('tag')
+                ->optionsIcon('tag')
+                ->placeholder('Введите тег')
+                ->options(Tag::select('id', 'name')->get())
+                ->multiple(true),
+
             SelectField::make('Бот', 'bot_id')
                 ->options(Bot::query()->pluck('name', 'id')->toArray())
-                ->required(),
+                ->required()
+                ->icon($magnifierIcon),
 
-            Checkbox::make('Дата', 'data->date')
-                ->setValue((boolean)$item?->data['date'] ?? false),
-            Checkbox::make('Время', 'data->time')
-                ->setValue((boolean)$item?->data['time'] ?? false),
+            TriggerContentField::make('Содержимое уведомления', 'data')
+                ->withoutWrapper()
+                ->onApply(function ($item) {
+                    $data = TriggerContentField::normalize(request('data', []));
 
-            Checkbox::make('Видеопоток', 'data->stream')
-                ->setValue((boolean)$item?->data['stream'] ?? false)
-                ->showWhen('device_type', '=', Trigger::DEVICE_CAMERA),
+                    $eventType = request('device_type') == Trigger::DEVICE_CAMERA
+                        ? request('event_type_camera')
+                        : request('event_type');
 
-            Checkbox::make('ФИО', 'data->lfm')
-                ->setValue((boolean)$item?->data['lfm'] ?? false)
-                ->showWhen('event_type_camera', '!=', Trigger::EVENT_UNKNOWED)
-                ->showWhen('event_type', '!=', Trigger::EVENT_MANUAL)
-                ->showWhen('event_type', '!=', Trigger::EVENT_DENIED),
+                    if ($eventType === Trigger::EVENT_UNKNOWED) {
+                        $data = TriggerContentField::withoutPersonOnly($data);
+                    }
 
-            Checkbox::make('ID персоны', 'data->person_id')
-                ->setValue((boolean)$item?->data['person_id'] ?? false)
-                ->showWhen('event_type_camera', '!=', Trigger::EVENT_UNKNOWED)
-                ->showWhen('event_type', '!=', Trigger::EVENT_MANUAL)
-                ->showWhen('event_type', '!=', Trigger::EVENT_DENIED),
+                    $item->data = $data;
 
-            Checkbox::make('Фото из фотобонка', 'data->photobank')
-                ->setValue((boolean)$item?->data['photobank'] ?? false)
-                ->showWhen('event_type_camera', '!=', Trigger::EVENT_UNKNOWED)
-                ->showWhen('event_type', '!=', Trigger::EVENT_MANUAL)
-                ->showWhen('event_type', '!=', Trigger::EVENT_DENIED),
-
-            Checkbox::make('Комментарий', 'data->comment')
-                ->setValue((boolean)$item?->data['comment'] ?? false)
-                ->showWhen('event_type_camera', '!=', Trigger::EVENT_UNKNOWED)
-                ->showWhen('event_type', '!=', Trigger::EVENT_MANUAL)
-                ->showWhen('event_type', '!=', Trigger::EVENT_DENIED),
-
-            Checkbox::make('Фото камеры', 'data->photo')
-                ->setValue((boolean)$item?->data['photo'] ?? false)
-                ->showWhen('device_type', '=', Trigger::DEVICE_CAMERA),
-
-            SelectField::make('Теги', 'tags')
-                ->options(Tag::select('id', 'name')->get())
-                ->multiple(true)
+                    return $item;
+                }),
         ];
     }
 
@@ -309,6 +451,9 @@ class TriggerResource extends BaseModelResource
                 ->nullable(),
 
             SelectField::make('Теги', 'tags')
+                ->icon('tag')
+                ->optionsIcon('tag')
+                ->placeholder('Введите тег')
                 ->options(Tag::select('id', 'name')->get())
                 ->multiple(true)
         ];

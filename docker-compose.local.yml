@@ -70,6 +70,7 @@ services:
       - ofelia
     environment:
       TZ: Europe/Moscow
+      LOG_SOURCE: php
       UPLOAD_MAX_FILESIZE: 5M
       POST_MAX_SIZE: 5M
       MEMORY_LIMIT: 256M
@@ -191,8 +192,10 @@ services:
       - redis
     environment:
       TZ: Europe/Moscow
+      LOG_SOURCE: horizon
     networks:
       - laravel
+    entrypoint: ["php", "/var/www/html/artisan", "queue:work", "--sleep=1", "--tries=3", "--timeout=90"]
     logging: *default-logging
 
   adminer:
@@ -274,6 +277,7 @@ services:
     volumes:
       - ./analytic/person-photos:/app/person_photos
       - ./analytic/thumbnails:/app/thumbnails
+      - ./analytic/logs/api:/app/logs
     depends_on:
       analytic-database:
         condition: service_healthy
@@ -300,6 +304,7 @@ services:
     volumes:
       - ./test:/app/captured_images
       - ./analytic/thumbnails:/app/thumbnails
+      - ./analytic/logs/server:/app/logs
     depends_on:
       analytic-api:
         condition: service_started
@@ -388,6 +393,7 @@ services:
       - redis
     environment:
       TZ: Europe/Moscow
+      LOG_SOURCE: events
     networks:
       - laravel
     entrypoint: ["php", "/var/www/html/artisan", "events:process-new"]
@@ -408,6 +414,7 @@ services:
       - redis
     environment:
       TZ: Europe/Moscow
+      LOG_SOURCE: lpr-rules
     networks:
       - laravel
     entrypoint: ["php", "/var/www/html/artisan", "lpr:process-rules"]

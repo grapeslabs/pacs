@@ -2,10 +2,11 @@
 
 namespace App\Observers;
 
+use App\Models\GrapeslabsSkudController;
 use App\Models\Key;
 use App\Models\Person;
+use App\Services\ControllerAccessService;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Database\Eloquent\Collection;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use GrapesLabs\PinvideoSkud\Keys\RfidKey;
 use GrapesLabs\PinvideoSkud\ControllerFactory;
@@ -14,88 +15,123 @@ class KeyObserver
 {
     public bool $afterCommit = true;
 
+    public function __construct(protected ControllerAccessService $access) {}
+
     public function created(Key $key): void
     {
-        if ($this->shouldSkipImmediateSync($key->person)) {
-            $this->reschedulePersonCommands($key->person);
-            return;
-        }
+        $key->load('person.tags');
 
-        $this->addKey($key);
+        if (! $this->shouldSkipImmediateSync($key->person)) {
+            $this->reconcileKey($key);
+        }
         $this->reschedulePersonCommands($key->person);
     }
 
     public function updated(Key $key): void
     {
-        if ($key->wasChanged(['key', 'type'])) {
-            if ($this->shouldSkipImmediateSync($key->person)) {
-                $this->reschedulePersonCommands($key->person);
-                return;
-            }
+        if (! $key->wasChanged(['key', 'type', 'person_id', 'is_active'])) {
+            return;
+        }
 
-            $this->updateKey($key);
-            $this->reschedulePersonCommands($key->person);
+        $key->load('person.tags');
+
+        if (! $this->shouldSkipImmediateSync($key->person)) {
+            $oldCode = $key->wasChanged('key') ? $key->getOriginal('key') : null;
+            $this->reconcileKey($key, $oldCode, $key->getOriginal('type'));
+        }
+
+        $this->reschedulePersonCommands($key->person);
+
+        if ($key->wasChanged('person_id')) {
+            $oldPersonId = $key->getOriginal('person_id');
+            if ($oldPersonId !== null && $oldPersonId !== $key->person_id) {
+                $this->reschedulePersonCommands(Person::find($oldPersonId));
+            }
         }
     }
 
     public function deleted(Key $key): void
     {
-        $this->delKey($key);
+        $this->clearEverywhere($key->key, $key->type);
         $this->reschedulePersonCommands($key->person);
     }
 
-    protected function addKey(Key $key): void
+    public function reconcilePersonKeys(Person $person): void
     {
-        $rfidKey = $this->createRfidKey($key->key, $key->type);
-        $this->syncWithControllers([$rfidKey], [], "add key {$key->id}");
-    }
-
-    protected function updateKey(Key $key): void
-    {
-        $oldRfidKey = $this->createRfidKey($key->getOriginal('key'), $key->getOriginal('type'));
-        $newRfidKey = $this->createRfidKey($key->key, $key->type);
-
-        $this->syncWithControllers([$newRfidKey], [$oldRfidKey], "update key {$key->id}");
-    }
-
-    protected function delKey(Key $key): void
-    {
-        $rfidKey = $this->createRfidKey($key->key, $key->type);
-        $this->syncWithControllers([], [$rfidKey], "delete key {$key->id}");
-    }
-
-    protected function syncWithControllers(array $keysToWrite, array $keysToClear, string $actionLogContext): void
-    {
-        $controllers = $this->getControllers();
-        if ($controllers->isEmpty()) {
-            Log::error('SKUD controllers not found');
+        if ($this->shouldSkipImmediateSync($person)) {
             return;
         }
 
+        foreach ($person->keys as $key) {
+            $this->reconcileKey($key);
+        }
+    }
+
+    protected function reconcileKey(Key $key, ?string $oldCode = null, ?string $oldType = null): void
+    {
+        $controllers = $this->rfidControllers();
+        if ($controllers->isEmpty()) {
+            return;
+        }
+
+        $allowedIds = $key->is_active ? $this->access->rfidControllersForKey($key)->pluck('id') : collect();
+        $newKey = $this->createRfidKey($key->key, $key->type);
+        $oldKey = ($oldCode !== null && $oldCode !== $key->key)
+            ? $this->createRfidKey($oldCode, $oldType ?? $key->type)
+            : null;
+
         foreach ($controllers as $controller) {
             try {
-                $skudController = ControllerFactory::create($controller);
-                if (!empty($keysToClear)) {
-                    $skudController->clearKeys($keysToClear);
+                $skud = ControllerFactory::create($this->toVendorController($controller));
+                if ($oldKey) {
+                    $skud->clearKeys([$oldKey]);
                 }
-                if (!empty($keysToWrite)) {
-                    $skudController->writeKeys($keysToWrite);
+                if ($allowedIds->contains($controller->id)) {
+                    $skud->writeKeys([$newKey]);
+                } else {
+                    $skud->clearKeys([$newKey]);
                 }
-                Log::info("SKUD $actionLogContext success for controller ID: " . ($controller->id ?? 'unknown'));
+                Log::info("SKUD reconcile key {$key->id} success for controller ID: {$controller->id}");
             } catch (\Exception $e) {
-                Log::error("SKUD $actionLogContext exception on controller: " . $e->getMessage());
+                Log::error("SKUD reconcile key {$key->id} exception on controller {$controller->serial_number}: " . $e->getMessage());
             }
         }
+    }
+
+    protected function clearEverywhere(?string $code, ?string $type): void
+    {
+        if ($code === null) {
+            return;
+        }
+
+        $rfidKey = $this->createRfidKey($code, $type);
+        foreach ($this->rfidControllers() as $controller) {
+            try {
+                ControllerFactory::create($this->toVendorController($controller))->clearKeys([$rfidKey]);
+                Log::info("SKUD delete key {$code} success for controller ID: {$controller->id}");
+            } catch (\Exception $e) {
+                Log::error("SKUD delete key {$code} exception on controller {$controller->serial_number}: " . $e->getMessage());
+            }
+        }
+    }
+
+    protected function rfidControllers()
+    {
+        return GrapeslabsSkudController::whereNotIn('type', ['pingate', 'pinterm'])->get();
+    }
+
+    protected function toVendorController(GrapeslabsSkudController $controller): SkudController
+    {
+        $vendor = new SkudController();
+        $vendor->setRawAttributes($controller->getAttributes(), true);
+        $vendor->exists = $controller->exists;
+
+        return $vendor;
     }
 
     protected function createRfidKey(?string $code, ?string $type): RfidKey
     {
         return new RfidKey(code: $code, type: $type);
-    }
-
-    protected function getControllers(): Collection
-    {
-        return SkudController::whereNotIn('type', ['pingate', 'pinterm'])->get();
     }
 
     protected function shouldSkipImmediateSync(?Person $person): bool

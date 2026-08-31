@@ -5,6 +5,8 @@ namespace App\MoonShine\Resources;
 use App\Models\Person;
 use App\Models\Stream;
 use App\Models\VideoAnalyticReport;
+use App\MoonShine\Fields\AvatarField;
+use App\MoonShine\Fields\IconTextField;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\SelectField;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,9 +27,16 @@ class EventReportResource extends BaseModelResource
 {
     protected string $model = VideoAnalyticReport::class;
     protected string $title = 'Отчеты по событиям';
+
+    public function indexSubtitle(): ?string
+    {
+        return 'Все срабатывания распознавания лиц по камерам';
+    }
     protected string $column = 'name';
     protected string $sortColumn = 'id';
     protected SortDirection $sortDirection = SortDirection::DESC;
+    protected bool $detailModal = true;
+    protected ?string $periodColumn = 'datetime';
 
     protected function activeActions(): ListOf
     {
@@ -47,32 +56,79 @@ class EventReportResource extends BaseModelResource
 
     public function indexFields(): iterable
     {
-        return [
-            ID::make()
-                ->sortable(),
+        $personIcon = $this->iconFile('person');
 
+        return [
             Date::make('Дата и время', 'datetime')
                 ->withTime()
                 ->sortable(),
 
-            BelongsTo::make('Камера','stream',fn($item)=>$item->name??'Камера удалена', VideoStreamResource::class)
-                ->sortable(),
+            AvatarField::make('Персона', 'person_photobank_id')
+                ->text(fn($item) => $item->is_unknown
+                    ? 'Неизвестное лицо'
+                    : ($item->person?->getFullName() ?? $item->person_photobank_id))
+                ->subtext(fn($item) => $item->is_unknown
+                    ? ($item->data['unknown_uuid'] ?? $item->person_photobank_id)
+                    : ($item->person?->certificate_number ? $item->person->certificate_number : null))
+                ->photo(fn($item) => (! $item->is_unknown && $item->person)
+                    ? ($item->person->photo[0] ?? null)
+                    : null)
+                ->icon(fn($item) => $item->is_unknown ? $personIcon : null),
 
-            Text::make('Персона', 'person_photobank_id', fn ($item) =>
-                $item->person?->getFullName() ?? $item->person_photobank_id
-            ),
-
-            ColoredSelectField::make('Тип распознавания', 'is_unknown', fn ($item) =>
-                $item->is_unknown ? 'unknown' : 'known'
-            )->options([
-                'known'   => ['label' => 'Известное лицо',    'color' => 'green'],
-                'unknown' => ['label' => 'Неизвестное лицо',  'color' => 'yellow'],
-            ]),
+            IconTextField::make('Камера', 'camera_id')
+                ->text(fn($item) => $item->stream?->name ?? 'Камера удалена')
+                ->deleted(fn($item) => $item->stream === null),
 
             Image::make('Фото', '', fn ($item) => basename($item->data['snapshot_path'] ?? ''))
                 ->disk('analytic')
                 ->dir('thumbnails')
                 ->setLabel('Фото'),
+        ];
+    }
+
+    public function detailModalData(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        /** @var VideoAnalyticReport $item */
+        $isUnknown = (bool) $item->is_unknown;
+        $person    = $item->person;
+
+        $snapshot = $item->data['snapshot_path'] ?? null;
+        $photo    = $snapshot
+            ? \Illuminate\Support\Facades\Storage::disk('analytic')->url('thumbnails/' . basename($snapshot))
+            : null;
+
+        $uuid = $item->data['unknown_uuid'] ?? $item->person_photobank_id;
+
+        $rows = [
+            ['k' => 'Дата, время', 'v' => $item->datetime ? $item->datetime->format('d.m.Y, H:i:s') : '—', 'mono' => true],
+            ['k' => 'Статус',      'badge' => $isUnknown
+                ? ['label' => 'Неизвестное лицо', 'tone' => 'yellow']
+                : ['label' => 'Известное лицо',   'tone' => 'green']],
+        ];
+
+        if ($isUnknown) {
+            $rows[] = ['k' => 'Идентификатор', 'v' => $uuid, 'mono' => true];
+            $rows[] = ['k' => 'Камера', 'v' => $item->stream?->name ?? 'Камера удалена'];
+        } else {
+            $rows[] = ['k' => 'Персона', 'v' => $person?->getFullName() ?? $item->person_photobank_id]
+                + ($person ? ['link' => $this->filteredIndexUrl(app(PersonResource::class), ['last_name' => $person->last_name])] : []);
+            if ($person && $person->tags_list) {
+                $rows[] = ['k' => 'Теги', 'v' => $person->tags_list];
+            }
+            $rows[] = ['k' => 'Камера', 'v' => $item->stream?->name ?? 'Камера удалена'];
+            $org = $person?->organization?->short_name ?? $person?->organization?->full_name;
+            if ($org) {
+                $rows[] = ['k' => 'Организация', 'v' => $org]
+                    + ['link' => $this->filteredIndexUrl(app(OrganizationResource::class), ['short_name' => $org])];
+            }
+        }
+
+        return [
+            'title'    => $isUnknown ? 'Неопознанное лицо' : 'Распознавание лица',
+            'layout'   => 'portrait',
+            'photo'    => $photo,
+            'initials' => $person ? mb_substr($person->last_name ?? '', 0, 1) . mb_substr($person->first_name ?? '', 0, 1) : '',
+            'rows'     => $rows,
         ];
     }
 

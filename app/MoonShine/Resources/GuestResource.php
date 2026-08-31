@@ -3,6 +3,11 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Guest;
+use App\Models\Organization;
+use App\MoonShine\Fields\SelectField;
+use Illuminate\Database\Eloquent\Model;
+use App\MoonShine\Fields\AvatarField;
+use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
@@ -15,6 +20,7 @@ use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
+use MoonShine\UI\Components\Layout\Column;
 use MoonShine\UI\Fields\Date;
 use MoonShine\UI\Fields\DateRange;
 use MoonShine\UI\Fields\ID;
@@ -23,12 +29,22 @@ use MoonShine\UI\Fields\Phone;
 use MoonShine\UI\Fields\Image;
 use App\MoonShine\Fields\CustomTextarea;
 use Illuminate\Support\Facades\Storage;
+use MoonShine\UI\Components\Layout\Grid;
 
 class GuestResource extends BaseModelResource
 {
     protected string $model = Guest::class;
     protected string $title = 'Гости';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('временный пропуск', 'временных пропуска', 'временных пропусков');
+    }
+    protected ?string $editModalTitle = 'Редактирование гостя';
     protected string $column = 'full_name';
+    protected bool $detailSidebar = true;
+    protected ?string $createLabel = 'Добавить гостя';
+
     protected function pages(): array
     {
         return [
@@ -38,46 +54,140 @@ class GuestResource extends BaseModelResource
         ];
     }
 
+    public function detailSidebarData(Model $item): array
+    {
+        $icPerson = $this->iconFile('person');
+        $icCheck = $this->iconFile('check');
+
+        $photos = is_array($item->photo) ? $item->photo : [];
+        $avatar = ! empty($photos[0]) ? Storage::disk('public')->url($photos[0]) : null;
+        $initials = collect(preg_split('/\s+/u', trim($item->full_name ?? '')) ?: [])
+            ->take(2)
+            ->map(fn($p) => mb_strtoupper(mb_substr($p, 0, 1)))
+            ->join('');
+
+        $now = now();
+        $start = $item->entry_start;
+        $end = $item->entry_end;
+        if ($start && $now->lt($start->copy()->startOfDay())) {
+            $badge = ['text' => 'Ожидает', 'tone' => 'muted', 'icon' => $icCheck];
+        } elseif ($end && $now->gt($end->copy()->endOfDay())) {
+            $badge = ['text' => 'Истёк', 'tone' => 'danger', 'icon' => $icCheck];
+        } else {
+            $badge = ['text' => 'Действует', 'icon' => $icCheck];
+        }
+
+        $period = collect([$start?->format('d.m.Y'), $end?->format('d.m.Y')])->filter()->join(' — ');
+
+        $sections = [
+            [
+                'icon' => $icPerson,
+                'title' => 'Данные гостя',
+                'fields' => [
+                    ['label' => 'Телефон', 'value' => $item->phone],
+                    ['label' => 'Документ', 'value' => $item->document],
+                    ['label' => 'Действует', 'value' => $period],
+                ],
+            ],
+        ];
+
+        if (! blank($item->comment)) {
+            $sections[] = [
+                'icon' => $this->iconFile('comment'),
+                'title' => 'Комментарий',
+                'text' => $item->comment,
+            ];
+        }
+
+        $sub = collect(['Гостевой пропуск', $item->external_id])->filter()->join(' · ');
+
+        return [
+            'title' => 'Карточка гостя',
+            'subtitle' => $sub,
+            'hero' => [
+                'title' => $item->full_name,
+                'subtitle' => $sub,
+                'avatar' => $avatar,
+                'initials' => $avatar ? null : $initials,
+                'badges' => [$badge],
+            ],
+            'sections' => $sections,
+            'footer' => [
+                ['spacer' => true],
+                ['html' => $this->detailEditButtonHtml($item)],
+            ],
+        ];
+    }
+
     protected function activeActions(): ListOf
     {
         return parent::activeActions()->except(Action::VIEW);
     }
 
 
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить гостя?',
+            'text'  => 'Пропуск «' . ($item->full_name ?: 'Гость') . '» будет удалён.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
-            Text::make('Внешний ID', 'external_id')
-                ->sortable(),
-            Text::make('ФИО', 'full_name')
+            AvatarField::make('ФИО', 'full_name')
+                ->text('full_name')
+                ->subtext('external_id')
+                ->photo(fn ($item) => is_array($item->photo) ? ($item->photo[0] ?? null) : $item->photo)
                 ->sortable(),
             Text::make('Телефон', 'phone')
                 ->sortable(),
-            Image::make('Фото', 'photo')
-                ->multiple(),
             Text::make('Документ', 'document')
-                ->sortable(),
-            Text::make('Комментарий', 'comment')
-                ->sortable(),
-            Date::make('Действует с', 'entry_start')
                 ->sortable(),
             Date::make('Действует до', 'entry_end')
                 ->sortable(),
+            ColoredSelectField::make('Статус', 'entry_end', function ($item) {
+                $now = now();
+                if ($item->entry_start && $now->lt($item->entry_start->copy()->startOfDay())) {
+                    return 'waiting';
+                }
+                if ($item->entry_end && $now->gt($item->entry_end->copy()->endOfDay())) {
+                    return 'expired';
+                }
+                return 'active';
+            })->options([
+                'waiting' => ['label' => 'Ждёт', 'color' => 'yellow'],
+                'active'  => ['label' => 'Действует', 'color' => 'green'],
+                'expired' => ['label' => 'Истёк', 'color' => 'gray'],
+            ]),
         ];
     }
 
     public function formFields(): iterable
     {
+        $phonIcon = file_get_contents(public_path('icons/phone.svg'));
+        $documentIcon = file_get_contents(public_path('icons/document.svg'));
         return [
+            Grid::make([
+                Column::make([
+                    CustomText::make('ФИО', 'full_name')
+                        ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
+                        ->required(),
+                ])->columnSpan(6),
+                Column::make([
+                    CustomText::make('Телефон', 'phone')
+                        ->nullable()
+                        ->phone()
+                        ->leadingIcon($phonIcon),
+                    ])->columnSpan(6),
+            ]),
             CustomText::make('Внешний ID', 'external_id')
                 ->unique('guests','external_id')
                 ->nullable(),
-            CustomText::make('ФИО', 'full_name')
-                ->pattern('/^[А-Яа-яA-Za-zЁё\s\-]+$/u', 'Допустимы только буквы, пробел и дефис')
-                ->required(),
-            CustomText::make('Телефон', 'phone')
+            CustomText::make('Документ', 'document')
                 ->nullable()
-                ->phone(),
+                ->leadingIcon($documentIcon),
             PhotoField::make('Фото', 'photo')
                 ->multiple()
                 ->removable()
@@ -113,14 +223,25 @@ class GuestResource extends BaseModelResource
                     }
                     return $data;
                 }),
-            CustomText::make('Документ', 'document')
+            Grid::make([
+                Column::make([
+                    CustomDate::make('Действует с', 'entry_start')
+                        ->onApply(function ($item, $value) {
+                            $item->entry_start = ! empty($value) ? Carbon::parse($value)->startOfDay() : null;
+                            return $item;
+                        }),
+                    ])->columnSpan(6),
+                Column::make([
+                    CustomDate::make('Действует до', 'entry_end')
+                        ->afterField('entry_start', 'Конец действия не может быть раньше его начала')
+                        ->onApply(function ($item, $value) {
+                            $item->entry_end = ! empty($value) ? Carbon::parse($value)->endOfDay() : null;
+                            return $item;
+                        }),
+                ])->columnSpan(6),
+            ]),
+            CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию')
                 ->nullable(),
-            CustomTextarea::make('Комментарий', 'comment')
-                ->nullable(),
-            CustomDate::make('Действует с', 'entry_start')
-                ->after(Carbon::now(), 'Начало действия не может в прошлом'),
-            CustomDate::make('Действует до', 'entry_end')
-                ->afterField('entry_start', 'Конец действия не может быть раньше его начала'),
         ];
     }
 

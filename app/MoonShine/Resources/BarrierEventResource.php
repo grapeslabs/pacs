@@ -2,7 +2,6 @@
 
 namespace App\MoonShine\Resources;
 
-//use GrapesLabs\PinvideoSkud\Models\SkudEvent;
 use App\MoonShine\Fields\SelectField;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use App\Models\GrapeslabsSkudEvent;
@@ -34,6 +33,13 @@ class BarrierEventResource extends BaseModelResource
 {
     protected string $model = GrapeslabsSkudEvent::class;
     protected string $title = 'События автомобили';
+
+    public function indexSubtitle(): ?string
+    {
+        return 'События автомобилей на шлагбаумах';
+    }
+    protected bool $detailModal = true;
+    protected ?string $periodColumn = 'datetime';
 
     protected function activeActions(): ListOf
     {
@@ -393,13 +399,18 @@ class BarrierEventResource extends BaseModelResource
 
             // Фильтр по организации
             SelectField::make('Организация', 'organization')
+                ->icon('magnifier')
+                ->optionsIcon('organization')
                 ->options(
                     Organization::query()
                         ->orderBy('short_name')
                         ->get()
-                        ->mapWithKeys(function ($org) {
-                            $name = $org->short_name ?? $org->full_name;
-                            return [$org->id => $name];
+                        ->map(function ($org) {
+                            return [
+                                'id'      => $org->id,
+                                'name'    => $org->short_name ?? $org->full_name,
+                                'subtext' => $org->inn ? 'ИНН ' . $org->inn : null,
+                            ];
                         })
                         ->toArray()
                 )
@@ -471,6 +482,65 @@ class BarrierEventResource extends BaseModelResource
             'type' => ['required', 'string', 'max:50'],
             'event_id' => ['nullable', 'string', 'max:100'],
             'event' => ['nullable', 'array'],
+        ];
+    }
+
+    public function detailModalData(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        /** @var GrapeslabsSkudEvent $item */
+        $eventData = json_decode($item->event ?? '{}', true) ?: [];
+
+        $b64ToSrc = function (?string $b64): ?string {
+            if (empty($b64)) {
+                return null;
+            }
+            return str_contains($b64, 'base64,') ? $b64 : 'data:image/jpeg;base64,' . $b64;
+        };
+
+        $carPlate = SkudEventCarPlate::where('event_id', $item->id)->value('car_plate');
+        $car = $carPlate
+            ? Car::where('license_plate', $carPlate)->with(['brand', 'color', 'people', 'organization'])->first()
+            : null;
+
+        $brand = $car?->brand?->name;
+        $color = $car?->color?->name;
+        $people = ($car && $car->people->isNotEmpty()) ? $car->people : collect();
+        $person = $people->isNotEmpty()
+            ? $people->map(fn($p) => $p->getFullName())->implode(', ')
+            : null;
+        $org = $car?->organization?->short_name
+            ?? $car?->organization?->full_name
+            ?? ($car && $car->people->isNotEmpty() ? ($car->people->first()->organization?->short_name ?? $car->people->first()->organization?->full_name) : null);
+
+        $rows = [
+            ['k' => 'Дата, время',  'v' => $item->datetime ? \Illuminate\Support\Carbon::parse($item->datetime)->format('d.m.Y, H:i:s') : '—', 'mono' => true],
+            ['k' => 'Оборудование', 'v' => trim(($item->controller->serial_number ?? '—') . ($item->controller->type ? ' · ' . $item->controller->type : '')), 'mono' => true],
+            ['k' => 'Тип события',  'v' => $eventData['event'] ?? '—'],
+            ['k' => 'ГРЗ',          'v' => $carPlate ?: '—', 'mono' => true],
+        ];
+        if ($brand || $color) {
+            $rows[] = ['k' => 'Марка / цвет', 'v' => trim(($brand ?? '—') . ($color ? ' · ' . $color : ''))];
+        }
+        if ($person) {
+            $row = ['k' => 'ФИО персоны', 'v' => $person];
+            if ($people->count() === 1) {
+                $row['link'] = $this->filteredIndexUrl(app(PersonResource::class), ['last_name' => $people->first()->last_name]);
+            }
+            $rows[] = $row;
+        }
+        if ($org) {
+            $rows[] = ['k' => 'Организация', 'v' => $org]
+                + ['link' => $this->filteredIndexUrl(app(OrganizationResource::class), ['short_name' => $org])];
+        }
+
+        return [
+            'title'   => 'Событие · шлагбаум',
+            'layout'  => 'gallery',
+            'gallery' => [
+                ['label' => 'Фото машины', 'image' => $b64ToSrc($eventData['image_car'] ?? null)],
+                ['label' => 'Фото номера', 'image' => $b64ToSrc($eventData['image_plate'] ?? null), 'plate' => $carPlate],
+            ],
+            'rows'    => $rows,
         ];
     }
 
@@ -617,16 +687,16 @@ class BarrierEventResource extends BaseModelResource
             <img
                 src="$src"
                 style="max-width: 150px; max-height: 80px; border-radius: 4px; cursor: pointer; object-fit: cover;"
-                @click="open = true"
+                @click.stop="open = true"
                 title="Нажмите для увеличения"
                 loading="lazy"
             />
 
             <div x-show="open" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;"
-                 x-transition.opacity @click.self="open = false" @keydown.escape.window="open = false" x-cloak>
+                 x-transition.opacity @click.self.stop="open = false" @keydown.escape.window="open = false" x-cloak>
                 <div style="position: relative;">
                     <img src="$src" style="max-width: 90vw; max-height: 90vh; border-radius: 8px;">
-                    <button @click="open = false" style="position: absolute; top: -10px; right: -10px; background: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 20px;">×</button>
+                    <button @click.stop="open = false" style="position: absolute; top: -10px; right: -10px; background: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 20px;">×</button>
                 </div>
             </div>
         </div>

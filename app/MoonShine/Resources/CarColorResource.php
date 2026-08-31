@@ -1,9 +1,12 @@
 <?php
 
 namespace App\MoonShine\Resources;
+use App\MoonShine\Fields\ColorSwatchField;
+use App\MoonShine\Fields\CountField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Pages\CustomIndexPage;
+use Illuminate\Database\Eloquent\Model;
 use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
 use App\Models\CarColor;
@@ -19,6 +22,7 @@ class CarColorResource extends BaseModelResource
 {
     protected string $model = CarColor::class;
     protected string $title = 'Цвета автомобилей';
+    protected ?string $editModalTitle = 'Редактирование цвета';
     protected string $column = 'name';
     protected function pages(): array
     {
@@ -35,11 +39,19 @@ class CarColorResource extends BaseModelResource
             Text::make('name'),
         ];
     }
+    public function deleteConfirmation(Model $item): array
+    {
+        return [
+            'title' => 'Удалить запись?',
+            'text'  => '«' . ($item->name ?: 'Запись') . '» будет удалена из справочника.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
-            ID::make()->sortable(),
-            Text::make('Название', 'name')->sortable(),
+            ColorSwatchField::make('Название', 'name')->sortable(),
+            CountField::make('Автомобилей', 'id', fn($item) => $item->cars()->count()),
         ];
     }
 
@@ -48,14 +60,6 @@ class CarColorResource extends BaseModelResource
         return [
             ID::make(),
             CustomText::make('Название', 'name')->required(),
-        ];
-    }
-
-    protected function detailFields(): iterable
-    {
-        return [
-            ID::make(),
-            Text::make('Название', 'name'),
         ];
     }
 

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models\User;
+use App\MoonShine\Pages\LogViewerPage;
 use App\MoonShine\Pages\SettingsPage;
+use App\MoonShine\Pages\PresenceReportPage;
 use App\MoonShine\Resources\CarEventResource;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\PeopleReportResource;
@@ -31,6 +33,7 @@ use App\MoonShine\Resources\TerminalResource;
 use App\MoonShine\Resources\BarrierResource;
 use App\MoonShine\Resources\ControllerResource;
 use App\MoonShine\Resources\CarPassageRuleResource;
+use App\MoonShine\Resources\PersonPassageRuleResource;
 use App\MoonShine\Resources\CarTagResource;
 use App\MoonShine\Resources\PassageResource;
 use App\MoonShine\Resources\PassageEventResource;
@@ -69,6 +72,7 @@ class MoonShineServiceProvider extends ServiceProvider
                 ControllerResource::class,
                 PassageResource::class,
                 CarPassageRuleResource::class,
+                PersonPassageRuleResource::class,
                 PassageEventResource::class,
                 CarTagResource::class,
                 ReferenceResource::class,
@@ -95,7 +99,9 @@ class MoonShineServiceProvider extends ServiceProvider
             ])
             ->pages([
                 ...$config->getPages(),
+                LogViewerPage::class,
                 ...config('services.ms.enabled')?[SettingsPage::class]:[],
+                ...config('services.va.enabled')?[PresenceReportPage::class]:[],
             ]);
         $config->authorizationRules(
             static function (ResourceContract $resource, Model $user, Ability $ability): bool {

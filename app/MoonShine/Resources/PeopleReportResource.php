@@ -5,6 +5,8 @@ namespace App\MoonShine\Resources;
 use App\Models\Person;
 use App\Models\Stream;
 use App\Models\VideoAnalyticReport;
+use App\MoonShine\Fields\AvatarField;
+use App\MoonShine\Fields\IconTextField;
 use App\MoonShine\Fields\SelectField;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use MoonShine\Laravel\Enums\Action;
@@ -22,9 +24,16 @@ class PeopleReportResource extends BaseModelResource
 {
     protected string $model = VideoAnalyticReport::class;
     protected string $title = 'Отчеты по персонам';
+
+    public function indexSubtitle(): ?string
+    {
+        return 'Распознанные лица с группировкой';
+    }
     protected string $column = 'name';
     protected string $sortColumn = 'id';
     protected SortDirection $sortDirection = SortDirection::DESC;
+    protected bool $detailModal = true;
+    protected ?string $periodColumn = 'datetime';
 
     protected ?string $oldPerson = null;
 
@@ -46,12 +55,16 @@ class PeopleReportResource extends BaseModelResource
     public function indexFields(): iterable
     {
         return [
-            Text::make('Персона', 'person_photobank_id', function ($item) {
-                if ($this->oldPerson === $item->person_photobank_id) {
-                    return "";
-                }
-                return $item->person?->getFullName() ?? $item->person_photobank_id;
-            }),
+            AvatarField::make('Персона', 'person_photobank_id')
+                ->text(fn($item) => $this->oldPerson === $item->person_photobank_id
+                    ? ''
+                    : ($item->person?->getFullName() ?? $item->person_photobank_id))
+                ->subtext(fn($item) => ($this->oldPerson === $item->person_photobank_id || ! $item->person?->certificate_number)
+                    ? null
+                    : $item->person->certificate_number)
+                ->photo(fn($item) => ($this->oldPerson === $item->person_photobank_id || ! $item->person)
+                    ? null
+                    : ($item->person->photo[0] ?? null)),
 
             Date::make('Дата рождения', null, function ($item) {
                 if ($this->oldPerson === $item->person_photobank_id) {
@@ -59,6 +72,14 @@ class PeopleReportResource extends BaseModelResource
                 }
                 return $item->person?->birth_date;
             })->format('d.m.Y'),
+
+            Date::make('Дата и время', 'datetime')
+                ->withTime()
+                ->sortable(),
+
+            IconTextField::make('Камера', 'camera_id')
+                ->text(fn($item) => $item->stream?->name ?? 'Камера удалена')
+                ->deleted(fn($item) => $item->stream === null),
 
             Text::make('Теги', null, function ($item) {
                 if ($this->oldPerson === $item->person_photobank_id) {
@@ -68,17 +89,45 @@ class PeopleReportResource extends BaseModelResource
                 return $item->person?->tags_list ?? '';
             }),
 
-            Date::make('Дата и время', 'datetime')
-                ->withTime()
-                ->sortable(),
-
-            BelongsTo::make('Камера','stream',fn($item)=>$item->name??'Камера удалена', VideoStreamResource::class)
-                ->sortable(),
-
             Image::make('Фото', null, fn($item) => basename($item->data['snapshot_path'] ?? ''))
                 ->disk('analytic')
                 ->dir('thumbnails')
                 ->setLabel('Фото'),
+        ];
+    }
+
+    public function detailModalData(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        /** @var VideoAnalyticReport $item */
+        $person = $item->person ?? $this->getPerson($item->person_photobank_id);
+
+        $snapshot = $item->data['snapshot_path'] ?? null;
+        $photo    = $snapshot
+            ? \Illuminate\Support\Facades\Storage::disk('analytic')->url('thumbnails/' . basename($snapshot))
+            : null;
+
+        $rows = [
+            ['k' => 'Дата, время', 'v' => $item->datetime ? $item->datetime->format('d.m.Y, H:i:s') : '—', 'mono' => true],
+            ['k' => 'Статус',      'badge' => ['label' => 'Известное лицо', 'tone' => 'green']],
+            ['k' => 'Персона',     'v' => $person?->getFullName() ?? $item->person_photobank_id]
+                + ($person ? ['link' => $this->filteredIndexUrl(app(PersonResource::class), ['last_name' => $person->last_name])] : []),
+        ];
+        if ($person && $person->tags_list) {
+            $rows[] = ['k' => 'Теги', 'v' => $person->tags_list];
+        }
+        $rows[] = ['k' => 'Камера', 'v' => $item->stream?->name ?? 'Камера удалена'];
+        $org = $person?->organization?->short_name ?? $person?->organization?->full_name;
+        if ($org) {
+            $rows[] = ['k' => 'Организация', 'v' => $org]
+                + ['link' => $this->filteredIndexUrl(app(OrganizationResource::class), ['short_name' => $org])];
+        }
+
+        return [
+            'title'    => 'Распознавание лица',
+            'layout'   => 'portrait',
+            'photo'    => $photo,
+            'initials' => $person ? mb_substr($person->last_name ?? '', 0, 1) . mb_substr($person->first_name ?? '', 0, 1) : '',
+            'rows'     => $rows,
         ];
     }
 

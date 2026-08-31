@@ -12,28 +12,34 @@
 
     .cta-wrapper .cta-input {
         width: 100%;
-        border-radius: 0.5rem;
-        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        border: 1.5px solid #D7DBEF;
         padding: 1rem 2rem 0.5rem 0.75rem;
-        background-color: transparent;
+        background-color: #fff;
         transition: all 0.2s;
         outline: none;
         resize: vertical;
         min-height: 6rem;
     }
 
+    .cta-wrapper .cta-input:hover {
+        border-color: #7381F4;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(115, 129, 244, .18);
+    }
+
     .cta-wrapper .cta-input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 1px #3b82f6;
+        border-color: #7381F4;
+        box-shadow: 0 0 0 3px rgba(115, 129, 244, .18);
     }
 
     .cta-wrapper .cta-input.cta-error {
-        border-color: #ef4444 !important;
-        box-shadow: 0 0 0 1px #ef4444 !important;
+        border-color: #F04138 !important;
+        box-shadow: 0 0 0 1px #F04138 !important;
     }
 
     .cta-error-msg {
-        color: #ef4444;
+        color: #F04138;
         font-size: 0.875rem;
         margin-top: 0.25rem;
         display: block;
@@ -52,13 +58,13 @@
         width: 1rem;
         height: 1rem;
         border: 2px solid #e5e7eb;
-        border-top-color: #3b82f6;
+        border-top-color: #7381F4;
         border-radius: 50%;
         animation: cta-spin 1s linear infinite;
     }
 
     .cta-icon-error {
-        color: #ef4444;
+        color: #F04138;
         font-weight: bold;
         font-size: 1.1rem;
         user-select: none;

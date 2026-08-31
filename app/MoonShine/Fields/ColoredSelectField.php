@@ -16,12 +16,12 @@ class ColoredSelectField extends Field
     protected mixed $defaultValue = null;
 
     protected static array $colorPresets = [
-        'green'  => ['dot' => '#22c55e', 'bg' => '#dcfce7', 'text' => '#166534'],
+        'green'  => ['dot' => '#51D16D', 'bg' => '#C9F3CE', 'text' => '#36944C'],
         'yellow' => ['dot' => '#eab308', 'bg' => '#fef9c3', 'text' => '#854d0e'],
         'orange' => ['dot' => '#f97316', 'bg' => '#ffedd5', 'text' => '#7c2d12'],
         'pink'   => ['dot' => '#f43f5e', 'bg' => '#ffe4e6', 'text' => '#9f1239'],
-        'red'    => ['dot' => '#ef4444', 'bg' => '#fee2e2', 'text' => '#7f1d1d'],
-        'blue'   => ['dot' => '#3b82f6', 'bg' => '#dbeafe', 'text' => '#1e40af'],
+        'red'    => ['dot' => '#F04138', 'bg' => '#FBF5F5', 'text' => '#C2322B'],
+        'blue'   => ['dot' => '#7381F4', 'bg' => '#EFF1FF', 'text' => '#7381F4'],
         'purple' => ['dot' => '#a855f7', 'bg' => '#f3e8ff', 'text' => '#6b21a8'],
         'gray'   => ['dot' => '#6b7280', 'bg' => '#f3f4f6', 'text' => '#374151'],
     ];
@@ -106,13 +106,11 @@ class ColoredSelectField extends Field
 
         return sprintf(
             '<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;'
-            . 'border-radius:20px;background-color:%s;font-size:13px;font-weight:500;'
+            . 'border-radius:20px;background-color:%s;font-size:12px;font-weight:500;'
             . 'color:%s;white-space:nowrap;">'
-            . '<span style="width:8px;height:8px;border-radius:50%%;background-color:%s;flex-shrink:0;"></span>'
             . '%s</span>',
             $styles['bg'],
             $styles['text'],
-            $styles['dot'],
             e($label)
         );
     }

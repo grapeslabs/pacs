@@ -9,7 +9,24 @@ use App\Http\Controllers\ChatsController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\CustomFieldController;
+use App\Http\Controllers\DetailCardController;
+use App\Http\Controllers\DetailModalController;
+use App\Http\Controllers\LogViewerController;
 use App\Http\Controllers\PersonPhotoArchiveController;
+use App\Http\Controllers\ProfileSettingsController;
+use App\Http\Controllers\SearchController;
+use MoonShine\Laravel\Http\Middleware\Authenticate as MoonShineAuthenticate;
+use App\Http\Controllers\PresenceReportController;
+
+
+Route::prefix(config('moonshine.prefix', 'admin'))
+    ->middleware(\MoonShine\Laravel\Http\Middleware\Authenticate::class)
+    ->group(function () {
+        Route::get('detail-card/{resource}/{id}', [DetailCardController::class, 'show'])
+            ->name('detail-card');
+        Route::get('detail-modal/{resource}/{id}', [DetailModalController::class, 'show'])
+            ->name('detail-modal');
+    });
 
 
 Route::prefix('tags')->group(function() {
@@ -26,9 +43,26 @@ Route::prefix('car-tags')->group(function() {
 
 Route::post("/field-validation", [CustomFieldController::class, "validate"])->name("field.validation");
 
-Route::prefix("settings")->group(function () {
-    Route::post("store", [SettingsController::class, "store"])->name("settings.store");
+Route::get("/system-search", [SearchController::class, "index"])->name("system.search");
+
+Route::prefix("settings")
+    ->middleware(MoonShineAuthenticate::class)
+    ->group(function () {
+        Route::post("store", [SettingsController::class, "store"])->name("settings.store");
+    });
+
+Route::prefix("presence-report")->group(function () {
+    Route::post("generate", [PresenceReportController::class, "generate"])->name("presence-report.generate");
+    Route::get("status/{report}", [PresenceReportController::class, "status"])->name("presence-report.status");
+    Route::get("export/{report}", [PresenceReportController::class, "export"])->name("presence-report.export");
 });
+
+Route::prefix("logs")
+    ->middleware(MoonShineAuthenticate::class)
+    ->group(function () {
+        Route::get("download", [LogViewerController::class, "download"])->name("logs.download");
+        Route::post("clear", [LogViewerController::class, "clear"])->name("logs.clear");
+    });
 
 Route::prefix("chats")->group(function () {
     Route::get("list", [ChatsController::class, "index"])->name("chats.index");
@@ -69,6 +103,11 @@ Route::post("/person-photos/import", [PersonPhotoArchiveController::class, "impo
 Route::get("/person-photos/export-all", [PersonPhotoArchiveController::class, "exportAll"])->name(
     "person-photos.export-all",
 );
+
+Route::post("/profile-settings/personal", [ProfileSettingsController::class, "personal"])->name("profile-settings.personal");
+Route::post("/profile-settings/password", [ProfileSettingsController::class, "password"])->name("profile-settings.password");
+Route::post("/profile-settings/avatar", [ProfileSettingsController::class, "avatar"])->name("profile-settings.avatar");
+Route::post("/profile-settings/avatar/delete", [ProfileSettingsController::class, "avatarDelete"])->name("profile-settings.avatar-delete");
 
 Route::get("/test-person-skud", function () {
     \Log::info("🧪 TEST Person SKUD Integration Started");

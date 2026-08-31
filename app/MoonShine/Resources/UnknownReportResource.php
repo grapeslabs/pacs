@@ -7,6 +7,8 @@ use App\Models\Organization;
 use App\Models\Tag;
 use App\Models\Stream;
 use App\Models\VideoAnalyticReport;
+use App\MoonShine\Fields\AvatarField;
+use App\MoonShine\Fields\IconTextField;
 use App\MoonShine\Fields\CustomDate;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\PhotoField;
@@ -17,6 +19,7 @@ use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Handlers\Handler;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\MoonShineRequest;
@@ -40,9 +43,16 @@ class UnknownReportResource extends BaseModelResource
 {
     protected string $model = VideoAnalyticReport::class;
     protected string $title = 'Отчеты по неизвестным';
+
+    public function indexSubtitle(): ?string
+    {
+        return 'Лица, не найденные в базе персон';
+    }
     protected string $column = 'name';
     protected string $sortColumn = 'id';
     protected SortDirection $sortDirection = SortDirection::DESC;
+    protected bool $detailModal = true;
+    protected ?string $periodColumn = 'datetime';
     protected ?string $oldPerson = null;
 
     protected function modifyQueryBuilder(Builder $builder): Builder
@@ -62,20 +72,22 @@ class UnknownReportResource extends BaseModelResource
 
     public function indexFields(): iterable
     {
-        return [
-            Text::make('Персона', 'person_photobank_id', function($item) {
-                if(!empty($this->oldPerson) && $this->oldPerson == $item->person_photobank_id) {
-                    return "";
-                }
-                return $this->oldPerson = $item->person_photobank_id;
-            })->sortable(),
+        $personIcon = $this->iconFile('person');
 
+        return [
             Date::make('Дата и время', 'datetime')
                 ->withTime()
                 ->sortable(),
 
-            BelongsTo::make('Камера', 'stream', fn($item) => $item->name ?? 'Камера удалена', VideoStreamResource::class)
+            AvatarField::make('Персона', 'person_photobank_id')
+                ->text(fn($item) => 'Неизвестное лицо')
+                ->subtext(fn($item) => $item->data['unknown_uuid'] ?? $item->person_photobank_id)
+                ->icon($personIcon)
                 ->sortable(),
+
+            IconTextField::make('Камера', 'camera_id')
+                ->text(fn($item) => $item->stream?->name ?? 'Камера удалена')
+                ->deleted(fn($item) => $item->stream === null),
 
             Image::make('Фото', 'snapshot_path_display', fn($item) => basename($item->data['snapshot_path'] ?? ''))
                 ->disk('analytic')
@@ -101,14 +113,55 @@ class UnknownReportResource extends BaseModelResource
                 ]
             )
         )
-            ->icon('pencil')
-            ->class('js-identify-button')
+            ->icon($this->iconFile('user-plus'), true)
+            ->class(['js-identify-button', 'ds-rowbtn'])
             ->customAttributes([
-                '@click.prevent' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' })",
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' })",
             ])
             ->async(selector: "#{$this->safeModalName}_content");
     }
 
+
+    public function detailModalData(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        /** @var VideoAnalyticReport $item */
+        $snapshot = $item->data['snapshot_path'] ?? null;
+        $photo    = $snapshot
+            ? Storage::disk('analytic')->url('thumbnails/' . basename($snapshot))
+            : null;
+
+        $uuid = $item->data['unknown_uuid'] ?? $item->person_photobank_id;
+
+        $userPlus = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/><path d="M4 20a7 7 0 0 1 12.5-4.3"/><path d="M18 14v6"/><path d="M15 17h6"/></svg>';
+
+        $identifyBtn = (string) ActionButton::make(
+            'Добавить в базу',
+            $this->getAsyncMethodUrl('getIdentifyForm', params: [
+                'item_id' => $item->getKey(),
+                '_component_name' => $this->getListComponentName(),
+                '_async_form' => true,
+            ], page: $this->getIndexPage())
+        )
+            ->icon($userPlus, true)
+            ->async(selector: "#{$this->safeModalName}_content")
+            ->customAttributes([
+                'class' => 'dm-btn dm-btn--primary',
+                '@click.prevent.stop' => "\$dispatch('modal-toggled', { id: '{$this->safeModalName}', title: 'Идентификация персоны' }); \$dispatch('modal-toggled', { id: 'detail-modal' })",
+            ]);
+
+        return [
+            'title'    => 'Неопознанное лицо',
+            'layout'   => 'portrait',
+            'photo'    => $photo,
+            'rows'     => [
+                ['k' => 'Дата, время',   'v' => $item->datetime ? $item->datetime->format('d.m.Y, H:i:s') : '—', 'mono' => true],
+                ['k' => 'Статус',        'badge' => ['label' => 'Неизвестное лицо', 'tone' => 'yellow']],
+                ['k' => 'Идентификатор', 'v' => $uuid, 'mono' => true],
+                ['k' => 'Камера',        'v' => $item->stream?->name ?? 'Камера удалена'],
+            ],
+            'footer'   => ['html' => $identifyBtn],
+        ];
+    }
 
     public function getIdentifyForm(MoonShineRequest $request): string
     {
@@ -177,7 +230,13 @@ class UnknownReportResource extends BaseModelResource
                     Column::make([
                         SelectField::make('Организация', 'organization_id')
                             ->placeholder('Выберите организацию')
-                            ->options(Organization::query()->get()->pluck('short_name', 'id')->toArray())
+                            ->icon('magnifier')
+                            ->optionsIcon('organization')
+                            ->options(Organization::query()->get()->map(fn($o) => [
+                                'id'      => $o->id,
+                                'name'    => $o->short_name,
+                                'subtext' => $o->inn ? 'ИНН ' . $o->inn : null,
+                            ])->toArray())
                             ->nullable(),
                     ])->columnSpan(6),
                 ]),
@@ -188,10 +247,13 @@ class UnknownReportResource extends BaseModelResource
                     ->dir('thumbnails')
                     ->allowedExtensions(['jpg', 'png', 'jpeg', 'gif']),
                 SelectField::make('Теги', 'tags')
+                    ->icon('tag')
+                    ->optionsIcon('tag')
+                    ->placeholder('Введите тег')
                     ->options(Tag::select('id', 'name')->get())
                     ->multiple(true)
                     ->creatable(true, route('tags.store')),
-                CustomTextarea::make('Комментарий', 'comment'),
+                CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию'),
                 Grid::make([
                     Column::make([
                         CustomDate::make('Заморозить с', 'frozen_start')
@@ -211,51 +273,26 @@ class UnknownReportResource extends BaseModelResource
     public function savePerson(MoonShineRequest $request)
     {
         $data = $request->all();
+        $report = VideoAnalyticReport::find($request->get('item_id'));
+        $photos = $this->collectIdentifyPhotos($request, $report);
+
         $person = Person::create([
-            'grapesva_uuid' => $data['grapesva_uuid'],
-            'last_name' => $data['last_name'],
-            'first_name' => $data['first_name'],
-            'middle_name' => $data['middle_name'],
-            'birth_date' => $data['birth_date'],
-            'certificate_number' => $data['certificate_number'],
+            'grapesva_uuid' => $data['grapesva_uuid'] ?? null,
+            'last_name' => $data['last_name'] ?? null,
+            'first_name' => $data['first_name'] ?? null,
+            'middle_name' => $data['middle_name'] ?? null,
+            'birth_date' => $data['birth_date'] ?? null,
+            'certificate_number' => $data['certificate_number'] ?? null,
             'organization_id' => $data['organization_id'] ?? null,
             'comment' => $data['comment'] ?? null,
+            'frozen_start' => $data['frozen_start'] ?? null,
+            'frozen_end' => $data['frozen_end'] ?? null,
+            'photo' => $photos,
         ]);
 
         if ($request->has('tags')) {
             $person->tags()->sync($request->get('tags'));
         }
-
-        $finalPhotos = [];
-
-        if ($request->has('hidden_photo')) {
-            foreach ($request->input('hidden_photo') as $filename) {
-                $sourcePath = 'thumbnails/' . basename($filename);
-                $newPath = 'person/photos/' . basename($filename);
-
-                if (Storage::disk('analytic')->exists($sourcePath)) {
-                    $content = Storage::disk('analytic')->get($sourcePath);
-                    Storage::disk('public')->put($newPath, $content);
-                    $finalPhotos[] = $newPath;
-                }
-                elseif (Storage::disk('public')->exists($newPath)) {
-                    $finalPhotos[] = $newPath;
-                }
-            }
-        }
-
-        if ($request->hasFile('photo')) {
-            $files = $request->file('photo');
-            $files = is_array($files) ? $files : [$files];
-
-            foreach ($files as $file) {
-                $path = $file->store('person/photos', 'public');
-                $finalPhotos[] = $path;
-            }
-        }
-
-        $person->photo = $finalPhotos;
-        $person->save();
 
         VideoAnalyticReport::query()->toBase()
             ->where('person_photobank_id', $person->grapesva_uuid)
@@ -264,6 +301,63 @@ class UnknownReportResource extends BaseModelResource
         return MoonShineJsonResponse::make()
             ->toast('Персона успешно идентифицирована!', ToastType::SUCCESS)
             ->redirect($this->getUrl());
+    }
+
+    protected function collectIdentifyPhotos(MoonShineRequest $request, ?VideoAnalyticReport $report): array
+    {
+        $photos = [];
+
+        if ($request->hasFile('photo')) {
+            $files = $request->file('photo');
+            $files = is_array($files) ? $files : [$files];
+
+            foreach ($files as $file) {
+                $photos[] = $file->store('person/photos', 'public');
+            }
+        }
+
+        foreach ((array) $request->input('hidden_photo', []) as $filename) {
+            $path = $this->copySnapshotToPersonPhotos((string) $filename);
+
+            if ($path !== null) {
+                $photos[] = $path;
+            }
+        }
+
+        if ($photos === [] && ! empty($report?->data['snapshot_path'])) {
+            $path = $this->copySnapshotToPersonPhotos((string) $report->data['snapshot_path']);
+
+            if ($path !== null) {
+                $photos[] = $path;
+            } else {
+                Log::warning('Идентификация персоны: снимок отчёта не найден на диске', [
+                    'report_id'     => $report->id,
+                    'snapshot_path' => $report->data['snapshot_path'],
+                ]);
+            }
+        }
+
+        return array_values(array_unique($photos));
+    }
+
+    protected function copySnapshotToPersonPhotos(string $filename): ?string
+    {
+        $basename = basename($filename);
+
+        if ($basename === '') {
+            return null;
+        }
+
+        $sourcePath = 'thumbnails/' . $basename;
+        $newPath = 'person/photos/' . $basename;
+
+        if (Storage::disk('analytic')->exists($sourcePath)) {
+            Storage::disk('public')->put($newPath, Storage::disk('analytic')->get($sourcePath));
+
+            return $newPath;
+        }
+
+        return Storage::disk('public')->exists($newPath) ? $newPath : null;
     }
 
     public function search(): array

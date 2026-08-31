@@ -3,8 +3,10 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\CarBrand;
+use App\MoonShine\Fields\CountField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Pages\CustomIndexPage;
+use Illuminate\Database\Eloquent\Model;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
@@ -18,6 +20,7 @@ class CarBrandResource extends BaseModelResource
 {
     protected string $model = CarBrand::class;
     protected string $title = 'Марки автомобилей';
+    protected ?string $editModalTitle = 'Редактирование марки';
     protected string $column = 'name';
     protected function pages(): array
     {
@@ -28,11 +31,19 @@ class CarBrandResource extends BaseModelResource
         ];
     }
 
+    public function deleteConfirmation(Model $item): array
+    {
+        return [
+            'title' => 'Удалить запись?',
+            'text'  => '«' . ($item->name ?: 'Запись') . '» будет удалена из справочника.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
-            ID::make()->sortable(),
             Text::make('Название', 'name')->sortable(),
+            CountField::make('Автомобилей', 'id', fn($item) => $item->cars()->count()),
         ];
     }
 
@@ -48,13 +59,6 @@ class CarBrandResource extends BaseModelResource
     {
         return [
             Text::make('Name'),
-        ];
-    }
-
-    public function detailFields(): iterable
-    {
-        return [
-            Text::make('Название', 'name'),
         ];
     }
 

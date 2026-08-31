@@ -4,13 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use App\Models\Stream;
+use App\Models\User;
+use App\MoonShine\Pages\SettingsPage;
 use Illuminate\Http\Request;
+use MoonShine\Laravel\Enums\Ability;
+use MoonShine\Laravel\MoonShineAuth;
 use MoonShine\Support\Enums\FlashType;
 
 class SettingsController extends Controller
 {
     public function store(Request $request)
     {
+        $user = MoonShineAuth::getGuard()->user();
+
+        abort_if(
+            !$user instanceof User || !$user->hasPermission(SettingsPage::class, Ability::VIEW),
+            403
+        );
+
         $settings = [
             'face_recognition' => $request->boolean('face_recognition', false),
             'stream_autoresume' => $request->boolean('stream_autoresume', true),

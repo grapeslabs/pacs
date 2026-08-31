@@ -5,6 +5,8 @@ namespace App\MoonShine\Resources;
 use App\Actuators\ActuatorDriverManager;
 use App\Actuators\ActuatorService;
 use App\Models\ActuatorDevice;
+use Illuminate\Database\Eloquent\Model;
+use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
@@ -21,7 +23,99 @@ class ActuatorDeviceResource extends BaseModelResource
 {
     protected string $model = ActuatorDevice::class;
     protected string $title = 'Исполнительные устройства';
+
+    public function indexSubtitle(): ?string
+    {
+        return $this->countSubtitle('устройство', 'устройства', 'устройств');
+    }
+    protected ?string $editModalTitle = 'Редактирование устройства';
     protected string $column = 'name';
+    protected bool $detailSidebar = true;
+    protected ?string $createLabel = 'Добавить устройство';
+
+    public function detailSidebarData(Model $item): array
+    {
+        $icPlug = $this->iconFile('plug');
+
+        $active = $item->status === ActuatorDevice::STATUS_ACTIVE;
+
+        $settingLabels = [
+            'modbus_tcp_host' => 'Modbus TCP · Хост',
+            'modbus_tcp_port' => 'Modbus TCP · Порт',
+            'modbus_tcp_unit_id' => 'Modbus TCP · Unit ID',
+            'modbus_tcp_function' => 'Modbus TCP · Функция',
+            'modbus_tcp_address' => 'Modbus TCP · Адрес',
+            'modbus_tcp_on_value' => 'Modbus TCP · Значение «вкл»',
+            'modbus_tcp_off_value' => 'Modbus TCP · Значение «выкл»',
+            'dingtian_dt_r002_host' => 'Dingtian · Хост',
+            'dingtian_dt_r002_port' => 'Dingtian · Порт',
+            'dingtian_dt_r002_unit_id' => 'Dingtian · Unit ID',
+            'dingtian_dt_r002_relay' => 'Dingtian · Реле',
+            'dingtian_dt_r002_duration' => 'Dingtian · Длительность, с',
+            'http_base_url' => 'HTTP · Базовый URL',
+            'http_channel' => 'HTTP · Канал',
+            'http_open_url' => 'HTTP · URL открытия',
+            'http_close_url' => 'HTTP · URL закрытия',
+            'http_method' => 'HTTP · Метод',
+        ];
+
+        $fields = [['label' => 'Драйвер', 'value' => $item->driver_label]];
+        foreach (($item->settings ?? []) as $key => $value) {
+            if (is_array($value)) {
+                continue;
+            }
+            if (is_bool($value)) {
+                $display = $value ? 'Да' : 'Нет';
+            } else {
+                $display = blank($value) ? 'Нет' : (string) $value;
+            }
+            $fields[] = [
+                'label' => $settingLabels[$key] ?? $key,
+                'value' => $display,
+            ];
+        }
+
+        $footer = [];
+        foreach ([
+            ['open', 'doOpen', 'lock-open', 'Открыть'],
+            ['close', 'doClose', 'lock-closed', 'Закрыть'],
+            ['test', 'doTest', 'signal', 'Проверка связи'],
+        ] as [$capability, $method, $icon, $label]) {
+            if (! $this->supports($item, $capability)) {
+                continue;
+            }
+            $url = $this->getAsyncMethodUrl($method, page: $this->getIndexPage(), params: ['item_id' => $item->getKey()]);
+            $footer[] = ['html' => (string) ActionButton::make('', $url)
+                ->icon($icon)
+                ->async()
+                ->customAttributes(['class' => 'ds-fbtn', 'title' => $label])];
+        }
+        $footer[] = ['spacer' => true];
+        $footer[] = ['html' => $this->detailEditButtonHtml($item)];
+
+        return [
+            'title' => 'Карточка устройства',
+            'subtitle' => $item->driver_label,
+            'hero' => [
+                'title' => $item->name,
+                'subtitle' => $item->driver_label,
+                'icon' => $icPlug,
+                'badges' => [
+                    $active
+                        ? ['text' => $item->status_label]
+                        : ['text' => $item->status_label, 'tone' => 'muted'],
+                ],
+            ],
+            'sections' => [
+                [
+                    'icon' => $icPlug,
+                    'title' => 'Параметры',
+                    'fields' => $fields,
+                ],
+            ],
+            'footer' => $footer,
+        ];
+    }
 
     public function menuGroup(): string
     {
@@ -33,15 +127,22 @@ class ActuatorDeviceResource extends BaseModelResource
         return app(ActuatorDriverManager::class);
     }
 
+    public function deleteConfirmation(\Illuminate\Database\Eloquent\Model $item): array
+    {
+        return [
+            'title' => 'Удалить устройство?',
+            'text'  => '«' . ($item->name ?: 'Устройство') . '» будет удалено из системы.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
-            ID::make()->sortable(),
-
-            Text::make('Название', 'name')->sortable(),
-
-            Text::make('Тип устройства', 'driver_key')
-                ->setValue(fn($item) => $item->driver_label),
+            AvatarField::make('Название', 'name')
+                ->icon($this->iconFile('menu-equipments') ?: $this->deviceFallbackIconSvg())
+                ->text(fn($item) => $item->name)
+                ->subtext(fn($item) => $item->driver_label)
+                ->sortable(),
 
             ColoredSelectField::make('Статус', 'status')
                 ->options([
@@ -162,7 +263,7 @@ class ActuatorDeviceResource extends BaseModelResource
             ->customAttributes([
                 'title' => $label,
                 '@click.stop' => '',
-                'class' => 'js-actuator-button',
+                'class' => 'js-actuator-button ds-rowbtn',
             ]);
 
         if ($capability !== null) {

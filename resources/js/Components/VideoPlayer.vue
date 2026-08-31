@@ -2,6 +2,8 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import Hls from 'hls.js';
 
+const LIVE_EDGE_TOLERANCE = 10;
+
 const props = defineProps({
     src: { type: String, default: '' },
     autoplay: { type: Boolean, default: true },
@@ -15,6 +17,48 @@ const emit = defineEmits(['error', 'ready', 'timeupdate', 'play', 'pause', 'dura
 
 const videoElement = ref(null);
 let hlsInstance = null;
+let liveEdgeSynced = false;
+
+const bufferedRanges = (video) => {
+    const ranges = [];
+    for (let i = 0; i < video.buffered.length; i++) {
+        ranges.push([video.buffered.start(i), video.buffered.end(i)]);
+    }
+    return ranges;
+};
+
+const jumpIntoBuffer = () => {
+    const video = videoElement.value;
+    if (!video) return false;
+
+    const ranges = bufferedRanges(video);
+    if (!ranges.length) return false;
+
+    const position = video.currentTime;
+    const inside = ranges.some(([start, end]) => position >= start - 0.1 && position <= end);
+    if (inside) return false;
+
+    const target = props.live
+        ? Math.max(0, ranges[ranges.length - 1][1] - 1)
+        : ranges[0][0] + 0.1;
+
+    console.warn(`[HLS] playhead вне буфера (${position.toFixed(2)}s), переходим на ${target.toFixed(2)}s`, ranges);
+    video.currentTime = target;
+    return true;
+};
+
+const syncToLiveEdge = () => {
+    const video = videoElement.value;
+    if (!video) return;
+
+    const ranges = bufferedRanges(video);
+    if (!ranges.length) return;
+
+    const edge = ranges[ranges.length - 1][1];
+    if (edge - video.currentTime > LIVE_EDGE_TOLERANCE) {
+        video.currentTime = Math.max(0, edge - 1);
+    }
+};
 
 const initHls = async () => {
     if (!videoElement.value || !props.src) return;
@@ -26,11 +70,17 @@ const initHls = async () => {
     if (isSafari && canPlayHlsNative) {
         videoElement.value.src = props.src;
         videoElement.value.load();
-        if (props.autoplay) {
-            videoElement.value.addEventListener('canplay', () => {
-                videoElement.value.play().catch(e => console.warn('Autoplay failed', e));
-            }, { once: true });
-        }
+        videoElement.value.addEventListener('canplay', () => {
+            const video = videoElement.value;
+            if (!video) return;
+
+            if (props.live && video.seekable.length) {
+                video.currentTime = video.seekable.end(video.seekable.length - 1);
+            }
+            if (props.autoplay) {
+                video.play().catch(e => console.warn('Autoplay failed', e));
+            }
+        }, { once: true });
     } else if (Hls.isSupported()) {
         hlsInstance = new Hls({
             debug: false,
@@ -55,7 +105,7 @@ const initHls = async () => {
             const level = data.levels[0];
             if (level && level.details && level.details.fragments) {
                 const fragments = level.details.fragments;
-                if(props.live) {
+                if (props.live) {
                     const lastFragment = fragments[fragments.length - 1];
                     startPosition = lastFragment.start;
                     console.log(`[HLS] LIVE detected. Jumping to end: ${startPosition}s`);
@@ -68,7 +118,7 @@ const initHls = async () => {
                 }
             }
 
-            if (videoElement.value) {
+            if (!props.live && videoElement.value) {
                 videoElement.value.currentTime = startPosition;
             }
 
@@ -87,8 +137,17 @@ const initHls = async () => {
             }
         });
 
+        hlsInstance.on(Hls.Events.FRAG_BUFFERED, () => {
+            if (jumpIntoBuffer()) return;
+
+            if (!props.live || liveEdgeSynced) return;
+            liveEdgeSynced = true;
+            syncToLiveEdge();
+        });
+
         hlsInstance.on(Hls.Events.ERROR, (event, data) => {
             if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
+                if (jumpIntoBuffer()) return;
                 if (videoElement.value) {
                     videoElement.value.currentTime += 0.5;
                 }
@@ -115,6 +174,8 @@ const initHls = async () => {
 };
 
 const destroyHls = () => {
+    liveEdgeSynced = false;
+
     if (hlsInstance) {
         hlsInstance.destroy();
         hlsInstance = null;

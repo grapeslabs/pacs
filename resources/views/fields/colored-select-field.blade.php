@@ -16,7 +16,7 @@
         user-select: none;
     }
     .cs-box.active { box-shadow: 0 0 0 0.2rem rgba(55, 107, 244, 0.5); }
-    .cs-box.cs-error { border-color: #ef4444 !important; box-shadow: 0 0 0 1px #ef4444 !important; }
+    .cs-box.cs-error { border-color: #F04138 !important; box-shadow: 0 0 0 1px #F04138 !important; }
 
     .cs-badge {
         display: inline-flex;
@@ -24,16 +24,9 @@
         gap: 6px;
         padding: 4px 12px;
         border-radius: 20px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 500;
         white-space: nowrap;
-    }
-
-    .cs-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
     }
 
     .cs-placeholder {
@@ -88,10 +81,10 @@
         margin-left: auto;
         transition: color 0.2s;
     }
-    .cs-clear:hover { color: #F1416C; }
+    .cs-clear:hover { color: #F04138; }
 
     .cs-error-msg {
-        color: #ef4444;
+        color: #F04138;
         font-size: 0.875rem;
         margin-top: 0.25rem;
         display: block;
@@ -163,7 +156,6 @@
             <span class="cs-badge"
                   :style="'background-color:' + selected.bg + ';color:' + selected.text"
             >
-                <span class="cs-dot" :style="'background-color:' + selected.dot"></span>
                 <span x-text="selected.name"></span>
             </span>
         </template>
@@ -194,7 +186,6 @@
                     <span class="cs-badge"
                           :style="'background-color:' + option.bg + ';color:' + option.text"
                     >
-                        <span class="cs-dot" :style="'background-color:' + option.dot"></span>
                         <span x-text="option.name"></span>
                     </span>
                 </div>

@@ -54,6 +54,13 @@ else
     fi
 fi
 
+log "Starting queue worker..."
+if $DOCKER_COMPOSE up -d horizon; then
+    log "Queue worker started."
+else
+    error "Starting failed"
+fi
+
 if is_enabled "MEDIA_SERVER_ENABLED"; then
     log "Starting media-server..."
     $DOCKER_COMPOSE up -d media-server || warn "FAILED"

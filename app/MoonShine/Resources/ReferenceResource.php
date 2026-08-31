@@ -97,23 +97,6 @@ class ReferenceResource extends BaseModelResource
         ];
     }
 
-    public function detailFields(): iterable
-    {
-        return [
-            ID::make(),
-            Text::make('Название', 'name'),
-            Text::make('Код', 'code'),
-            Text::make('Тип справочника', 'type')
-                ->setValue(fn($item) => $item->type_label),
-            CustomTextarea::make('Описание', 'description'),
-            Json::make('Данные', 'data')
-                ->keyValue('Ключ', 'Значение'),
-            Checkbox::make('Активен', 'is_active')
-                ->setValue(fn($item) => $item->status_label),
-            Number::make('Порядок сортировки', 'sort_order'),
-        ];
-    }
-
     public function rules($item): array
     {
         return [

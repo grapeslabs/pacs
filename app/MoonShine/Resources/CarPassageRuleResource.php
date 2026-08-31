@@ -28,6 +28,7 @@ class CarPassageRuleResource extends BaseModelResource
 {
     protected string $model = CarPassageRule::class;
     protected string $title = 'Правила проезда';
+    protected ?string $editModalTitle = 'Редактирование правила проезда';
     protected string $column = 'name';
 
     private const TYPE_OPTIONS = [
@@ -80,6 +81,8 @@ class CarPassageRuleResource extends BaseModelResource
                 ->required(),
 
             SelectField::make('Теги авто', 'carTags')
+                ->icon('tag')
+                ->optionsIcon('tag')
                 ->multiple()
                 ->options(CarTag::query()->pluck('name', 'id')->toArray()),
 
@@ -108,24 +111,7 @@ class CarPassageRuleResource extends BaseModelResource
 
             Switcher::make('Активно', 'is_active')->default(true),
 
-            CustomTextarea::make('Комментарий', 'comment')->nullable(),
-        ];
-    }
-
-
-    public function detailFields(): iterable
-    {
-        return [
-            ID::make(),
-            Text::make('Наименование', 'name'),
-            Text::make('Теги авто', 'carTags', fn($item) => $item->carTags->pluck('name')->implode(', ') ?: '—'),
-            Text::make('Персоны', 'people', fn($item) => $item->people->map(fn(Person $p) => $p->getFullName())->implode(', ') ?: '—'),
-            Text::make('Номера автомобилей', 'cars', fn($item) => $item->cars->pluck('license_plate')->implode(', ') ?: '—'),
-            Text::make('Проезды', 'passages', fn($item) => $item->passages->pluck('name')->implode(', ') ?: '—'),
-            ColoredSelectField::make('Направление', 'direction')->options(self::DIRECTION_OPTIONS),
-            ColoredSelectField::make('Тип правила', 'type')->options(self::TYPE_OPTIONS),
-            Switcher::make('Активно', 'is_active'),
-            Text::make('Комментарий', 'comment'),
+            CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию')->nullable(),
         ];
     }
 
@@ -233,6 +219,8 @@ class CarPassageRuleResource extends BaseModelResource
             CustomText::make('Наименование', 'name'),
 
             SelectField::make('Теги авто', 'car_tags_filter')
+                ->icon('tag')
+                ->optionsIcon('tag')
                 ->multiple()->nullable()
                 ->options(CarTag::query()->pluck('name', 'id')->toArray())
                 ->onApply($this->relationFilter('carTags', 'car_tags.id')),
@@ -260,7 +248,7 @@ class CarPassageRuleResource extends BaseModelResource
                 ->nullable()
                 ->options(CarPassageRule::TYPES),
 
-            CustomText::make('Комментарий', 'comment'),
+            CustomText::make('Комментарий', 'comment')->placeholder('Дополнительная информацию'),
         ];
     }
 

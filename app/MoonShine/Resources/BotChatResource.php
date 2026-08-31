@@ -20,6 +20,7 @@ class BotChatResource extends BaseModelResource
 {
     protected string $model = BotChat::class;
     protected string $title = 'Чаты бота';
+    protected ?string $editModalTitle = 'Редактирование чата';
     protected function pages(): array
     {
         return [
@@ -58,15 +59,6 @@ class BotChatResource extends BaseModelResource
                 ->required(),
             Text::make('Название', 'name')
                 ->required(),
-        ];
-    }
-
-    public function detailFields(): iterable
-    {
-        return [
-            BelongsTo::make('Бот', 'bot', fn($item) => $item->name),
-            Text::make('ID чата', 'chat_id'),
-            Text::make('Название', 'name'),
         ];
     }
 

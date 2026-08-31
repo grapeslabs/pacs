@@ -12,11 +12,11 @@
 
     .cdf-input {
         width: 100%;
-        height: 42px;
-        border-radius: 0.5rem;
-        border: 1px solid #d1d5db;
+        height: 46px;
+        border-radius: 12px;
+        border: 1.5px solid #D7DBEF;
         padding: 0.5rem 4rem 0.5rem 0.75rem;
-        background-color: transparent;
+        background-color: #fff;
         transition: all 0.2s;
         outline: none;
     }
@@ -27,18 +27,24 @@
         cursor: pointer;
     }
 
+    .cdf-input:hover {
+        border-color: #7381F4;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(115, 129, 244, .18);
+    }
+
     .cdf-input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 1px #3b82f6;
+        border-color: #7381F4;
+        box-shadow: 0 0 0 3px rgba(115, 129, 244, .18);
     }
 
     .cdf-input.cdf-error {
-        border-color: #ef4444 !important;
-        box-shadow: 0 0 0 1px #ef4444 !important;
+        border-color: #F04138 !important;
+        box-shadow: 0 0 0 1px #F04138 !important;
     }
 
     .cdf-error-msg {
-        color: #ef4444;
+        color: #F04138;
         font-size: 0.875rem;
         margin-top: 0.25rem;
         display: block;
@@ -58,13 +64,13 @@
         width: 1rem;
         height: 1rem;
         border: 2px solid #e5e7eb;
-        border-top-color: #3b82f6;
+        border-top-color: #7381F4;
         border-radius: 50%;
         animation: cdf-spin 1s linear infinite;
     }
 
     .cdf-icon-error {
-        color: #ef4444;
+        color: #F04138;
         font-weight: bold;
         font-size: 1.1rem;
         user-select: none;
@@ -86,18 +92,30 @@
     modelId: '{{ $element->getData()?->getKey() ?? '' }}',
     csrfToken: '{{ csrf_token() }}',
     error: null,
+    touched: false,
     loading: false,
     timeout: null,
     init() {
+        window.cdfFields = window.cdfFields || [];
+        window.cdfFields.push(this);
+
         if (!window.customDateFieldsInitialized) {
             window.customDateFieldsInitialized = true;
             document.addEventListener('submit', function(event) {
-                const errorField = document.querySelector('.cdf-error');
-                if (errorField) {
+                window.cdfFields = (window.cdfFields || []).filter(f => document.contains(f.$el));
+
+                const fields = window.cdfFields.filter(f => event.target.contains(f.$el));
+                fields.forEach(f => {
+                    f.touched = true;
+                    f.validate();
+                });
+
+                const invalid = fields.find(f => f.error !== null);
+                if (invalid) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
-                    errorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    errorField.focus();
+                    invalid.$el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    invalid.$el.querySelector('input')?.focus();
                 }
             }, true);
         }
@@ -106,6 +124,7 @@
             this.validate();
         }
         this.$watch('value', () => {
+            this.touched = true;
             this.validate();
         });
     },
@@ -192,14 +211,14 @@
         <input {!! $element->getAttributes()->merge(['class' => 'cdf-input form-input', 'type' => 'date']) !!}
                name="{{ $element->getName() }}"
                x-model="value"
-               @blur="validate()"
-               :class="{'cdf-error': error !== null}"
+               @blur="touched = true; validate()"
+               :class="{'cdf-error': error !== null && touched}"
         />
         <div class="cdf-icon-wrapper">
             <template x-if="loading">
                 <div class="cdf-spinner"></div>
             </template>
-            <template x-if="error !== null && !loading">
+            <template x-if="error !== null && touched && !loading">
                 <div class="cdf-icon-error">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path
@@ -210,5 +229,5 @@
             </template>
         </div>
     </div>
-    <span class="cdf-error-msg" x-show="error !== null" x-text="error ?? ''"></span>
+    <span class="cdf-error-msg" x-show="error !== null && touched" x-text="error ?? ''"></span>
 </div>

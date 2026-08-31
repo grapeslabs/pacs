@@ -12,7 +12,8 @@ final class StreamGridComponent extends MoonShineComponent
 
     public function __construct(
         protected iterable $items =[],
-        protected ?Closure $editUrlResolver = null
+        protected ?Closure $editUrlResolver = null,
+        protected ?Closure $deleteUrlResolver = null
     ) {
         parent::__construct();
     }
@@ -31,11 +32,19 @@ final class StreamGridComponent extends MoonShineComponent
         return $this;
     }
 
+    public function deleteUrlResolver(Closure $resolver): self
+    {
+        $this->deleteUrlResolver = $resolver;
+
+        return $this;
+    }
+
     protected function viewData(): array
     {
         return[
             'items' => $this->items,
             'editUrlResolver' => $this->editUrlResolver,
+            'deleteUrlResolver' => $this->deleteUrlResolver,
             'isDriveLimitStopped' => Cache::get('drive_limit_stoped', false),
         ];
     }

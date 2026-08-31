@@ -1,0 +1,292 @@
+@php
+    $disabled = empty($stream->is_active);
+@endphp
+
+<div class="sp-wrap">
+    <div class="sp-card">
+        <div class="sp-card-head">
+            <h3 class="sp-card-title">Параметры камеры</h3>
+            @if($disabled)
+                <span class="sp-badge sp-badge-red"><span class="sp-dot"></span>Не отвечает</span>
+            @else
+                <div x-data="{ ok:false, done:false }"
+                     x-init="let img=new Image(); img.onload=()=>{ok=true;done=true}; img.onerror=()=>{done=true}; img.src='/media/{{ e($stream->uid) }}/'+Math.floor(Date.now()/1000)+'.jpg'">
+                    <span x-show="ok" x-cloak class="sp-badge sp-badge-green"><span class="sp-dot"></span>Активна</span>
+                    <span x-show="done && !ok" x-cloak class="sp-badge sp-badge-red"><span class="sp-dot"></span>Не отвечает</span>
+                    <span x-show="!done" class="sp-badge sp-badge-gray">проверка…</span>
+                </div>
+            @endif
+        </div>
+
+        <div class="sp-rows">
+            <div class="sp-row">
+                <span class="sp-row-label">UID</span>
+                <span class="sp-row-value">{{ $stream->uid }}</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-row-label">Локация</span>
+                <span class="sp-row-value">{{ $stream->location ?: '—' }}</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-row-label">Адрес потока (RTSP)</span>
+                <span class="sp-row-value sp-row-value--mono">{{ $stream->rtsp ?: '—' }}</span>
+            </div>
+            @if($stream->archive_time)
+                <div class="sp-row">
+                    <span class="sp-row-label">Архив</span>
+                    <span class="sp-row-value">{{ $stream->archive_time }} ч</span>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <div class="sp-card sp-card--events">
+        <div class="sp-card-head">
+            <h3 class="sp-card-title">События — сегодня</h3>
+        </div>
+
+        @if(count($events))
+            <div class="sp-events">
+                @foreach($events as $event)
+                    @php
+                        $evType = data_get($event, 'type', 'face');
+                        $title = data_get($event, 'title', 'Событие');
+                        $person = data_get($event, 'sub');
+                        $dt = data_get($event, 'datetime');
+                        $time = $dt ? \Illuminate\Support\Carbon::parse($dt)->format('H:i') : '';
+                    @endphp
+                    <div class="sp-event">
+                        <div class="sp-event-ico sp-event-ico--{{ $evType }}">
+                            @switch($evType)
+                                @case('plate')
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
+                                         aria-hidden="true">
+                                        <path d="M3 7h18v10H3z"></path>
+                                        <path d="M6 11h2"></path>
+                                        <path d="M11 11h2"></path>
+                                        <path d="M16 11h2"></path>
+                                        <path d="M6 14h12"></path>
+                                    </svg>
+                                    @break
+                                @case('face')
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
+                                         aria-hidden="true">
+                                        <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18"></path>
+                                        <path d="M9 10h.01"></path>
+                                        <path d="M15 10h.01"></path>
+                                        <path d="M9 15c1 1 5 1 6 0"></path>
+                                    </svg>
+                                    @break
+                                @default
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+                                         data-pv-ic="1">
+                                        <path
+                                            d="M16.751 14C17.3474 14.0005 17.9192 14.2378 18.3407 14.6597C18.7622 15.0816 18.999 15.6536 18.999 16.25V16.825C18.999 17.719 18.679 18.584 18.099 19.263C16.529 21.096 14.142 22.001 10.996 22.001C7.85 22.001 5.464 21.096 3.898 19.261C3.31861 18.5824 3.00021 17.7193 3 16.827V16.249C3.00027 15.6526 3.2373 15.0807 3.65901 14.659C4.08072 14.2373 4.65261 14.0003 5.249 14H16.751ZM16.751 15.5H5.248C5.04909 15.5 4.85832 15.579 4.71767 15.7197C4.57702 15.8603 4.498 16.0511 4.498 16.25V16.827C4.498 17.362 4.69 17.88 5.038 18.287C6.291 19.756 8.258 20.501 10.995 20.501C13.734 20.501 15.701 19.756 16.958 18.288C17.3066 17.8803 17.4982 17.3614 17.498 16.825V16.249C17.4977 16.0506 17.4189 15.8604 17.2787 15.72C17.1385 15.5796 16.9494 15.5005 16.751 15.5ZM10.996 2.005C11.6526 2.005 12.3028 2.13433 12.9094 2.3856C13.516 2.63688 14.0672 3.00517 14.5315 3.46947C14.9958 3.93376 15.3641 4.48496 15.6154 5.09158C15.8667 5.69821 15.996 6.34839 15.996 7.005C15.996 7.66161 15.8667 8.31179 15.6154 8.91842C15.3641 9.52505 14.9958 10.0762 14.5315 10.5405C14.0672 11.0048 13.516 11.3731 12.9094 11.6244C12.3028 11.8757 11.6526 12.005 10.996 12.005C9.66992 12.005 8.39815 11.4782 7.46047 10.5405C6.52278 9.60285 5.996 8.33108 5.996 7.005C5.996 5.67892 6.52278 4.40715 7.46047 3.46947C8.39815 2.53179 9.66992 2.005 10.996 2.005ZM10.996 3.505C10.5364 3.505 10.0812 3.59553 9.65661 3.77142C9.23197 3.94731 8.84613 4.20512 8.52113 4.53013C8.19612 4.85513 7.93831 5.24097 7.76242 5.66561C7.58653 6.09025 7.496 6.54537 7.496 7.005C7.496 7.46463 7.58653 7.91975 7.76242 8.34439C7.93831 8.76903 8.19612 9.15487 8.52113 9.47987C8.84613 9.80488 9.23197 10.0627 9.65661 10.2386C10.0812 10.4145 10.5364 10.505 10.996 10.505C11.9243 10.505 12.8145 10.1363 13.4709 9.47987C14.1273 8.8235 14.496 7.93326 14.496 7.005C14.496 6.07674 14.1273 5.1865 13.4709 4.53013C12.8145 3.87375 11.9243 3.505 10.996 3.505Z"
+                                            fill="currentColor"></path>
+                                        <path
+                                            d="M19 5.84615C19 4.82655 19.8954 4 21 4C22.1046 4 23 4.82655 23 5.84615C23 6.21368 22.8837 6.55612 22.6831 6.84381C22.0854 7.70124 21 8.01886 21 9.03846V9.5M20.9902 12H20.9992"
+                                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                            stroke-linejoin="round"></path>
+                                    </svg>
+                            @endswitch
+                        </div>
+                        <div class="sp-event-body">
+                            <div class="sp-event-title">{{ $title }}</div>
+                            @if($person)
+                                <div class="sp-event-sub">{{ $person }}</div>
+                            @endif
+                        </div>
+                        <div class="sp-event-time">{{ $time }}</div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="sp-empty">Нет событий за сегодня</div>
+        @endif
+    </div>
+</div>
+
+<style>
+    .sp-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        font-family: inherit;
+        height: calc(100vh - 260px);
+    }
+
+    .sp-card {
+        background: #fff;
+        border: 1px solid #D7D0EF;
+        border-radius: 16px;
+        padding: 16px 18px;
+        flex: 1 1 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .sp-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+        flex-shrink: 0;
+    }
+
+    .sp-card-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin: 0;
+    }
+
+    .sp-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 12px;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .sp-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .sp-badge-green {
+        background: #E7F7EE;
+        color: #1FA463;
+    }
+
+    .sp-badge-red {
+        background: #FDECEC;
+        color: #E5484D;
+    }
+
+    .sp-badge-gray {
+        background: #F1F3FB;
+        color: #7F7F9D;
+    }
+
+    .sp-rows {
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .sp-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px solid #EAEDFB;
+    }
+
+    .sp-row:last-child {
+        border-bottom: none;
+    }
+
+    .sp-row-label {
+        font-size: 13px;
+        color: #7F7F9D;
+        flex-shrink: 0;
+    }
+
+    .sp-row-value {
+        font-size: 13px;
+        color: #1a1a2e;
+        font-weight: 600;
+        text-align: right;
+        word-break: break-all;
+    }
+
+    .sp-row-value--mono {
+        font-weight: 500;
+        font-size: 12px;
+        color: #4E4E61;
+    }
+
+    .sp-events {
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        min-height: 0;
+    }
+
+    .sp-event {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px dashed #EAEDFB;
+        flex-shrink: 0;
+    }
+
+    .sp-event:last-child {
+        border-bottom: none;
+    }
+
+    .sp-event-ico {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sp-event-ico--plate {
+        background: #EAF1FE;
+        color: #3B82F6;
+    }
+
+    .sp-event-ico--face {
+        background: #EDEBFD;
+        color: #6972F0;
+    }
+
+    .sp-event-ico--motion {
+        background: #E7F7EE;
+        color: #1FA463;
+    }
+
+    .sp-event-body {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .sp-event-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1a1a2e;
+    }
+
+    .sp-event-sub {
+        font-size: 12px;
+        color: #7F7F9D;
+        margin-top: 1px;
+    }
+
+    .sp-event-time {
+        font-size: 12px;
+        color: #7F7F9D;
+        flex-shrink: 0;
+    }
+
+    .sp-empty {
+        font-size: 13px;
+        color: #B7B7C9;
+        text-align: center;
+        padding: 24px 0;
+    }
+</style>
