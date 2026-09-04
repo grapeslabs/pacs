@@ -16,7 +16,7 @@ class AllPersonPhotosExportService
 
     public function createArchive(): ?string
     {
-        $persons = Person::all();
+        $persons = Person::orderBy('id')->get();
         $disk = Storage::disk('public');
 
         $zipFileName = 'persons_photos_archive_' . now()->format('Ymd_His') . '.zip';

@@ -16,11 +16,13 @@ class GrapeslabsSkudController extends Model
         'serial_number',
         'type',
         'ip',
+        'data',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'data' => 'json',
     ];
 
     const TYPE_PINTERM = 'pinterm';

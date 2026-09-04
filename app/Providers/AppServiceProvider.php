@@ -16,7 +16,6 @@ use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
@@ -51,7 +50,7 @@ class AppServiceProvider extends ServiceProvider
         Person::observe(PersonObserver::class);
         Stream::observe(StreamObserver::class);
         Car::observe(CarObserver::class);
-        if (env('DOCKER_DOMAIN')) {
+        if (config('app.docker_domain')) {
             URL::forceScheme('https');
         }
 

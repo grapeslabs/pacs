@@ -89,15 +89,6 @@ Route::get("/organizations/search-dadata", [DadataController::class, "searchOrga
 Route::post("/organizations/save-direct", [DadataController::class, "saveDirect"])
     ->name("organizations.save-direct")
     ->middleware("web");
-Route::get("/test-clean-data", [DadataController::class, "testCleanData"]);
-
-Route::post("/test-multipart-direct", function (Illuminate\Http\Request $request) {
-    return response()->json([
-        "status" => "direct_route_works",
-        "content_type" => $request->header("Content-Type"),
-        "is_multipart" => str_contains($request->header("Content-Type"), "multipart"),
-    ]);
-});
 
 Route::post("/person-photos/import", [PersonPhotoArchiveController::class, "import"])->name("person-photos.import");
 Route::get("/person-photos/export-all", [PersonPhotoArchiveController::class, "exportAll"])->name(
@@ -109,28 +100,3 @@ Route::post("/profile-settings/password", [ProfileSettingsController::class, "pa
 Route::post("/profile-settings/avatar", [ProfileSettingsController::class, "avatar"])->name("profile-settings.avatar");
 Route::post("/profile-settings/avatar/delete", [ProfileSettingsController::class, "avatarDelete"])->name("profile-settings.avatar-delete");
 
-Route::get("/test-person-skud", function () {
-    \Log::info("🧪 TEST Person SKUD Integration Started");
-
-    // Проверим существующие персоны
-    $person = Person::first();
-    if (!$person) {
-        return "No persons found. Please create a person first.";
-    }
-
-    \Log::info("🧪 Testing with person: " . $person->id . " - " . $person->getFullName());
-
-    // Проверим методы модели
-    \Log::info("🧪 Person methods:", [
-        "skud_uid" => $person->getSkudUid(),
-        "full_name" => $person->getFullName(),
-        "photos_count" => count($person->photo ?? []),
-    ]);
-
-    return response()->json([
-        "person_id" => $person->id,
-        "skud_uid" => $person->getSkudUid(),
-        "full_name" => $person->getFullName(),
-        "photos" => $person->photo ?? [],
-    ]);
-});

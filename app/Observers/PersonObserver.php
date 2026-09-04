@@ -3,7 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Person;
-use App\Models\SkudCommand;
+use GrapesLabs\PinvideoSkud\Models\SkudCommand;
 use App\Models\GrapeslabsSkudController;
 use App\Services\ControllerAccessService;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
@@ -23,8 +23,6 @@ class PersonObserver
     protected VideoAnalyticService $vas;
 
     protected ControllerAccessService $access;
-
-    protected array $deletedRfidKeysCache = [];
 
     public function __construct(VideoAnalyticService $vas, ControllerAccessService $access)
     {
@@ -103,18 +101,23 @@ class PersonObserver
 
     public function deleting(Person $person): void
     {
-        $this->deletedRfidKeysCache[$person->id] = $person->keys->pluck('key')->toArray();
+        $person->setRelation('keys', $person->keys()->get());
     }
 
     public function deleted(Person $person): void
     {
         $uid = $person->key_uid ?? $person->getSkudUid();
+        $cards = $person->keys->pluck('key')->all();
+
+        SkudCommand::where('message', 'LIKE', '%"person":"' . $uid . '"%')->delete();
+        foreach ($cards as $cardNum) {
+            SkudCommand::where('message', 'LIKE', '%"card":"' . $cardNum . '"%')->delete();
+        }
 
         foreach ($this->getFaceControllers() as $controller) {
             $this->createSkudCommand($controller->id, Carbon::now(), 'del_persons', ['persons' => [['person' => $uid]]]);
         }
 
-        $cards = $this->deletedRfidKeysCache[$person->id] ?? [];
         if (!empty($cards)) {
             $rfidCardsDel = array_map(fn($c) => ['card' => (string)$c], $cards);
             foreach ($this->getRfidControllers() as $controller) {
@@ -122,14 +125,8 @@ class PersonObserver
             }
         }
 
-        SkudCommand::where('message', 'LIKE', '%"person":"' . $uid . '"%')->delete();
-        foreach ($cards as $cardNum) {
-            SkudCommand::where('message', 'LIKE', '%"card":"' . $cardNum . '"%')->delete();
-        }
-
         $this->vas->personDelete($person->grapesva_uuid);
         $person->keys()->getQuery()->delete();
-        unset($this->deletedRfidKeysCache[$person->id]);
     }
 
     public function scheduleCommands(Person $person): void

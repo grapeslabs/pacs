@@ -59,6 +59,8 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
+    'docker_domain' => env('DOCKER_DOMAIN'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

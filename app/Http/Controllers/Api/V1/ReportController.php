@@ -50,7 +50,7 @@ class ReportController extends Controller
             $query->where('datetime', '<=', Carbon::parse($request->input('datetime_to')));
         }
         if ($request->filled('camera_id')) {
-            $query->whereHas('stream', fn($q) => $q->where('uid', $request->input('camera_id')));
+            $query->where('camera_id', $request->input('camera_id'));
         }
         if ($request->filled('person_photobank_id')) {
             $query->where('person_photobank_id', $request->input('person_photobank_id'));
@@ -72,7 +72,7 @@ class ReportController extends Controller
             $query->where('datetime', '<=', Carbon::parse($request->input('datetime_to')));
         }
         if ($request->filled('camera_id')) {
-            $query->whereHas('stream', fn($q) => $q->where('uid', $request->input('camera_id')));
+            $query->where('camera_id', $request->input('camera_id'));
         }
 
         $reports = $query->orderBy('id', 'desc')->paginate($request->input('per_page', 15));

@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Trigger;
 use App\Models\Bot;
+use App\Models\GrapeslabsSkudController;
 use App\Models\Stream;
 use App\Models\Tag;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
@@ -15,14 +16,16 @@ class TriggerFactory extends Factory
 
     public function definition(): array
     {
-        $deviceTypes = [
+        $deviceTypes = array_values(array_filter([
             Trigger::DEVICE_CAMERA,
             Trigger::DEVICE_TERMINAL,
             Trigger::DEVICE_BARIER,
             Trigger::DEVICE_CONTROLLER,
-        ];
+        ], fn (string $type) => $this->findDeviceId($type) !== null));
 
-        $deviceType = $this->faker->randomElement($deviceTypes);
+        $deviceType = $deviceTypes === []
+            ? Trigger::DEVICE_CONTROLLER
+            : $this->faker->randomElement($deviceTypes);
 
         // Выбираем устройство в зависимости от типа
         $deviceId = $this->getDeviceId($deviceType);
@@ -60,7 +63,24 @@ class TriggerFactory extends Factory
     /**
      * Получить ID устройства по типу
      */
-    private function getDeviceId(string $deviceType): ?int
+    private function getDeviceId(string $deviceType): int
+    {
+        $existing = $this->findDeviceId($deviceType);
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        return GrapeslabsSkudController::factory()->create([
+            'type' => match ($deviceType) {
+                Trigger::DEVICE_TERMINAL => 'pinterm',
+                Trigger::DEVICE_BARIER => 'pingate',
+                default => 'z5rweb',
+            },
+        ])->id;
+    }
+
+    private function findDeviceId(string $deviceType): ?int
     {
         return match($deviceType) {
             Trigger::DEVICE_CAMERA => Stream::inRandomOrder()->value('id'),
@@ -141,7 +161,7 @@ class TriggerFactory extends Factory
     /**
      * Создать триггер для камеры
      */
-    public function forCamera(Stream $stream, string $eventType = null): static
+    public function forCamera(Stream $stream, ?string $eventType = null): static
     {
         return $this->state(fn (array $attributes) => [
             'device_type' => Trigger::DEVICE_CAMERA,
@@ -153,7 +173,7 @@ class TriggerFactory extends Factory
     /**
      * Создать триггер для терминала
      */
-    public function forTerminal(SkudController $terminal, string $eventType = null): static
+    public function forTerminal(SkudController $terminal, ?string $eventType = null): static
     {
         return $this->state(fn (array $attributes) => [
             'device_type' => Trigger::DEVICE_TERMINAL,
@@ -165,7 +185,7 @@ class TriggerFactory extends Factory
     /**
      * Создать триггер для шлагбаума
      */
-    public function forBarrier(SkudController $barrier, string $eventType = null): static
+    public function forBarrier(SkudController $barrier, ?string $eventType = null): static
     {
         return $this->state(fn (array $attributes) => [
             'device_type' => Trigger::DEVICE_BARIER,
@@ -177,7 +197,7 @@ class TriggerFactory extends Factory
     /**
      * Создать триггер для контроллера
      */
-    public function forController(SkudController $controller, string $eventType = null): static
+    public function forController(SkudController $controller, ?string $eventType = null): static
     {
         return $this->state(fn (array $attributes) => [
             'device_type' => Trigger::DEVICE_CONTROLLER,

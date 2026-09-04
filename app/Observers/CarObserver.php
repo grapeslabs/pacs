@@ -88,9 +88,11 @@ class CarObserver
             return;
         }
 
+        $normalizedPlate = mb_strtoupper(str_replace(' ', '', $car->license_plate));
+
         CarPassageEvent::query()
             ->whereNull('car_id')
-            ->whereRaw("upper(replace(plate_text, ' ', '')) = ?", [$car->license_plate])
+            ->whereRaw("upper(replace(plate_text, ' ', '')) = ?", [$normalizedPlate])
             ->update(['car_id' => $car->id]);
     }
 }
