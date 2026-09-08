@@ -8,6 +8,7 @@ use App\Models\Person;
 use App\Http\Controllers\ChatsController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StreamController;
+use App\Http\Controllers\VideoWallController;
 use App\Http\Controllers\CustomFieldController;
 use App\Http\Controllers\DetailCardController;
 use App\Http\Controllers\DetailModalController;
@@ -69,6 +70,14 @@ Route::prefix("chats")->group(function () {
     Route::post("store", [ChatsController::class, "store"])->name("chats.store");
     Route::get("test", [ChatsController::class, "test"])->name("chats.test");
 });
+
+Route::prefix("video-walls")
+    ->middleware(MoonShineAuthenticate::class)
+    ->group(function () {
+        Route::post("store", [VideoWallController::class, "store"])->name("video-walls.store");
+        Route::post("{videoWall}", [VideoWallController::class, "update"])->name("video-walls.update");
+        Route::delete("{videoWall}", [VideoWallController::class, "destroy"])->name("video-walls.destroy");
+    });
 
 Route::prefix("/streams")->group(function () {
     Route::post("/archive-download/{stream}", [StreamController::class, "downloadArchive"])->name(

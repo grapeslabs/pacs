@@ -18,10 +18,12 @@ use App\Models\Role;
 use App\Models\Stream;
 use App\Models\Trigger;
 use App\Models\User;
+use App\Models\VideoWall;
 use App\MoonShine\Pages\Dashboard;
 use App\MoonShine\Pages\LogViewerPage;
 use App\MoonShine\Pages\PresenceReportPage;
 use App\MoonShine\Pages\SettingsPage;
+use App\MoonShine\Pages\VideoWallPage;
 use App\MoonShine\Resources\ActuatorDeviceResource;
 use App\MoonShine\Resources\ApiKeyResource;
 use App\MoonShine\Resources\BotResource;
@@ -71,6 +73,7 @@ class MenuService
                 'feature' => 'services.ms.enabled',
                 'items' => [
                     ['label' => 'Видеопотоки', 'class' => VideoStreamResource::class, 'icon' => $this->iconFile('camera'), 'model' => Stream::class],
+                    ['label' => 'Видеостены', 'class' => VideoWallPage::class, 'icon' => $this->iconFile('videowall'), 'model' => VideoWall::class],
                 ],
             ],
             [
