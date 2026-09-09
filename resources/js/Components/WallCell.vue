@@ -16,11 +16,13 @@ const emit = defineEmits(['toggle-audio', 'toggle-pause', 'open']);
 
 const playerRef = ref(null);
 const useHls = ref(false);
-const status = ref('connecting');
+const disabled = computed(() => props.stream.is_active === false);
+const status = ref(disabled.value ? 'disabled' : 'connecting');
 
 const hlsSrc = computed(() => `/media/${props.stream.uid}/index.m3u8`);
 
 const badge = computed(() => {
+    if (status.value === 'disabled') return 'Отключена';
     if (status.value === 'error') return 'Офлайн';
     if (status.value !== 'live') return '···';
     if (props.paused) return 'Пауза';
@@ -29,6 +31,7 @@ const badge = computed(() => {
 });
 
 const badgeTitle = computed(() => {
+    if (status.value === 'disabled') return 'Камера выключена администратором';
     if (status.value === 'error') return 'Нет связи с камерой';
     if (status.value !== 'live') return 'Подключение';
     if (props.paused) return 'Воспроизведение приостановлено';
@@ -124,7 +127,7 @@ const onUnsupported = () => {
 watch(() => props.muted, applyState);
 watch(() => props.paused, applyState);
 
-armWatchdog();
+if (!disabled.value) armWatchdog();
 
 onBeforeUnmount(() => {
     disposed = true;
@@ -135,7 +138,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="wall-cell" :class="{ clickable, paused }" @click="clickable && emit('open')">
-        <div class="wall-cell-media">
+        <div v-if="!disabled" class="wall-cell-media">
             <WhepPlayer
                 v-if="!useHls"
                 ref="playerRef"
@@ -156,8 +159,12 @@ onBeforeUnmount(() => {
             />
         </div>
 
-        <div v-if="status !== 'live'" class="wc-state">
-            <template v-if="status === 'connecting'">
+        <div v-if="status !== 'live'" class="wc-state" :class="{ off: status === 'disabled' }">
+            <template v-if="status === 'disabled'">
+                <div class="wc-ph"><span></span><span></span><span></span></div>
+                <span>Камера выключена администратором</span>
+            </template>
+            <template v-else-if="status === 'connecting'">
                 <span class="wc-spinner"></span>
                 <span>Подключение…</span>
             </template>
@@ -176,7 +183,7 @@ onBeforeUnmount(() => {
             <span class="d"></span>{{ badge }}
         </span>
 
-        <div v-if="controls && status !== 'error'" class="wc-tools">
+        <div v-if="controls && status !== 'error' && !disabled" class="wc-tools">
             <button
                 type="button"
                 class="wc-tool"
@@ -276,10 +283,36 @@ onBeforeUnmount(() => {
     align-items: center;
     justify-content: center;
     gap: 10px;
+    padding: 0 12px;
+    text-align: center;
     color: rgba(255, 255, 255, .55);
     font-weight: 600;
     font-size: 12px;
     pointer-events: none;
+}
+
+.wc-state.off { background: #1B1A2A; }
+
+.wc-ph { position: relative; width: 64px; height: 34px; flex: 0 0 auto; }
+
+.wc-ph span {
+    position: absolute;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, .5);
+    filter: blur(1px);
+    animation: wc-ph-float 2.4s ease-in-out infinite;
+}
+
+.wc-ph span:nth-child(1) { left: 4px; animation-delay: 0s; }
+.wc-ph span:nth-child(2) { left: 27px; animation-delay: .35s; background: rgba(255, 255, 255, .7); }
+.wc-ph span:nth-child(3) { left: 50px; animation-delay: .7s; }
+
+@keyframes wc-ph-float {
+    0%, 100% { transform: translateY(-6px); opacity: .35; }
+    50% { transform: translateY(6px); opacity: .85; }
 }
 
 .wc-spinner {

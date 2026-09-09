@@ -74,6 +74,7 @@ const camQuery = ref('');
 const renameId = ref(null);
 const renameValue = ref('');
 const deleteTarget = ref(null);
+const saveTarget = ref(null);
 const confirmExit = ref(false);
 const pendingAction = ref(null);
 const saving = ref(false);
@@ -133,6 +134,19 @@ const panelStreams = computed(() => {
         .slice()
         .sort((a, b) => (ids.value.includes(b.id) ? 1 : 0) - (ids.value.includes(a.id) ? 1 : 0));
 });
+
+const camWord = (value) => {
+    const tail = Math.abs(value) % 100;
+    const last = tail % 10;
+
+    if (tail > 10 && tail < 20) return 'камер';
+    if (last === 1) return 'камера';
+    if (last > 1 && last < 5) return 'камеры';
+
+    return 'камер';
+};
+
+const cams = (value) => `${value} ${camWord(value)}`;
 
 const columnHeight = (column) => column.items.reduce((sum, item) => sum + item.h, 0) || 1;
 const cellIndex = (id) => ids.value.indexOf(id) + 1;
@@ -210,6 +224,25 @@ const saveToProfile = async (profile) => {
     } finally {
         saving.value = false;
     }
+};
+
+const requestSaveTo = (profile) => {
+    if (profile.id === activeId.value) {
+        saveToProfile(profile).catch(() => {});
+        return;
+    }
+
+    saveTarget.value = profile;
+};
+
+const confirmSaveTo = () => {
+    const profile = saveTarget.value;
+
+    if (!profile) return;
+
+    saveToProfile(profile)
+        .then(() => { saveTarget.value = null; })
+        .catch(() => {});
 };
 
 const createProfile = async (layout = []) => {
@@ -858,7 +891,7 @@ onBeforeUnmount(() => {
                                 <span class="wp-nm" :title="profile.name" @click="loadProfile(profile)">{{ profile.name }}</span>
                                 <span class="wp-cnt">{{ profileCount(profile) }}</span>
                                 <div class="wp-acts">
-                                    <button type="button" class="act" title="Сохранить текущую сетку в профиль" @click="saveToProfile(profile)">
+                                    <button type="button" class="act" title="Сохранить текущую сетку в профиль" @click="requestSaveTo(profile)">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                                     </button>
                                     <button type="button" class="act" title="Переименовать" @click="renameId = profile.id; renameValue = profile.name">
@@ -923,6 +956,23 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
+        <div v-if="saveTarget" class="wall-modal-overlay" @click.self="saveTarget = null">
+            <div class="wall-modal">
+                <h3>Сохранить в другой профиль?</h3>
+                <p v-if="active">
+                    Вы редактируете профиль «{{ active.name }}», а сохраняете сетку в «{{ saveTarget.name }}».
+                    Текущая сетка ({{ cams(count) }}) заменит сетку профиля «{{ saveTarget.name }}» ({{ cams(profileCount(saveTarget)) }}).
+                </p>
+                <p v-else>
+                    Текущая сетка ({{ cams(count) }}) заменит сетку профиля «{{ saveTarget.name }}» ({{ cams(profileCount(saveTarget)) }}).
+                </p>
+                <div class="wall-modal-actions">
+                    <button type="button" class="btn" :disabled="saving" @click="saveTarget = null">Отмена</button>
+                    <button type="button" class="btn primary" :disabled="saving" @click="confirmSaveTo">Сохранить</button>
+                </div>
+            </div>
+        </div>
+
         <div v-if="confirmExit" class="wall-modal-overlay" @click.self="confirmExit = false">
             <div class="wall-modal">
                 <h3>Сохранить изменения?</h3>
@@ -978,7 +1028,8 @@ onBeforeUnmount(() => {
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn.primary { background: linear-gradient(180deg, #7E92F8 0%, #6972F0 100%); border-color: transparent; color: #fff; }
 .btn.primary:hover:not(:disabled) { color: #fff; }
-.btn.danger { background: #F04138; border-color: transparent; color: #fff; }
+.btn.danger { background: #F04138; border-color: transparent; color: #fff; transition: background-color .15s, border-color .15s; }
+.btn.danger:hover:not(:disabled) { background: #D93A32; border-color: transparent; color: #fff; }
 
 .prof-select { position: relative; }
 .prof-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1292,8 +1343,12 @@ onBeforeUnmount(() => {
     font-family: inherit;
     font-weight: 700;
     font-size: 13px;
+    line-height: 1.4;
     outline: none;
+    box-shadow: none;
 }
+
+.wprof input:focus { outline: none; box-shadow: none; }
 
 .act {
     width: 30px;
@@ -1326,7 +1381,23 @@ onBeforeUnmount(() => {
     color: #ACACB6;
 }
 
-.wcam-search input { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; outline: none; font-family: inherit; font-weight: 600; font-size: 13px; color: #1a1a2e; }
+.wcam-search input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    outline: none;
+    box-shadow: none;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #1a1a2e;
+}
+
+.wcam-search input:focus { border: 0; outline: none; box-shadow: none; }
 .wcam-search:focus-within { border-color: #7381F4; background: #fff; box-shadow: 0 0 0 3px rgba(115, 129, 244, .16); }
 .wcam-search-x { border: 0; background: transparent; color: #ACACB6; cursor: pointer; display: flex; padding: 2px; border-radius: 6px; }
 .wcam-search-x:hover { background: #EAEDF8; color: #1a1a2e; }
