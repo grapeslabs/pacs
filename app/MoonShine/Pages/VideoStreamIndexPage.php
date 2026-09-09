@@ -36,6 +36,7 @@ class VideoStreamIndexPage extends CustomIndexPage
 
                 Flex::make([
                     $this->streamsViewToggle(),
+                    $this->videoWallButton(),
                     $this->getCustomCreateButton(),
                 ])->itemsAlign('center'),
             ])
@@ -122,6 +123,15 @@ class VideoStreamIndexPage extends CustomIndexPage
             . '<p style="font-size:13px;color:#7F7F9D;margin:4px 0 0;" '
             . 'x-text="$store.streamView ? ($store.streamView.total + \' камер · \' + $store.streamView.active + \' активны · \' + $store.streamView.notResponding + \' не отвечают\') : \'\'"></p>'
             . '</div>';
+    }
+
+    private function videoWallButton(): string
+    {
+        $url = toPage(VideoWallPage::class);
+        $style = 'display:inline-flex;align-items:center;gap:8px;padding:9px 18px;margin-right:14px;border-radius:9999px;background:#fff;color:#4E4E61;border:1px solid #D7D0EF;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;font-family:inherit;';
+        $icon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="8" height="16" rx="1.5"></rect><rect x="13" y="4" width="8" height="7" rx="1.5"></rect><rect x="13" y="13" width="8" height="7" rx="1.5"></rect></svg>';
+
+        return '<a href="' . $url . '" style="' . $style . '">' . $icon . 'Видеостены</a>';
     }
 
     private function streamsViewToggle(): string

@@ -41,6 +41,7 @@ return [
         "url" => env("MEDIA_SERVER_API_URL"),
         "rtsp_url" => env("MEDIA_SERVER_RTSP"),
         "timeout" => env("MEDIA_SERVER_API_TIMEOUT", 5),
+        "webrtc_profile" => env("MEDIA_SERVER_WEBRTC_PROFILE", "original"),
     ],
     "va" => [
         "enabled" => env("ANALYTIC_ENABLED", false) || env("LPR_ENABLED", false),

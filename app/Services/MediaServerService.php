@@ -66,6 +66,8 @@ class MediaServerService
             'segment_duration' => 10,
             'enable_hls' => true,
             'enable_rtsp' => true,
+            'enable_webrtc' => true,
+            'webrtc_profile' => config('services.ms.webrtc_profile'),
             'mount_path' => '/rtsp/' . $stream_uid,
             'depthhours' => $depthHours,
         ];
@@ -87,6 +89,8 @@ class MediaServerService
             'depthhours' => $depthHours,
             'enable_hls' => true,
             'enable_rtsp' => true,
+            'enable_webrtc' => true,
+            'webrtc_profile' => config('services.ms.webrtc_profile'),
             'mount_path' => '/rtsp/' . $streamUid,
         ];
 

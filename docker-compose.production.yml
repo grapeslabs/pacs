@@ -197,6 +197,8 @@ services:
       - laravel
     expose:
       - 8081
+    ports:
+      - "${MEDIA_SERVER_WEBRTC_UDP_PORT:-8189}:${MEDIA_SERVER_WEBRTC_UDP_PORT:-8189}/udp"
     user: "0:0"
     working_dir: /cfg
     volumes:

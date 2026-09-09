@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Stream;
+use App\Models\VideoWall;
 use App\Services\MediaServerService;
 use App\Services\VideoAnalyticLprService;
 use App\Services\VideoAnalyticService;
@@ -97,6 +98,28 @@ class StreamObserver
             $result = $this->lpr->cameraDelete($stream->uid);
             if (empty($result['ok'])) {
                 Log::warning('StreamObserver: LPR camera delete failed', ['uid' => $stream->uid]);
+            }
+        }
+
+        $this->removeFromVideoWalls($stream);
+    }
+
+    private function removeFromVideoWalls(Stream $stream): void
+    {
+        foreach (VideoWall::all() as $wall) {
+            $layout = array_values(array_filter(
+                array_map(static fn (array $column): array => [
+                    'w' => $column['w'] ?? 1,
+                    'items' => array_values(array_filter(
+                        $column['items'] ?? [],
+                        static fn ($item): bool => is_array($item) && (int) ($item['id'] ?? 0) !== $stream->id
+                    )),
+                ], $wall->layout ?? []),
+                static fn (array $column): bool => $column['items'] !== []
+            ));
+
+            if ($layout !== ($wall->layout ?? [])) {
+                $wall->update(['layout' => $layout]);
             }
         }
     }

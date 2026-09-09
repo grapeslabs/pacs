@@ -17,6 +17,8 @@ ADB_PASS=""
 LPR_DB_NAME="pacs-lpr"
 LPR_DB_PASS=""
 MEDIA_ENABLED=""
+WEBRTC_PUBLIC_IP=""
+WEBRTC_UDP_PORT="8189"
 ANALYTIC_ENABLED=""
 LPR_ENABLED=""
 ADMIN_EMAIL=""
@@ -94,6 +96,7 @@ parse_args() {
             --adb-password)    ADB_PASS="$val" ;;
             --lpr-db-password) LPR_DB_PASS="$val" ;;
             --media-server)    MEDIA_ENABLED="$(to_bool "$val")" ;;
+            --webrtc-ip)       WEBRTC_PUBLIC_IP="$val" ;;
             --analytic)        ANALYTIC_ENABLED="$(to_bool "$val")" ;;
             --lpr)             LPR_ENABLED="$(to_bool "$val")" ;;
             --admin-email)     ADMIN_EMAIL="$val" ;;
@@ -201,6 +204,53 @@ collect_params() {
     ask_bool_or LPR_ENABLED      "Включить модуль видеоаналитики ГРЗ?"              "no" "false"
 
     warn_media_requirement
+    collect_webrtc_ip
+}
+
+validate_ipv4() {
+    printf '%s' "$1" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$' || return 1
+    local IFS='.' octet
+    for octet in $1; do
+        [ "$octet" -le 255 ] || return 1
+    done
+}
+
+collect_webrtc_ip() {
+    [ "$MEDIA_ENABLED" = "true" ] || return 0
+
+    if [ -n "$WEBRTC_PUBLIC_IP" ]; then
+        validate_ipv4 "$WEBRTC_PUBLIC_IP" || err "Некорректный IP для WebRTC: $WEBRTC_PUBLIC_IP (пример: 192.168.1.10)"
+        return 0
+    fi
+
+    local detected
+    detected="$(detect_ip || true)"
+
+    if ! have_tty; then
+        WEBRTC_PUBLIC_IP="$detected"
+        if [ -n "$WEBRTC_PUBLIC_IP" ]; then
+            log "IP для WebRTC определён автоматически: $WEBRTC_PUBLIC_IP"
+        else
+            warn "Не удалось определить IP для WebRTC - видео пойдёт через резервный HLS."
+        fi
+        return 0
+    fi
+
+    echo
+    log "Просмотр видео в реальном времени (видеостены, режим LIVE) идёт по WebRTC напрямую"
+    log "на порт ${WEBRTC_UDP_PORT}/udp, минуя веб-сервер. Нужен адрес, по которому этот сервер"
+    log "доступен операторам: за NAT это внешний адрес, а не локальный."
+
+    while :; do
+        WEBRTC_PUBLIC_IP="$(ask "IP-адрес сервера для WebRTC (Enter - пропустить, видео пойдёт через HLS с задержкой)" "$detected")"
+        if [ -z "$WEBRTC_PUBLIC_IP" ]; then
+            warn "WebRTC не настроен: видеостены и LIVE будут работать через резервный HLS (задержка ~30 секунд)."
+            warn "Позже это правится в .env (MEDIA_SERVER_WEBRTC_PUBLIC_IP) и перезапуском ./start.sh."
+            break
+        fi
+        validate_ipv4 "$WEBRTC_PUBLIC_IP" && break
+        warn "Некорректный IP: $WEBRTC_PUBLIC_IP (пример: 192.168.1.10)"
+    done
 }
 
 warn_media_requirement() {
@@ -254,7 +304,9 @@ configure_env() {
     set_env DB_USERNAME       "$DB_USER"
     set_env DB_PASSWORD       "$DB_PASS"
 
-    set_env MEDIA_SERVER_ENABLED "$MEDIA_ENABLED"
+    set_env MEDIA_SERVER_ENABLED           "$MEDIA_ENABLED"
+    set_env MEDIA_SERVER_WEBRTC_PUBLIC_IP  "$WEBRTC_PUBLIC_IP"
+    set_env MEDIA_SERVER_WEBRTC_UDP_PORT   "$WEBRTC_UDP_PORT"
     set_env ANALYTIC_ENABLED     "$ANALYTIC_ENABLED"
     set_env LPR_ENABLED          "$LPR_ENABLED"
 
