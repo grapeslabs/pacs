@@ -161,7 +161,8 @@ class MoonShineUserResource extends BaseModelResource
                     ])->columnSpan(6)
                 ]),
                 PermissionMatrixField::make('Права', 'permissions')
-                    ->roleField('moonshine_user_role_id'),
+                    ->roleField('moonshine_user_role_id')
+                    ->inheritable(),
                 ActionButton::make('Сохранить')
                     ->customAttributes(['type' => 'submit', 'style' => 'width: 136px'])
                     ->primary(),

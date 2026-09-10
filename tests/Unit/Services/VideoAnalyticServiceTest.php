@@ -86,15 +86,15 @@ class VideoAnalyticServiceTest extends TestCase
             && str_contains($r->url(), 'person_id=person-42'));
     }
 
-    public function test_person_info_posts_person_id(): void
+    public function test_person_info_gets_person_id(): void
     {
         Http::fake(['va.test/*' => Http::response(['ok' => true], 200)]);
 
         $this->service()->personInfo('person-7');
 
-        Http::assertSent(fn (Request $r) => $r->method() === 'POST'
-            && str_contains($r->url(), '/api/v1/person/add')
-            && $r['person_id'] === 'person-7');
+        Http::assertSent(fn (Request $r) => $r->method() === 'GET'
+            && str_contains($r->url(), '/api/v1/person/getinfo')
+            && str_contains($r->url(), 'person_id=person-7'));
     }
 
     public function test_camera_create_builds_stream_and_default_zones(): void

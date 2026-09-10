@@ -2,6 +2,7 @@
 
 namespace App\MoonShine\Resources;
 
+use MoonShine\Laravel\Enums\Ability;
 use App\Models\CarTag;
 use App\Models\Setting;
 use App\Models\Stream;
@@ -350,6 +351,29 @@ class VideoStreamResource extends BaseModelResource
     }
 
 
+    public function asyncMethodAbilities(): array
+    {
+        return array_merge(parent::asyncMethodAbilities(), [
+            'saveFaceDetectionZone' => Ability::UPDATE,
+            'saveMotionDetectionZones' => Ability::UPDATE,
+            'savePlateDetectionZone' => Ability::UPDATE,
+        ]);
+    }
+
+    private function validateZone(mixed $zoneData): void
+    {
+        if (empty($zoneData)) {
+            return;
+        }
+
+        validator($zoneData, [
+            'x1' => ['required', 'numeric', 'min:0', 'max:1'],
+            'y1' => ['required', 'numeric', 'min:0', 'max:1'],
+            'x2' => ['required', 'numeric', 'min:0', 'max:1', 'gt:x1'],
+            'y2' => ['required', 'numeric', 'min:0', 'max:1', 'gt:y1'],
+        ])->validate();
+    }
+
     public function saveFaceDetectionZone(MoonShineRequest $request): MoonShineJsonResponse
     {
         $item = $this->getItem();
@@ -359,6 +383,8 @@ class VideoStreamResource extends BaseModelResource
         if (is_string($zoneData)) {
             $zoneData = json_decode($zoneData, true);
         }
+
+        $this->validateZone($zoneData);
 
         $options = $item->va_options ?? [];
         $options['global_enable'] = true;
@@ -391,7 +417,7 @@ class VideoStreamResource extends BaseModelResource
         $options = $item->va_options ?? [];
         $options['global_enable'] = true;
         $options['is_motion_detection'] = true;
-        $options['has_motion_detection_zones'] = true;
+        $options['has_motion_detection_zone'] = true;
         $options['motion_detection_zones'] = $zoneData;
 
         $videoWidth = (int)$request->input('video_width', 0);
@@ -417,6 +443,8 @@ class VideoStreamResource extends BaseModelResource
         if (is_string($zoneData)) {
             $zoneData = json_decode($zoneData, true);
         }
+
+        $this->validateZone($zoneData);
 
         $options = $item->va_options ?? [];
         $options['global_enable'] = true;

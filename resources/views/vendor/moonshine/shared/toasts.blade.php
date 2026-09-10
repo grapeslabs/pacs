@@ -1,4 +1,4 @@
-<style>
+    <style>
     .toast:not(.ms-custom-toast),
     .toast-success,
     .toast-error,

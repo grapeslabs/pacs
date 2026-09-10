@@ -8,11 +8,6 @@ use Illuminate\Http\Request;
 
 class CarTagController extends Controller
 {
-    public function index(): JsonResponse
-    {
-        return response()->json(CarTag::select('id', 'name')->get());
-    }
-
     public function store(Request $request): JsonResponse
     {
         $request->validate([
@@ -25,10 +20,5 @@ class CarTagController extends Controller
         ]);
 
         return response()->json(['id' => $tag->id, 'name' => $tag->name]);
-    }
-
-    public function destroy(CarTag $carTag): JsonResponse
-    {
-        return response()->json(['id' => $carTag->id, 'success' => $carTag->delete()]);
     }
 }

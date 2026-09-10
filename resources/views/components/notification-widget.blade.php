@@ -69,9 +69,8 @@
             @forelse($groups as $group)
                 <div class="pacs-notify-group-label">{{ $group['label'] }}</div>
                 @foreach($group['items'] as $item)
-                    <a href="{{ route('moonshine.notifications.read', $item['id']) }}"
-                       class="pacs-notify-item @if($item['is_unread']) _unread @endif"
-                       @click.prevent="markRead($el, '{{ route('moonshine.notifications.read', $item['id']) }}')">
+                    <div class="pacs-notify-item @if($item['is_unread']) _unread @endif"
+                       @click="markRead($el, '{{ route('moonshine.notifications.read', $item['id']) }}')">
                         <span class="pacs-notify-ico {{ $item['type'] }}">
                             @if($item['type'] === 'error')
                                 {!! file_get_contents(public_path('icons/notification-error.svg')) !!}
@@ -95,7 +94,7 @@
                                 <span class="pacs-notify-unread-dot"></span>
                             @endif
                         </div>
-                    </a>
+                    </div>
                 @endforeach
             @empty
                 <div class="pacs-notify-empty">Нет уведомлений</div>

@@ -2,12 +2,9 @@
 
 namespace App\MoonShine\Resources;
 
-use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
@@ -93,14 +90,6 @@ class TerminalResource extends BaseModelResource
         ][$type] ?? (string) $type;
     }
 
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
 
     public function menuGroup(): string
     {

@@ -8,9 +8,6 @@ use App\Models\Stream;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\CustomTextarea;
 use App\MoonShine\Fields\SelectField;
-use App\MoonShine\Pages\CustomIndexPage;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\UI\Components\Layout\Box;
 use MoonShine\UI\Components\Layout\Column;
 use MoonShine\UI\Components\Layout\Grid;
@@ -21,12 +18,9 @@ class PassageResource extends BaseModelResource
 {
     protected string $model = Passage::class;
     protected string $title = 'Проезды';
+    protected array $with = ['entryCameras', 'exitCameras', 'entryActuatorDevice', 'exitActuatorDevice'];
     protected string $column = 'name';
 
-    protected function pages(): array
-    {
-        return [CustomIndexPage::class, DetailPage::class, FormPage::class];
-    }
 
     public function indexFields(): iterable
     {
@@ -115,11 +109,6 @@ class PassageResource extends BaseModelResource
         return [
             Text::make('Наименование', 'name'),
         ];
-    }
-
-    public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
-    {
-        return parent::indexQuery()->with(['entryCameras', 'exitCameras', 'entryActuatorDevice', 'exitActuatorDevice']);
     }
 
     private function lprCameraOptions(): array

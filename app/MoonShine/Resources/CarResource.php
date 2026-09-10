@@ -3,6 +3,7 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Car;
+use Illuminate\Validation\Rule;
 use App\Models\CarBrand;
 use App\Models\CarColor;
 use App\Models\Organization;
@@ -11,7 +12,6 @@ use App\Models\CarTag;
 use App\Models\CarPassageRule;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Fields\TagsField;
-use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Resources\CarBrandResource;
 use App\MoonShine\Resources\CarColorResource;
 use App\MoonShine\Resources\OrganizationResource;
@@ -20,8 +20,6 @@ use MoonShine\Laravel\Fields\Relationships\BelongsToMany;
 use MoonShine\UI\Components\Layout\Column;
 use MoonShine\UI\Components\Layout\Grid;
 use MoonShine\UI\Components\Badge;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
@@ -51,14 +49,6 @@ class CarResource extends BaseModelResource
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить автомобиль';
 
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
 
     public function detailSidebarData(Model $item): array
     {
@@ -486,7 +476,7 @@ class CarResource extends BaseModelResource
     public function rules($item): array
     {
         return [
-            'license_plate' => ['required', 'string', 'max:20', 'unique:cars,license_plate,' . ($item?->id ?? 0)],
+            'license_plate' => ['required', 'string', 'max:20', Rule::unique('cars', 'license_plate')->ignore($item?->id)->withoutTrashed()],
             'brand_id' => ['required', 'exists:car_brands,id'],
             'color_id' => ['required', 'exists:car_colors,id'],
             'organization_id' => ['nullable', 'exists:organizations,id'],

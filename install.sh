@@ -30,6 +30,10 @@ gen_pass() {
     od -An -tx1 -N16 /dev/urandom | tr -d ' \n'
 }
 
+gen_app_key() {
+    printf 'base64:%s' "$(head -c 32 /dev/urandom | base64 | tr -d '\n')"
+}
+
 detect_ip() {
     ip route get 1.1.1.1 2>/dev/null \
         | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}'
@@ -293,12 +297,15 @@ apply_domain_env() {
         set_env DOCKER_DOMAIN ""
         URL="http://$(detect_ip || echo '<IP-сервера>'):8888"
     fi
+    set_env APP_URL "$URL"
 }
 
 configure_env() {
     log "Настройка .env..."
     [ -f "$INSTALL_DIR/.env.production.example" ] || err "Не найден .env.production.example в релизе."
     cp "$INSTALL_DIR/.env.production.example" "$INSTALL_DIR/.env"
+
+    set_env APP_KEY           "$(gen_app_key)"
 
     set_env DB_DATABASE       "$DB_NAME"
     set_env DB_USERNAME       "$DB_USER"

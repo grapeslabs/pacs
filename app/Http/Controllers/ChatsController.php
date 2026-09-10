@@ -2,40 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BotChat;
+use App\Models\Bot;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class ChatsController extends Controller
 {
-    public function index(): JsonResponse
-    {
-        return response()->json(
-            BotChat::all()
-        );
-    }
-
-    public function store(Request $request): JsonResponse
-    {
-        $request->validate([
-            'chat_id' => 'required|integer',
-            'bot_id' => 'required|integer',
-            'name' => 'required|string'
-        ]);
-
-        $chat = BotChat::create($request);
-        return response()->json([
-            'success' => true,
-            'chat' => $chat,
-        ]);
-    }
-
     public function test(Request $request): JsonResponse
     {
         $request->validate([
             'service' => 'required|string',
-            'api_url' => 'nullable|string',
-            'token' => 'required|string',
+            'api_url' => 'nullable|url|max:500',
+            'token' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) use ($request) {
+                    if (! Bot::validateToken($value, (string) $request->input('service'))) {
+                        $fail('Неверный формат токена для выбранного сервиса');
+                    }
+                },
+            ],
             'chat_id' => 'required|integer',
         ]);
 

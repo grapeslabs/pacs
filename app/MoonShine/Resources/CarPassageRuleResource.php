@@ -11,14 +11,11 @@ use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\CustomTextarea;
 use App\MoonShine\Fields\SelectField;
-use App\MoonShine\Pages\CustomIndexPage;
 use Closure;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
 use MoonShine\Laravel\TypeCasts\ModelDataWrapper;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Support\Enums\ToastType;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Switcher;
@@ -28,6 +25,7 @@ class CarPassageRuleResource extends BaseModelResource
 {
     protected string $model = CarPassageRule::class;
     protected string $title = 'Правила проезда';
+    protected array $with = ['carTags', 'people', 'cars', 'passages'];
     protected ?string $editModalTitle = 'Редактирование правила проезда';
     protected string $column = 'name';
 
@@ -42,10 +40,6 @@ class CarPassageRuleResource extends BaseModelResource
         CarPassageRule::DIRECTION_BOTH  => ['label' => 'Оба направления',  'color' => 'purple'],
     ];
 
-    protected function pages(): array
-    {
-        return [CustomIndexPage::class, DetailPage::class, FormPage::class];
-    }
 
 
     public function indexFields(): iterable
@@ -250,11 +244,6 @@ class CarPassageRuleResource extends BaseModelResource
 
             CustomText::make('Комментарий', 'comment')->placeholder('Дополнительная информацию'),
         ];
-    }
-
-    public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
-    {
-        return parent::indexQuery()->with(['carTags', 'people', 'cars', 'passages']);
     }
 
     private function relationFilter(string $relation, string $qualifiedKey): \Closure

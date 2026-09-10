@@ -68,12 +68,18 @@ class NotificationWidget extends MoonShineComponent
     {
         $message = (string) ($notification->data['message'] ?? '');
         $pos = mb_strpos($message, '. ');
-        $text = $pos === false ? '' : mb_substr($message, $pos + 2);
+        $text = $pos === false ? '' : e(mb_substr($message, $pos + 2));
 
         foreach (($notification->data['links'] ?? []) as $index => $link) {
+            $url = (string) ($link['url'] ?? '#');
+
+            if (! preg_match('#^(https?://|/)#i', $url)) {
+                $url = '#';
+            }
+
             $html = sprintf(
                 '<a href="%s" class="pacs-link">%s</a>',
-                htmlspecialchars((string) ($link['url'] ?? '#')),
+                htmlspecialchars($url),
                 htmlspecialchars((string) ($link['label'] ?? ''))
             );
             $text = str_replace('{link_' . $index . '}', $html, $text);

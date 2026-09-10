@@ -5,10 +5,7 @@ namespace App\MoonShine\Resources;
 use App\Models\CarBrand;
 use App\MoonShine\Fields\CountField;
 use App\MoonShine\Fields\CustomText;
-use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Database\Eloquent\Model;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
@@ -22,14 +19,6 @@ class CarBrandResource extends BaseModelResource
     protected string $title = 'Марки автомобилей';
     protected ?string $editModalTitle = 'Редактирование марки';
     protected string $column = 'name';
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
 
     public function deleteConfirmation(Model $item): array
     {

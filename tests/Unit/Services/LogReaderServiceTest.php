@@ -330,6 +330,37 @@ class LogReaderServiceTest extends TestCase
         $this->assertSame('connection to database established', $result['entries'][0]['message']);
     }
 
+    public function test_entries_search_matches_the_multiline_tail_of_an_entry(): void
+    {
+        $this->configureSource();
+        $this->writeFile('laravel.log', implode("\n", [
+            '[2026-01-01 10:00:00] local.ERROR: request failed',
+            '#0 /var/www/html/app/Jobs/PushKeysToControllers.php(72): applyKey()',
+            '#1 {main}',
+            '[2026-01-01 10:00:01] local.INFO: user logged in',
+        ]));
+
+        $result = $this->service()->entries('test', ['search' => 'pushkeystocontrollers']);
+
+        $this->assertCount(1, $result['entries']);
+        $this->assertSame('request failed', $result['entries'][0]['message']);
+    }
+
+    public function test_entries_search_is_applied_together_with_the_level_filter(): void
+    {
+        $this->configureSource();
+        $this->writeFile('laravel.log', implode("\n", [
+            '[2026-01-01 10:00:00] local.INFO: database is warm',
+            '[2026-01-01 10:00:01] local.ERROR: database is gone',
+            '[2026-01-01 10:00:02] local.ERROR: disk is full',
+        ]));
+
+        $result = $this->service()->entries('test', ['levels' => ['error'], 'search' => 'database']);
+
+        $this->assertCount(1, $result['entries']);
+        $this->assertSame('database is gone', $result['entries'][0]['message']);
+    }
+
     public function test_entries_paginates_respecting_per_page(): void
     {
         Config::set('logs.per_page', 2);

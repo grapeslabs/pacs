@@ -2,6 +2,9 @@
 
 namespace App\MoonShine\Resources;
 
+use App\Jobs\MarkReportsIdentified;
+use Illuminate\Support\Facades\DB;
+use MoonShine\Laravel\Enums\Ability;
 use App\Models\Person;
 use App\Models\Organization;
 use App\Models\Tag;
@@ -57,12 +60,7 @@ class UnknownReportResource extends BaseModelResource
 
     protected function modifyQueryBuilder(Builder $builder): Builder
     {
-        return $builder->where('is_unknown', true);
-    }
-
-    public function query(): Builder
-    {
-        return parent::query()->with(['stream']);
+        return $builder->with(['stream'])->where('is_unknown', true);
     }
 
     protected function activeActions(): ListOf
@@ -161,6 +159,14 @@ class UnknownReportResource extends BaseModelResource
             ],
             'footer'   => ['html' => $identifyBtn],
         ];
+    }
+
+    public function asyncMethodAbilities(): array
+    {
+        return array_merge(parent::asyncMethodAbilities(), [
+            'getIdentifyForm' => Ability::UPDATE,
+            'savePerson' => Ability::UPDATE,
+        ]);
     }
 
     public function getIdentifyForm(MoonShineRequest $request): string
@@ -276,27 +282,29 @@ class UnknownReportResource extends BaseModelResource
         $report = VideoAnalyticReport::find($request->get('item_id'));
         $photos = $this->collectIdentifyPhotos($request, $report);
 
-        $person = Person::create([
-            'grapesva_uuid' => $data['grapesva_uuid'] ?? null,
-            'last_name' => $data['last_name'] ?? null,
-            'first_name' => $data['first_name'] ?? null,
-            'middle_name' => $data['middle_name'] ?? null,
-            'birth_date' => $data['birth_date'] ?? null,
-            'certificate_number' => $data['certificate_number'] ?? null,
-            'organization_id' => $data['organization_id'] ?? null,
-            'comment' => $data['comment'] ?? null,
-            'frozen_start' => $data['frozen_start'] ?? null,
-            'frozen_end' => $data['frozen_end'] ?? null,
-            'photo' => $photos,
-        ]);
+        $person = DB::transaction(function () use ($data, $photos, $request) {
+            $person = Person::create([
+                'grapesva_uuid' => $data['grapesva_uuid'] ?? null,
+                'last_name' => $data['last_name'] ?? null,
+                'first_name' => $data['first_name'] ?? null,
+                'middle_name' => $data['middle_name'] ?? null,
+                'birth_date' => $data['birth_date'] ?? null,
+                'certificate_number' => $data['certificate_number'] ?? null,
+                'organization_id' => $data['organization_id'] ?? null,
+                'comment' => $data['comment'] ?? null,
+                'frozen_start' => $data['frozen_start'] ?? null,
+                'frozen_end' => $data['frozen_end'] ?? null,
+                'photo' => $photos,
+            ]);
 
-        if ($request->has('tags')) {
-            $person->tags()->sync($request->get('tags'));
-        }
+            if ($request->has('tags')) {
+                $person->tags()->sync($request->get('tags'));
+            }
 
-        VideoAnalyticReport::query()->toBase()
-            ->where('person_photobank_id', $person->grapesva_uuid)
-            ->update(['is_unknown' => false]);
+            return $person;
+        });
+
+        MarkReportsIdentified::dispatch($person->grapesva_uuid);
 
         return MoonShineJsonResponse::make()
             ->toast('Персона успешно идентифицирована!', ToastType::SUCCESS)

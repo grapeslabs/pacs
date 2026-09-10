@@ -2,6 +2,7 @@
 
 namespace App\MoonShine\Resources;
 
+use MoonShine\Laravel\Enums\Ability;
 use App\Models\Car;
 use App\Models\CarPassageEvent;
 use App\Models\Passage;
@@ -186,6 +187,14 @@ class PassageEventResource extends BaseModelResource
             ])
             ->async(selector: "#{$this->safeModalName}_content")
             ->canSee(fn($item) => $item->car_id === null && ! empty($item->plate_text));
+    }
+
+    public function asyncMethodAbilities(): array
+    {
+        return array_merge(parent::asyncMethodAbilities(), [
+            'getIdentifyForm' => Ability::UPDATE,
+            'saveCar' => Ability::UPDATE,
+        ]);
     }
 
     public function getIdentifyForm(MoonShineRequest $request): string

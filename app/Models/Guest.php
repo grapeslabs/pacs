@@ -29,6 +29,23 @@ class Guest extends Model
         'entry_end' => 'datetime',
     ];
 
+    public static function normalizePhone(?string $phone): string
+    {
+        $digits = preg_replace('/\D/', '', (string) $phone);
+
+        if (strlen($digits) === 11 && $digits[0] === '8') {
+            $digits = '7' . substr($digits, 1);
+        }
+
+        return $digits;
+    }
+
+    public function setPhoneAttribute(?string $value): void
+    {
+        $this->attributes['phone'] = $value;
+        $this->attributes['phone_normalized'] = self::normalizePhone($value) ?: null;
+    }
+
     public function visits()
     {
         return $this->hasMany(GuestVisit::class);

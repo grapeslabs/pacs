@@ -17,13 +17,16 @@ use App\MoonShine\Resources\VideoStreamResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use MoonShine\Laravel\Enums\Ability;
 use MoonShine\Laravel\MoonShineAuth;
 
 class SearchController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        if (! MoonShineAuth::getGuard()->check()) {
+        $user = MoonShineAuth::getGuard()->user();
+
+        if (! $user instanceof User) {
             abort(403);
         }
 
@@ -31,17 +34,19 @@ class SearchController extends Controller
 
         $empty = ['persons' => [], 'organizations' => [], 'cars' => [], 'guests' => [], 'users' => [], 'cameras' => []];
 
-        if (mb_strlen($q) < 1) {
+        if (mb_strlen($q) < 2) {
             return response()->json($empty);
         }
 
+        $can = fn (string $resource): bool => $user->hasPermission($resource, Ability::VIEW_ANY);
+
         return response()->json([
-            'persons' => $this->persons($q),
-            'organizations' => $this->organizations($q),
-            'cars' => $this->cars($q),
-            'guests' => $this->guests($q),
-            'users' => $this->users($q),
-            'cameras' => $this->cameras($q),
+            'persons' => $can(PersonResource::class) ? $this->persons($q) : [],
+            'organizations' => $can(OrganizationResource::class) ? $this->organizations($q) : [],
+            'cars' => $can(CarResource::class) ? $this->cars($q) : [],
+            'guests' => $can(GuestResource::class) ? $this->guests($q) : [],
+            'users' => $can(MoonShineUserResource::class) ? $this->users($q) : [],
+            'cameras' => $can(VideoStreamResource::class) ? $this->cameras($q) : [],
         ]);
     }
 

@@ -59,7 +59,7 @@ class Bot extends Model
     private function sendTelegram(Bot $bot, $chatId, $text, string|array|null $files): array
     {
         $baseUrl = rtrim($bot->api_url ?: "https://api.telegram.org", '/');
-        $request = Http::timeout(15);
+        $request = Http::timeout(15)->connectTimeout(5)->retry(3, 1000, throw: false);
         $filePaths = is_array($files) ? $files : ($files ? [$files] : []);
         $filePaths = array_filter($filePaths, fn($path) => file_exists($path));
 
@@ -106,9 +106,11 @@ class Bot extends Model
         $result = $response->json();
 
         return [
-            'success' => $result['ok'] ?? false,
-            'message' => $result['description'] ?? 'OK',
-            'data'    => $result['result'] ?? null
+            'success'     => $result['ok'] ?? false,
+            'message'     => $result['description'] ?? 'OK',
+            'data'        => $result['result'] ?? null,
+            'status'      => $response->status(),
+            'retry_after' => $result['parameters']['retry_after'] ?? null,
         ];
     }
 

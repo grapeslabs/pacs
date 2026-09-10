@@ -2,6 +2,7 @@
 
 namespace App\MoonShine\Resources;
 
+use MoonShine\Laravel\Enums\Ability;
 use App\Models\Bot;
 use App\Models\Stream;
 use App\Models\Tag;
@@ -72,6 +73,13 @@ class TriggerResource extends BaseModelResource
             ])
             ->async()
             ->canSee(fn($item) => (bool) $item->bot_id);
+    }
+
+    public function asyncMethodAbilities(): array
+    {
+        return array_merge(parent::asyncMethodAbilities(), [
+            'sendTest' => Ability::UPDATE,
+        ]);
     }
 
     public function sendTest(MoonShineRequest $request): MoonShineJsonResponse

@@ -145,10 +145,11 @@
     },
     async checkAjax(rule, allAjaxRules) {
         try {
-            const response = await fetch('/moonshine/custom-field-validation', {
+            const response = await fetch('/field-validation', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': this.csrfToken
                 },
                 body: JSON.stringify({
@@ -159,6 +160,10 @@
                     modelId: this.modelId
                 })
             });
+            if (!response.ok) {
+                return;
+            }
+
             const data = await response.json();
             if (!data.is_valid) {
                 this.error = rule.message;

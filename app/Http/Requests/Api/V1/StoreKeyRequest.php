@@ -16,9 +16,16 @@ class StoreKeyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'key' => ['required', 'string', 'max:255', 'unique:keys,key'],
+            'key' => ['required', 'string', 'max:255', 'regex:/^[0-9A-Za-z-]+$/', Rule::unique('keys', 'key')->withoutTrashed()],
             'type' =>['required', Rule::in(Key::TYPES)],
             'person_id' => ['required', 'integer', 'exists:person,id'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'key.regex' => 'Ключ может содержать только латинские буквы, цифры и дефис',
         ];
     }
 }

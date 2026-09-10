@@ -180,6 +180,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': this.csrfToken
                 },
                 body: JSON.stringify({
@@ -190,6 +191,10 @@
                     modelId: this.modelId
                 })
             });
+            if (!response.ok) {
+                this.loading = false;
+                return;
+            }
             const data = await response.json();
             if (!data.is_valid) {
                 this.error = rule.message;

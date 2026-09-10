@@ -5,13 +5,10 @@ use App\MoonShine\Fields\ColorSwatchField;
 use App\MoonShine\Fields\CountField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
-use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Database\Eloquent\Model;
 use MoonShine\ImportExport\Contracts\HasImportExportContract;
 use MoonShine\ImportExport\Traits\ImportExportConcern;
 use App\Models\CarColor;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
@@ -24,14 +21,6 @@ class CarColorResource extends BaseModelResource
     protected string $title = 'Цвета автомобилей';
     protected ?string $editModalTitle = 'Редактирование цвета';
     protected string $column = 'name';
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
 
     protected function importFields():iterable
     {

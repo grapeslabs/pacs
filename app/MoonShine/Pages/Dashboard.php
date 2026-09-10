@@ -34,6 +34,12 @@ class Dashboard extends Page
 {
     protected string $title = 'Главная';
 
+    private ?int $streamsCount = null;
+
+    private ?int $aiStreamsCount = null;
+
+    private ?int $recognitionsToday = null;
+
     protected function components(): iterable
     {
         $vaEnabled = (bool) config('services.va.enabled');
@@ -100,21 +106,21 @@ class Dashboard extends Page
 
     private function stats(bool $vaEnabled, string $streamUrl, string $personUrl, string $triggerUrl, string $skudUrl, string $eventReportUrl): array
     {
-        $recToday = $vaEnabled ? VideoAnalyticReport::whereDate('datetime', today())->count() : 0;
-        $recYesterday = $vaEnabled ? VideoAnalyticReport::whereDate('datetime', today()->subDay())->count() : 0;
+        $recToday = $vaEnabled ? $this->recognitionsToday() : 0;
+        $recYesterday = $vaEnabled ? VideoAnalyticReport::whereBetween('datetime', [today()->subDay()->startOfDay(), today()->subDay()->endOfDay()])->count() : 0;
 
-        $skudToday = GrapeslabsSkudEvent::whereDate('datetime', today())->count();
-        $skudYesterday = GrapeslabsSkudEvent::whereDate('datetime', today()->subDay())->count();
+        $skudToday = GrapeslabsSkudEvent::whereBetween('datetime', [today()->startOfDay(), today()->endOfDay()])->count();
+        $skudYesterday = GrapeslabsSkudEvent::whereBetween('datetime', [today()->subDay()->startOfDay(), today()->subDay()->endOfDay()])->count();
 
         return [
-            ['label' => 'Камеры онлайн', 'value' => Stream::count(), 'url' => $streamUrl,
-                'trend' => $this->delta(Stream::whereDate('created_at', today())->count())],
+            ['label' => 'Камеры онлайн', 'value' => $this->streamsCount(), 'url' => $streamUrl,
+                'trend' => $this->delta(Stream::whereBetween('created_at', [today()->startOfDay(), today()->endOfDay()])->count())],
             ['label' => 'Распознавания за сутки', 'value' => $recToday, 'url' => $eventReportUrl,
                 'trend' => $this->pctDelta($recToday, $recYesterday)],
             ['label' => 'События СКУД сегодня', 'value' => $skudToday, 'url' => $skudUrl,
                 'trend' => $this->pctDelta($skudToday, $skudYesterday)],
             ['label' => 'Персоны в базе', 'value' => Person::count(), 'url' => $personUrl,
-                'trend' => $this->delta(Person::whereDate('created_at', today())->count())],
+                'trend' => $this->delta(Person::whereBetween('created_at', [today()->startOfDay(), today()->endOfDay()])->count())],
             ['label' => 'Активные триггеры', 'value' => Trigger::where('is_active', true)->count(), 'url' => $triggerUrl,
                 'trend' => ['dir' => 'none', 'text' => 'без изменений']],
         ];
@@ -144,18 +150,32 @@ class Dashboard extends Page
             return [];
         }
 
-        return VideoAnalyticReport::query()
+        $reports = VideoAnalyticReport::query()
             ->orderByDesc('datetime')
             ->limit(15)
+            ->get();
+
+        $persons = Person::query()
+            ->select(['id', 'grapesva_uuid', 'last_name', 'first_name', 'middle_name'])
+            ->whereIn('grapesva_uuid', $reports->reject(fn ($r) => $r->is_unknown)->pluck('person_photobank_id')->filter()->unique())
             ->get()
-            ->map(function (VideoAnalyticReport $r) {
-                $person = $r->is_unknown ? null : Person::where('grapesva_uuid', $r->person_photobank_id)->first();
+            ->keyBy('grapesva_uuid');
+
+        $streams = Stream::query()
+            ->select(['id', 'uid', 'name'])
+            ->whereIn('uid', $reports->pluck('camera_id')->filter()->unique())
+            ->get()
+            ->keyBy('uid');
+
+        return $reports
+            ->map(function (VideoAnalyticReport $r) use ($persons, $streams) {
+                $person = $r->is_unknown ? null : $persons->get($r->person_photobank_id);
                 $snapshot = $r->data['snapshot_path'] ?? null;
 
                 return [
                     'is_unknown' => (bool) $r->is_unknown,
                     'title' => $r->is_unknown ? 'Неопознанное лицо' : 'Распознан: ' . ($person?->getFullName() ?: 'неизвестно'),
-                    'location' => Stream::where('uid', $r->camera_id)->value('name') ?: 'Камера',
+                    'location' => $streams->get($r->camera_id)?->name ?: 'Камера',
                     'time' => optional($r->datetime)->format('H:i:s'),
                     'avatar' => $snapshot ? Storage::disk('analytic')->url('thumbnails/' . basename($snapshot)) : null,
                     'status' => $r->is_unknown ? 'Неизвестен' : 'Опознан',
@@ -170,7 +190,7 @@ class Dashboard extends Page
             return ['items' => [], 'camerasCount' => 0, 'total' => 0];
         }
 
-        $rows = VideoAnalyticReport::whereDate('datetime', today())
+        $rows = VideoAnalyticReport::whereBetween('datetime', [today()->startOfDay(), today()->endOfDay()])
             ->selectRaw('camera_id, count(*) as cnt')
             ->groupBy('camera_id')
             ->orderByDesc('cnt')
@@ -193,7 +213,7 @@ class Dashboard extends Page
         return [
             'items' => $items,
             'camerasCount' => $this->aiEnabledStreamsCount(),
-            'total' => VideoAnalyticReport::whereDate('datetime', today())->count(),
+            'total' => $this->recognitionsToday(),
         ];
     }
 
@@ -203,7 +223,7 @@ class Dashboard extends Page
         $diskFree = @disk_free_space('/') ?: 0;
         $diskUsed = $diskTotal - $diskFree;
 
-        $camerasTotal = Stream::count();
+        $camerasTotal = $this->streamsCount();
         $aiCameras = $vaEnabled ? $this->aiEnabledStreamsCount() : 0;
         $equipmentTotal = ActuatorDevice::count() + GrapeslabsSkudController::count();
 
@@ -219,9 +239,22 @@ class Dashboard extends Page
         ];
     }
 
+    private function streamsCount(): int
+    {
+        return $this->streamsCount ??= Stream::count();
+    }
+
     private function aiEnabledStreamsCount(): int
     {
-        return Stream::whereRaw("(va_options->>'global_enable') in ('1', 'true')")->count();
+        return $this->aiStreamsCount ??= Stream::whereRaw("(va_options->>'global_enable') in ('1', 'true')")->count();
+    }
+
+    private function recognitionsToday(): int
+    {
+        return $this->recognitionsToday ??= VideoAnalyticReport::whereBetween(
+            'datetime',
+            [today()->startOfDay(), today()->endOfDay()],
+        )->count();
     }
 
     private function greeting(): string

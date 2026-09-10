@@ -14,7 +14,7 @@ class DownloadStatusRequest extends FormRequest
     public function rules()
     {
         return [
-            'requestId' => ['required', 'string', 'max:255'],
+            'requestId' => ['required', 'string', 'regex:/^[A-Za-z0-9_-]{1,64}$/'],
         ];
     }
 

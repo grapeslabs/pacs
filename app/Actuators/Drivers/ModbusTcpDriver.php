@@ -31,7 +31,8 @@ class ModbusTcpDriver extends AbstractModbusDriver
                     self::FUNCTION_COIL     => 'Coil — Write Single Coil (FC05)',
                     self::FUNCTION_REGISTER => 'Holding register — Write Single Register (FC06)',
                 ])
-                ->default(self::FUNCTION_COIL)),
+                ->default(self::FUNCTION_COIL)
+                ->hint('Длительности открытия у этого драйвера нет: реле должно закрываться само (аппаратный таймер) либо подключаться параллельно кнопке открытия. Сервер отправляет только команду открытия')),
             $this->wire(CustomNumber::make('Адрес coil / регистра', 'address')->default(0)),
             $this->wire(CustomNumber::make('Значение «Открыть»', 'on_value')->default(1)
                 ->hint('Для регистра (FC06); у coil игнорируется (всегда ON)')),

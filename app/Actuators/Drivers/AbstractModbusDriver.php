@@ -2,6 +2,8 @@
 
 namespace App\Actuators\Drivers;
 
+use App\Actuators\Exceptions\ActuatorTimeoutException;
+use App\Actuators\Exceptions\ActuatorUnreachableException;
 use App\Models\ActuatorDevice;
 use App\MoonShine\Fields\CustomNumber;
 use App\MoonShine\Fields\CustomText;
@@ -100,7 +102,7 @@ abstract class AbstractModbusDriver extends AbstractActuatorDriver
                     }
 
                     if ($isSignal) {
-                        throw new \RuntimeException(
+                        throw new ActuatorTimeoutException(
                             'Устройство приняло TCP-соединение, но не ответило по Modbus. '
                             . 'Проверьте, что это действительно Modbus TCP устройство, '
                             . 'включён Modbus, и верны unit_id и адрес coil/канала.',
@@ -109,7 +111,11 @@ abstract class AbstractModbusDriver extends AbstractActuatorDriver
                         );
                     }
 
-                    throw $e;
+                    if ($e instanceof \Error) {
+                        throw $e;
+                    }
+
+                    throw new ActuatorUnreachableException($e->getMessage(), 0, $e);
                 }
             }
         } finally {

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actuators\ActuatorService;
+use App\Actuators\Exceptions\ActuatorTimeoutException;
 use App\Models\ActuatorDevice;
 use App\Models\Car;
 use App\Models\CarPassageEvent;
@@ -193,7 +194,21 @@ class ProcessCarPassageRules extends Command
             return null;
         }
 
-        if (Car::withTrashed()->where('license_plate', $normalized)->exists()) {
+        $trashed = Car::onlyTrashed()->where('license_plate', $normalized)->first();
+
+        if ($trashed !== null) {
+            $trashed->restore();
+
+            Log::info('Car passage rules: soft-deleted car restored', [
+                'plate'     => $normalized,
+                'car_id'    => $trashed->id,
+                'stream_id' => $stream->id,
+            ]);
+
+            return $trashed;
+        }
+
+        if (Car::query()->where('license_plate', $normalized)->exists()) {
             return null;
         }
 
@@ -257,6 +272,8 @@ class ProcessCarPassageRules extends Command
             return null;
         }
 
+        $firstMatch = null;
+
         foreach ($rules as $rule) {
             if ($rule->passages->isNotEmpty() && ! $rule->passages->contains('id', $passage->id)) {
                 continue;
@@ -269,12 +286,18 @@ class ProcessCarPassageRules extends Command
                 continue;
             }
 
-            if ($rule->matchesPlate($plateText)) {
+            if (! $rule->matchesPlate($plateText)) {
+                continue;
+            }
+
+            if ($rule->type === CarPassageRule::TYPE_DENY) {
                 return $rule;
             }
+
+            $firstMatch ??= $rule;
         }
 
-        return null;
+        return $firstMatch;
     }
 
     protected function openController(
@@ -337,12 +360,10 @@ class ProcessCarPassageRules extends Command
         if ($device->status !== ActuatorDevice::STATUS_ACTIVE) {
             return CarPassageEvent::STATUS_ALLOWED_INACTIVE;
         }
-        $message = $e->getMessage();
-        if (str_contains($message, 'не ответило по Modbus')
-            || str_contains($message, 'interrupted by an incoming signal')
-        ) {
+        if ($e instanceof ActuatorTimeoutException) {
             return CarPassageEvent::STATUS_ALLOWED_OFFLINE;
         }
+
         return CarPassageEvent::STATUS_ALLOWED_NO_LINK;
     }
 

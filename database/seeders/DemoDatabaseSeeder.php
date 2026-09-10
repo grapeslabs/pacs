@@ -45,9 +45,9 @@ class DemoDatabaseSeeder extends Seeder
         $this->command->info('📋 Шаг 6/10: Создание автомобилей...');
         $this->callWith(CarSeeder::class, ['command' => $this->command]);
 
-        // Оборудование СКУД
-        $this->command->info('📋 Шаг 7/10: Создание оборудования СКУД...');
-        $this->callWith(EquipmentSeeder::class, ['command' => $this->command]);
+        // Контроллеры СКУД
+        $this->command->info('📋 Шаг 7/10: Создание контроллеров СКУД...');
+        $this->callWith(SkudControllerSeeder::class, ['command' => $this->command]);
 
         // Боты
         $this->command->info('📋 Шаг 8/10: Создание ботов...');
@@ -100,7 +100,6 @@ class DemoDatabaseSeeder extends Seeder
             'Цвета авто' => \App\Models\CarColor::count(),
             'Автомобили' => \App\Models\Car::count(),
             'Связи авто с людьми' => \DB::table('car_person')->count(),
-            'Оборудование СКУД' => \App\Models\Equipment::count(),
             'Контроллеры СКУД' => \GrapesLabs\PinvideoSkud\Models\SkudController::count(),
             'Боты' => \App\Models\Bot::count(),
             'Триггеры' => \App\Models\Trigger::count(),

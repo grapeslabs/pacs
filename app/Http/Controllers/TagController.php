@@ -8,13 +8,6 @@ use Illuminate\Http\JsonResponse;
 
 class TagController extends Controller
 {
-    public function index(): JsonResponse
-    {
-        $tags = Tag::select('id', 'name')->get();
-
-        return response()->json($tags);
-    }
-
     public function store(Request $request): JsonResponse
     {
         $request->validate([
@@ -29,14 +22,6 @@ class TagController extends Controller
         return response()->json([
             'id' => $tag->id,
             'name' => $tag->name
-        ]);
-    }
-
-    public function destroy(Tag $tag): JsonResponse
-    {
-        return response()->json([
-            'id' => $tag->id,
-            'success' => $tag->delete()
         ]);
     }
 }

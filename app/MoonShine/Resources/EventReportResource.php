@@ -27,6 +27,7 @@ class EventReportResource extends BaseModelResource
 {
     protected string $model = VideoAnalyticReport::class;
     protected string $title = 'Отчеты по событиям';
+    protected array $with = ['stream', 'person'];
 
     public function indexSubtitle(): ?string
     {
@@ -47,11 +48,6 @@ class EventReportResource extends BaseModelResource
             Action::DELETE,
             Action::MASS_DELETE
         );
-    }
-
-    public function query(): Builder
-    {
-        return parent::query()->with(['stream', 'person']);
     }
 
     public function indexFields(): iterable
