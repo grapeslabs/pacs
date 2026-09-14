@@ -86,6 +86,8 @@ services:
       - "ofelia.job-exec.drive-check.command=php /var/www/html/artisan drive:check"
       - "ofelia.job-exec.demo-user.schedule=@daily"
       - "ofelia.job-exec.demo-user.command=php /var/www/html/artisan demo:manage-demo-user"
+      - "ofelia.job-exec.frp-sync.schedule=@every 5m"
+      - "ofelia.job-exec.frp-sync.command=php /var/www/html/artisan frp:sync"
     env_file:
       - .env
     environment:

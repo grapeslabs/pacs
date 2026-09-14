@@ -129,6 +129,16 @@ class FrpService
         $this->putSetting('frp_enabled', false);
     }
 
+    public function sync(): void
+    {
+        if (!$this->isRegistered() || !$this->isEnabled()) {
+            return;
+        }
+
+        $this->writeConfig();
+        $this->supervisorctl('start');
+    }
+
     private function portal(): PendingRequest
     {
         return Http::baseUrl(rtrim((string) $this->config('portal_url'), '/'))
