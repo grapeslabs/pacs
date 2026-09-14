@@ -18,30 +18,23 @@
     <button type="button" class="filter-badges__reset" @click="resetAll()">Сбросить всё</button>
 </div>
 
+@include('components.filter-runtime')
+
 @once
     <script>
         function filterBadges(fields) {
             return {
                 fields: fields || [],
                 active: [],
-                filtersRoot: '#filters-sidebar_content',
-
-                form() { return document.querySelector(this.filtersRoot + ' form'); },
 
                 init() {
                     this.$nextTick(() => this.refresh());
-                    // фильтр применяется без перезагрузки — обновляем бейджи по событиям формы
                     setTimeout(() => this.refresh(), 300);
 
-                    document.addEventListener('submit', (e) => {
-                        const form = this.form();
-                        if (form && e.target === form) {
-                            setTimeout(() => this.refresh(), 150);
-                        }
-                    }, true);
+                    window.addEventListener('ms-filters-changed', () => this.refresh());
 
-                    document.addEventListener('click', (e) => {
-                        if (e.target.closest && e.target.closest(this.filtersRoot + ' .js-async-reset-button')) {
+                    document.addEventListener('submit', (e) => {
+                        if (e.target === window.msFilters.form()) {
                             setTimeout(() => this.refresh(), 150);
                         }
                     }, true);
@@ -50,63 +43,34 @@
                 },
 
                 refresh() {
-                    const form = this.form();
+                    const form = window.msFilters.form();
                     const result = [];
-                    if (!form) { this.active = result; return; }
+
+                    if (! form) {
+                        this.active = result;
+                        return;
+                    }
 
                     for (const f of this.fields) {
-                        const els = form.querySelectorAll(
-                            `[name="filter[${f.column}]"], [name^="filter[${f.column}]["]`
-                        );
-                        const vals = [];
-                        els.forEach((el) => {
-                            if (el.type === 'checkbox' || el.type === 'radio') {
-                                if (el.checked && el.value && el.value !== '0') { vals.push(el.value); }
-                            } else if (el.value !== '' && el.value != null && el.value !== '0') {
-                                vals.push(el.value);
-                            }
-                        });
-                        const value = vals.join(', ');
+                        const value = window.msFilters.valueOf(form, f.column);
+
                         if (value !== '') {
                             result.push({ column: f.column, label: f.label, value });
                         }
                     }
+
                     this.active = result;
                 },
 
                 removeFilter(column) {
-                    const form = this.form();
-                    if (!form) { return; }
-
-                    form.querySelectorAll(
-                        `[name="filter[${column}]"], [name^="filter[${column}]["]`
-                    ).forEach((el) => {
-                        if (el.type === 'checkbox' || el.type === 'radio') { el.checked = false; }
-                        el.value = '';
-                        el.dispatchEvent(new Event('input', { bubbles: true }));
-                        el.dispatchEvent(new Event('change', { bubbles: true }));
-                    });
-
-                    // применяем асинхронно
-                    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                    window.msFilters.clear(column);
+                    window.msFilters.apply();
                     setTimeout(() => this.refresh(), 150);
                 },
 
                 resetAll() {
-                    const reset = document.querySelector(this.filtersRoot + ' .js-async-reset-button');
-                    if (reset) {
-                        reset.click();
-                    } else {
-                        document.dispatchEvent(new CustomEvent('moonshine:filter-reset'));
-                        const form = this.form();
-                        if (form) {
-                            form.querySelectorAll('[name^="filter["]').forEach((el) => {
-                                if (el.type === 'checkbox' || el.type === 'radio') { el.checked = false; }
-                                el.value = '';
-                            });
-                            form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                        }
-                    }
+                    window.msFilters.clearAll();
+                    window.msFilters.apply(true);
                     setTimeout(() => this.refresh(), 150);
                 },
             };

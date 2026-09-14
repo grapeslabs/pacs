@@ -278,7 +278,8 @@ class KeyResource extends BaseModelResource
                 ->placeholder('Фильтрация по типу ключа')
                 ->options([
                     'Mifare' => 'Mifare',
-                ]),
+                ])
+                ->nullable(),
             SelectField::make('Персона', 'person_id')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray())
                 ->placeholder('Фильтрация по имени')

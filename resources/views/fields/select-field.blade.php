@@ -87,6 +87,25 @@
     }
     .multiselect-input.multiselect-input::placeholder { color: #A1A5B7; }
 
+    .ms-clear-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        margin-left: auto;
+        border: none;
+        border-radius: 50%;
+        background: transparent;
+        color: #A1A5B7;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background-color 0.15s, color 0.15s;
+    }
+    .ms-clear-btn:hover { background-color: #EAEDF8; color: #7F7F9D; }
+    .ms-clear-btn + .multiselect-arrow { margin-left: 2px; }
+
     .multiselect-arrow {
         display: flex; align-items: center; color: #A1A5B7;
         cursor: pointer; transition: transform 0.2s;
@@ -203,6 +222,7 @@
     createUrl: '{{ $createUrl }}',
     creatable: {{ $isCreatable ? 'true' : 'false' }},
     multiple: {{ $isMultiple ? 'true' : 'false' }},
+    nullable: {{ $element->isNullable() ? 'true' : 'false' }},
     placeholder: '{{ addslashes($placeholder) }}',
     rules: {{ json_encode($customClientRules) }},
     fieldIcon: {{ json_encode($iconSvg) }},
@@ -358,6 +378,11 @@
             this.$nextTick(() => this.$refs.searchInput?.focus());
         }
     },
+    clearSelection() {
+        this.selectedIds = [];
+        this.search = '';
+        this.open = false;
+    },
     async createTag() {
         if (!this.creatable || !this.showCreate || this.isLoading) return;
         this.isLoading = true;
@@ -407,6 +432,15 @@
             @keydown.backspace="search === '' && multiple && selectedIds.length > 0 ? removeOption(selectedIds[selectedIds.length - 1]) : null"
             class="multiselect-input"
         >
+
+        <template x-if="!multiple && nullable && selectedIds.length > 0">
+            <button type="button"
+                    class="ms-clear-btn"
+                    aria-label="Очистить"
+                    @click.stop="clearSelection()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            </button>
+        </template>
 
         <div class="multiselect-arrow" :class="{'rotated': open}" @click.stop="open = !open; if (open) $nextTick(() => $refs.searchInput?.focus())">
             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>

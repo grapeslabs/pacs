@@ -19,6 +19,7 @@ use GrapesLabs\PinvideoSkud\Keys\FaceIdKey;
 use GrapesLabs\PinvideoSkud\Keys\RfidKey;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -55,6 +56,14 @@ class PersonPassageRuleResource extends BaseModelResource
         return [CustomIndexPage::class, DetailPage::class, FormPage::class];
     }
 
+    public function deleteConfirmation(Model $item): array
+    {
+        return [
+            'title' => 'Удалить правила прохода?',
+            'text'  => '«' . ($item->name ?: 'Без имени') . '» будет удалена из базы.',
+        ];
+    }
+
     public function indexFields(): iterable
     {
         return [
@@ -77,27 +86,35 @@ class PersonPassageRuleResource extends BaseModelResource
         return [
             CustomText::make('Наименование', 'name')
                 ->max(255, "Наименование не может содержать более 255 символов")
+                ->placeholder('Введите наименование правила')
                 ->required(),
             SelectField::make('Персоны (ФИО)', 'people')
                 ->multiple()
+                ->placeholder('Выберите персоны')
                 ->options($this->personOptions()),
             SelectField::make('Теги персон', 'personTags')
                 ->multiple()
+                ->placeholder('Выберите теги персон')
                 ->options(Tag::query()->pluck('name', 'id')->toArray()),
             SelectField::make('Ключи', 'keys')
                 ->multiple()
+                ->placeholder('Выберите ключи')
                 ->options(Key::query()->pluck('key', 'id')->toArray()),
             SelectField::make('Контроллеры', 'controllers')
                 ->multiple()
                 ->required()
+                ->placeholder('Выберите контроллеры')
                 ->hint('Для распознавания лиц правило должно содержать персон или теги - правило только с ключами заблокирует проход по лицу. Ключи действуют только на RFID-контроллерах.')
                 ->options($this->controllerOptions()),
             SelectField::make('Тип правила', 'type')
                 ->required()
                 ->default(PersonPassageRule::TYPE_ALLOW)
+                ->placeholder('Выберите тип правила')
                 ->options(PersonPassageRule::TYPES),
             Switcher::make('Активно', 'is_active')->default(true),
-            CustomTextarea::make('Комментарий', 'comment')->nullable(),
+            CustomTextarea::make('Комментарий', 'comment')
+                ->placeholder('Дополнительная информация')
+                ->nullable(),
         ];
     }
 
@@ -134,28 +151,35 @@ class PersonPassageRuleResource extends BaseModelResource
     public function filters(): array
     {
         return [
-            CustomText::make('Наименование', 'name'),
+            CustomText::make('Наименование', 'name')
+                ->placeholder('Фильтрация по наименованию'),
 
             SelectField::make('Персоны', 'people_filter')
                 ->multiple()->nullable()
+                ->placeholder('Фильтрация по персонам')
                 ->options($this->personOptions())
                 ->onApply($this->relationFilter('people', 'person.id')),
             SelectField::make('Теги персон', 'tags_filter')
                 ->multiple()->nullable()
+                ->placeholder('Фильтрация по тегам персон')
                 ->options(Tag::query()->pluck('name', 'id')->toArray())
                 ->onApply($this->relationFilter('personTags', 'tags.id')),
             SelectField::make('Ключи', 'keys_filter')
                 ->multiple()->nullable()
+                ->placeholder('Фильтрация по ключам')
                 ->options(Key::query()->pluck('key', 'id')->toArray())
                 ->onApply($this->relationFilter('keys', 'keys.id')),
             SelectField::make('Контроллеры', 'controllers_filter')
                 ->multiple()->nullable()
+                ->placeholder('Фильтрация по контроллерам')
                 ->options($this->controllerOptions())
                 ->onApply($this->relationFilter('controllers', 'grapeslabs_skud_controllers.id')),
             SelectField::make('Тип правила', 'type')
                 ->nullable()
+                ->placeholder('Фильтрация по типу правила')
                 ->options(PersonPassageRule::TYPES),
-            CustomText::make('Комментарий', 'comment'),
+            CustomText::make('Комментарий', 'comment')
+                ->placeholder('Фильтрация по комментарию'),
         ];
     }
 
@@ -229,7 +253,7 @@ class PersonPassageRuleResource extends BaseModelResource
         $this->reconcileControllers(collect($this->oldControllerIds));
         $this->oldControllerIds = [];
 
-        return $item;
+        return parent::afterDeleted($item);
     }
 
     private function ruleControllerIds(PersonPassageRule $rule): Collection
@@ -328,3 +352,4 @@ class PersonPassageRuleResource extends BaseModelResource
         return $images;
     }
 }
+

@@ -303,7 +303,7 @@ class PersonResource extends BaseModelResource
             ID::make()->sortable(),
             AvatarField::make('ФИО', 'last_name')
                 ->text(fn($item) => trim(($item->last_name ?? '') . ' ' . ($item->first_name ?? '') . ' ' . ($item->middle_name ?? '')))
-                ->subtext(fn($item) => $item->certificate_number)
+                ->subtext(fn($item) => '№' . $item->certificate_number)
                 ->photo(fn($item) => is_array($item->photo) ? ($item->photo[0] ?? null) : $item->photo)
                 ->indicator(fn($item) => $item && $item->isFrozen()
                     ? '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M4.5 6l15 12M19.5 6l-15 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 6.5 9.5 5m2.5 1.5L14.5 5M12 17.5 9.5 19m2.5-1.5L14.5 19M5.5 8.8 5 6m.5 2.8L3 9.4M18.5 8.8 19 6m-.5 2.8L21 9.4M5.5 15.2 5 18m.5-2.8L3 14.6M18.5 15.2 19 18m-.5-2.8L21 14.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
@@ -452,12 +452,20 @@ class PersonResource extends BaseModelResource
                 ])->toArray())
                 ->nullable(),
 
-            SelectField::make('Теги', 'tags')
+            SelectField::make('Теги', 'tags_filter')
                 ->icon('tag')
                 ->optionsIcon('tag')
                 ->placeholder('Введите тег')
                 ->options(Tag::select('id', 'name')->get())
-                ->multiple(true),
+                ->multiple(true)
+                ->nullable()
+                ->onApply(function (Builder $query, $value) {
+                    if (empty($value)) {
+                        return $query;
+                    }
+
+                    return $query->whereHas('tags', fn($q) => $q->whereIn('tags.id', (array) $value));
+                }),
 
             SelectField::make('Статус', 'status_filter')
                 ->icon('check')

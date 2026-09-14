@@ -247,6 +247,10 @@ class InviterResource extends BaseModelResource
                 ->nullable()
                 ->placeholder('Фильтрация по организации')
                 ->onApply(function (Builder $query, $value) {
+                    if (blank($value)) {
+                        return $query;
+                    }
+
                     return $query->whereHas('person.organization', function ($q) use ($value) {
                         $q->where('id', $value);
                     });
@@ -265,6 +269,10 @@ class InviterResource extends BaseModelResource
                 ->nullable()
                 ->placeholder('Фильтрация по тегам')
                 ->onApply(function (Builder $query, $value) {
+                    if (blank($value)) {
+                        return $query;
+                    }
+
                     return $query->whereHas('person.tags', function ($q) use ($value) {
                         if (is_array($value)) {
                             $q->whereIn('tags.id', $value);

@@ -416,17 +416,20 @@ class CarResource extends BaseModelResource
                 Column::make([
                     SelectField::make('Марка', 'brand_id')
                         ->required()
+                        ->placeholder('Выберите марку')
                         ->options(CarBrand::query()->pluck('name', 'id')->toArray()),
                 ])->columnSpan(6),
                 Column::make([
                     SelectField::make('Цвет', 'color_id')
                         ->required()
+                        ->placeholder('Выберите цвет')
                         ->options(CarColor::query()->pluck('name', 'id')->toArray()),
                 ])->columnSpan(6),
             ]),
             SelectField::make('Персоны', 'people_ids')
                 ->icon('magnifier')
                 ->optionsIcon('person')
+                ->placeholder('Выберите персоны')
                 ->options(Person::query()->get()->map(fn($p) => [
                     'id'   => $p->id,
                     'name' => trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '') . ' ' . ($p->middle_name ?? '')),
@@ -437,6 +440,7 @@ class CarResource extends BaseModelResource
             SelectField::make('Организация', 'organization_id')
                 ->icon('magnifier')
                 ->optionsIcon('organization')
+                ->placeholder('Выберите организацию')
                 ->options(Organization::query()->get()->map(fn($o) => [
                     'id'      => $o->id,
                     'name'    => $o->short_name,
@@ -447,11 +451,15 @@ class CarResource extends BaseModelResource
             SelectField::make('Теги авто', 'tags')
                 ->icon('tag')
                 ->optionsIcon('tag')
+                ->placeholder('Выберите или создайте теги')
                 ->options(CarTag::select('id', 'name')->get())
                 ->multiple(true)
                 ->creatable(true, route('car-tags.store')),
-            CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию')->nullable(),
+            CustomTextarea::make('Комментарий', 'comment')
+                ->placeholder('Дополнительная информация')
+                ->nullable(),
             SelectField::make('Правила проезда', 'rule_ids')
+                ->placeholder('Выберите правила проезда')
                 ->options(CarPassageRule::query()->pluck('name', 'id')->toArray())
                 ->multiple()
                 ->nullable()
@@ -513,14 +521,17 @@ class CarResource extends BaseModelResource
                     'maxlength' => '12',
                 ]),
             SelectField::make('Марка', 'brand_id')
+                ->placeholder('Фильтрация по марке')
                 ->options(CarBrand::query()->pluck('name', 'id')->toArray())
                 ->nullable(),
             SelectField::make('Цвет', 'color_id')
+                ->placeholder('Фильтрация по цвету')
                 ->options(CarColor::query()->pluck('name', 'id')->toArray())
                 ->nullable(),
             SelectField::make('Организация', 'organization_id')
                 ->icon('magnifier')
                 ->optionsIcon('organization')
+                ->placeholder('Фильтрация по организации')
                 ->options(Organization::query()->get()->map(fn($o) => [
                     'id'      => $o->id,
                     'name'    => $o->short_name,
@@ -528,6 +539,7 @@ class CarResource extends BaseModelResource
                 ])->toArray())
                 ->nullable(),
             SelectField::make('Персоны', 'people_filter')
+                ->placeholder('Фильтрация по персонам')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray())
                 ->multiple()
                 ->nullable()
@@ -543,6 +555,7 @@ class CarResource extends BaseModelResource
             SelectField::make('Теги авто', 'tags_filter')
                 ->icon('tag')
                 ->optionsIcon('tag')
+                ->placeholder('Фильтрация по тегам авто')
                 ->options(CarTag::query()->pluck('name', 'id')->toArray())
                 ->multiple()
                 ->nullable()
@@ -559,7 +572,8 @@ class CarResource extends BaseModelResource
                 ->options(Car::SOURCES)
                 ->placeholder('Все')
                 ->nullable(),
-            Text::make('Комментарий', 'comment'),
+            Text::make('Комментарий', 'comment')
+                ->placeholder('Фильтрация по комментарию'),
         ];
     }
 
