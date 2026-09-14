@@ -107,9 +107,12 @@ services:
     environment:
       TZ: Europe/Moscow
       LOG_SOURCE: horizon
+      SUPERVISOR_HTTP_USER: ${SUPERVISOR_HTTP_USER:-supervisor}
+      SUPERVISOR_HTTP_PASS: ${SUPERVISOR_HTTP_PASS:-supervisor}
+    expose:
+      - 9001
     networks:
       - laravel
-    entrypoint: ["php", "/var/www/html/artisan", "queue:work", "--sleep=1", "--tries=3", "--timeout=90"]
     logging: *default-logging
 
   events-processor:

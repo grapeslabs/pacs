@@ -50,6 +50,8 @@ Route::prefix("settings")
     ->middleware(MoonShineAuthenticate::class)
     ->group(function () {
         Route::post("store", [SettingsController::class, "store"])->name("settings.store");
+        Route::post("frp/rotate-token", [SettingsController::class, "rotateFrpToken"])
+            ->name("settings.frp.rotate-token");
     });
 
 Route::prefix("presence-report")->group(function () {

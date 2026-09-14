@@ -16,6 +16,7 @@ ADB_NAME="pacs-frg"
 ADB_PASS=""
 LPR_DB_NAME="pacs-lpr"
 LPR_DB_PASS=""
+SUPERVISOR_PASS=""
 MEDIA_ENABLED=""
 WEBRTC_PUBLIC_IP=""
 WEBRTC_UDP_PORT="8189"
@@ -187,6 +188,7 @@ collect_params() {
     [ -n "$DB_PASS" ]     || DB_PASS="$(gen_pass)"
     [ -n "$ADB_PASS" ]    || ADB_PASS="$(gen_pass)"
     [ -n "$LPR_DB_PASS" ] || LPR_DB_PASS="$(gen_pass)"
+    [ -n "$SUPERVISOR_PASS" ] || SUPERVISOR_PASS="$(gen_pass)"
 
     if have_tty; then
         while :; do
@@ -317,6 +319,9 @@ configure_env() {
     set_env LPR_DB_USERNAME   "postgres"
     set_env LPR_DB_DATABASE   "$LPR_DB_NAME"
     set_env LPR_DB_PASSWORD   "$LPR_DB_PASS"
+
+    set_env SUPERVISOR_HTTP_USER "supervisor"
+    set_env SUPERVISOR_HTTP_PASS "$SUPERVISOR_PASS"
 
     set_env APP_VERSION       "${VERSION#v}"
     set_env COMPOSE_FILE      "docker-compose.production.yml"

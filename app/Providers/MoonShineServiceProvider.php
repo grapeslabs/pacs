@@ -101,7 +101,8 @@ class MoonShineServiceProvider extends ServiceProvider
             ->pages([
                 ...$config->getPages(),
                 LogViewerPage::class,
-                ...config('services.ms.enabled')?[SettingsPage::class, VideoWallPage::class]:[],
+                SettingsPage::class,
+                ...config('services.ms.enabled')?[VideoWallPage::class]:[],
                 ...config('services.va.enabled')?[PresenceReportPage::class]:[],
             ]);
         $config->authorizationRules(
