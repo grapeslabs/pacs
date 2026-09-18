@@ -109,4 +109,6 @@ USER root
 
 COPY docker/prod/php/supervisord.conf /etc/supervisord.conf
 
+USER app
+
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]

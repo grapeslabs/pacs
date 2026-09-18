@@ -18,6 +18,12 @@ class ProcessEvents extends Command
 
     public function handle(): int
     {
+        if (! config('services.va.enabled')) {
+            sleep(60);
+
+            return 0;
+        }
+
         $this->info('Служба обработки событий распознавания лиц запущена...');
         Log::info('Служба обработки событий запущена');
 

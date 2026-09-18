@@ -383,49 +383,6 @@ services:
       - laravel
     logging: *default-logging
 
-  events-processor:
-    build:
-      context: ./docker/php
-      dockerfile: Dockerfile
-      target: app
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    restart: unless-stopped
-    volumes:
-      - ./:/var/www/html:delegated
-    depends_on:
-      - app-database
-      - redis
-    environment:
-      TZ: Europe/Moscow
-      LOG_SOURCE: events
-    networks:
-      - laravel
-    entrypoint: ["php", "/var/www/html/artisan", "events:process-new"]
-    logging: *default-logging
-  lpr-rules-processor:
-    build:
-      context: ./docker/php
-      dockerfile: Dockerfile
-      target: app
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    restart: unless-stopped
-    volumes:
-      - ./:/var/www/html:delegated
-    depends_on:
-      - app-database
-      - redis
-    environment:
-      TZ: Europe/Moscow
-      LOG_SOURCE: lpr-rules
-    networks:
-      - laravel
-    entrypoint: ["php", "/var/www/html/artisan", "lpr:process-rules"]
-    logging: *default-logging
-
   ofelia:
     image: mcuadros/ofelia:latest
     restart: unless-stopped

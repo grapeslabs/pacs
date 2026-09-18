@@ -69,4 +69,6 @@ USER root
 
 COPY supervisord.conf /etc/supervisord.conf
 
+USER laravel
+
 CMD ["/usr/bin/supervisord", "-n", "-c",  "/etc/supervisord.conf"]

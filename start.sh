@@ -166,7 +166,7 @@ else
 fi
 
 log "Starting queue workers..."
-if $DOCKER_COMPOSE up -d horizon queue-actuators queue-sync; then
+if $DOCKER_COMPOSE up -d horizon; then
     log "Queue workers started."
 else
     error "Starting failed"
@@ -179,12 +179,12 @@ fi
 
 if is_enabled "ANALYTIC_ENABLED"; then
     log "Starting analytic services..."
-    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server events-processor media-server || warn "FAILED"
+    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server media-server || warn "FAILED"
 fi
 
 if is_enabled "LPR_ENABLED"; then
     log "Starting LPR services..."
-    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server lpr-database lpr-api lpr-core media-server lpr-rules-processor media-server || warn "FAILED"
+    $DOCKER_COMPOSE up -d analytic-database analytic-api analytic-server lpr-database lpr-api lpr-core media-server || warn "FAILED"
 fi
 
 if [ "$MEDIA_RESTART_NEEDED" = "true" ]; then

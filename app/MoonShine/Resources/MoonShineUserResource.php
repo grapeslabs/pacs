@@ -206,7 +206,8 @@ class MoonShineUserResource extends BaseModelResource
     {
         return [
             SelectField::make('Роль', 'moonshine_user_role_id')
-                ->options(Role::query()->pluck('name', 'id')->toArray()),
+                ->options(Role::query()->pluck('name', 'id')->toArray())
+                ->nullable(),
             CustomText::make('E-mail', 'email')
                 ->onApply(function (Builder $query, string $value, Field $field) {
                     if ($value) {

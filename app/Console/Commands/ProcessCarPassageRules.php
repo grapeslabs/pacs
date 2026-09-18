@@ -30,6 +30,12 @@ class ProcessCarPassageRules extends Command
 
     public function handle(): int
     {
+        if (! config('services.lpr.enabled')) {
+            sleep(60);
+
+            return self::SUCCESS;
+        }
+
         $this->info('Car passage rules worker started.');
 
         $iterations = 0;
