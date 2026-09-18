@@ -22,7 +22,6 @@ use MoonShine\Contracts\Core\DependencyInjection\ConfiguratorContract;
 use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
 use App\MoonShine\Resources\MoonShineUserResource;
 use App\MoonShine\Resources\MoonShineUserRoleResource;
-use App\MoonShine\Resources\EquipmentResource;
 use App\MoonShine\Resources\ActuatorDeviceResource;
 use App\MoonShine\Resources\PersonResource;
 use App\MoonShine\Resources\OrganizationResource;
@@ -31,7 +30,6 @@ use App\MoonShine\Resources\KeyResource;
 use App\MoonShine\Resources\CarResource;
 use App\MoonShine\Resources\GuestResource;
 use App\MoonShine\Resources\TerminalResource;
-use App\MoonShine\Resources\BarrierResource;
 use App\MoonShine\Resources\ControllerResource;
 use App\MoonShine\Resources\CarPassageRuleResource;
 use App\MoonShine\Resources\PersonPassageRuleResource;
@@ -42,12 +40,9 @@ use App\MoonShine\Resources\ReferenceResource;
 use App\MoonShine\Resources\SettingResource;
 use App\MoonShine\Resources\CarBrandResource;
 use App\MoonShine\Resources\CarColorResource;
-use App\MoonShine\Resources\PersonPhotoResource;
 use App\MoonShine\Resources\BotResource;
 use App\MoonShine\Resources\BotChatResource;
-use App\MoonShine\Resources\BarrierEventResource;
 use App\MoonShine\Resources\ApiKeyResource;
-use App\MoonShine\Resources\InviterResource;
 use App\MoonShine\Resources\VideoStreamResource;
 use MoonShine\Contracts\Core\ResourceContract;
 use MoonShine\Laravel\Enums\Ability;
@@ -60,7 +55,6 @@ class MoonShineServiceProvider extends ServiceProvider
             ->resources([
                 MoonShineUserResource::class,
                 MoonShineUserRoleResource::class,
-                EquipmentResource::class,
                 ActuatorDeviceResource::class,
                 PersonResource::class,
                 OrganizationResource::class,
@@ -69,7 +63,6 @@ class MoonShineServiceProvider extends ServiceProvider
                 CarResource::class,
                 GuestResource::class,
                 TerminalResource::class,
-                BarrierResource::class,
                 ControllerResource::class,
                 PassageResource::class,
                 CarPassageRuleResource::class,
@@ -83,7 +76,6 @@ class MoonShineServiceProvider extends ServiceProvider
                 SettingResource::class,
                 BotChatResource::class,
                 SkudEventResource::class,
-                BarrierEventResource::class,
                 ApiKeyResource::class,
                 ...config('services.ms.enabled')?[
                     VideoStreamResource::class,
@@ -111,7 +103,7 @@ class MoonShineServiceProvider extends ServiceProvider
                     return false;
                 }
 
-                if ($user->moonshine_user_role_id === 1) {
+                if ($user->isSuper()) {
                     return true;
                 }
 

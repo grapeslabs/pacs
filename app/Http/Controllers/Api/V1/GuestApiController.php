@@ -17,17 +17,6 @@ use App\Services\Otp\OtpManager;
 
 class GuestApiController extends Controller
 {
-    private function normalizePhone(string $phone): string
-    {
-        $digits = preg_replace('/\D/', '', $phone);
-
-        if (strlen($digits) === 11 && $digits[0] === '8') {
-            $digits = '7' . substr($digits, 1);
-        }
-
-        return $digits;
-    }
-
     public function auth(Request $request, OtpManager $otpManager): JsonResponse|Response
     {
         try {
@@ -42,11 +31,16 @@ class GuestApiController extends Controller
             ], 422);
         }
 
-        $normalizedPhone = $this->normalizePhone($request->phone);
+        $normalizedPhone = Guest::normalizePhone($request->phone);
 
-        $guest = Guest::all()->first(function ($guest) use ($normalizedPhone) {
-            return $this->normalizePhone($guest->phone) === $normalizedPhone;
-        });
+        if ($normalizedPhone === '') {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => ['phone' => ['Phone number must contain digits.']]
+            ], 422);
+        }
+
+        $guest = Guest::query()->where('phone_normalized', $normalizedPhone)->first();
 
         if (!$guest) {
             return response()->json([
@@ -91,11 +85,16 @@ class GuestApiController extends Controller
             ], 422);
         }
 
-        $normalizedPhone = $this->normalizePhone($request->phone);
+        $normalizedPhone = Guest::normalizePhone($request->phone);
 
-        $guest = Guest::all()->first(function ($guest) use ($normalizedPhone) {
-            return $this->normalizePhone($guest->phone) === $normalizedPhone;
-        });
+        if ($normalizedPhone === '') {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => ['phone' => ['Phone number must contain digits.']]
+            ], 422);
+        }
+
+        $guest = Guest::query()->where('phone_normalized', $normalizedPhone)->first();
 
         if (!$guest) {
             return response()->json([

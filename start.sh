@@ -165,9 +165,9 @@ else
     fi
 fi
 
-log "Starting queue worker..."
-if $DOCKER_COMPOSE up -d horizon; then
-    log "Queue worker started."
+log "Starting queue workers..."
+if $DOCKER_COMPOSE up -d horizon queue-actuators queue-sync; then
+    log "Queue workers started."
 else
     error "Starting failed"
 fi

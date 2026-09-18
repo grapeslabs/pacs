@@ -175,6 +175,10 @@ class LogReaderService
             $path = $this->resolvePath($sourceKey, $file['name']);
 
             foreach ($this->rawEntries($path, $budget, $source['format']) as $raw) {
+                if ($search !== '' && mb_stripos($raw, $search) === false) {
+                    continue;
+                }
+
                 $entry = $this->parse($raw, $source['format']);
                 $entry['file'] = $file['name'];
 
@@ -182,13 +186,10 @@ class LogReaderService
                     continue;
                 }
 
-                if ($search !== '' && mb_stripos($entry['raw'], $search) === false) {
-                    continue;
-                }
-
                 $found++;
 
                 if ($found > $offset) {
+                    $entry['context'] = $this->prettyContext($entry['context']);
                     $entries[] = $entry;
                 }
 
@@ -399,9 +400,22 @@ class LogReaderService
             return [$message, null];
         }
 
-        $context = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return [trim(substr($message, 0, $position)), $candidate];
+    }
 
-        return [trim(substr($message, 0, $position)), $context ?: null];
+    private function prettyContext(?string $context): ?string
+    {
+        if ($context === null) {
+            return null;
+        }
+
+        $decoded = json_decode($context, true);
+
+        if (!is_array($decoded) || $decoded === []) {
+            return $context;
+        }
+
+        return json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: $context;
     }
 
     private function guessLevel(string $text): string

@@ -122,13 +122,13 @@ class MediaServerService
 
     public function downloadStatus($streamUid, $requestId)
     {
-        return $this->request("/api/v1/stream/$streamUid/archive/status/{$requestId}", method: 'get');
+        return $this->request("/api/v1/stream/$streamUid/archive/status/" . rawurlencode((string) $requestId), method: 'get');
     }
 
     public function downloadArchiveFile(string $streamUid, $requestId)
     {
         return [
-            'url'=>"$this->externalUrl/media/api/v1/stream/{$streamUid}/archive/download/{$requestId}.mp4"
+            'url'=>"$this->externalUrl/media/api/v1/stream/{$streamUid}/archive/download/" . rawurlencode((string) $requestId) . ".mp4"
         ];
     }
 

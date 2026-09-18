@@ -4,9 +4,6 @@ namespace App\MoonShine\Resources;
 
 use App\Models\Setting;
 use App\MoonShine\Fields\SelectField;
-use App\MoonShine\Pages\CustomIndexPage;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
@@ -24,14 +21,6 @@ class SettingResource extends BaseModelResource
     protected string $title = 'Настройки';
     protected ?string $editModalTitle = 'Редактирование настройки';
     protected string $column = 'name';
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
 
     protected function beforeSave(mixed $item): mixed
     {

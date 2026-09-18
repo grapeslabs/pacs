@@ -16,7 +16,7 @@ class SkudEventPerson extends Model
 
     public function event(): BelongsTo
     {
-        return $this->belongsTo(SkudEvent::class, 'event_id');
+        return $this->belongsTo(GrapeslabsSkudEvent::class, 'event_id');
     }
 
     public function person(): BelongsTo

@@ -7,14 +7,11 @@ namespace App\MoonShine\Resources;
 use App\MoonShine\Fields\CustomText;
 use App\Models\Role;
 use App\MoonShine\Fields\PermissionMatrixField;
-use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Contracts\Validation\Rule;
 use MoonShine\Contracts\UI\ComponentContract;
 use MoonShine\Contracts\UI\FormBuilderContract;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Models\MoonshineUserRole;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\MenuManager\Attributes\Group;
@@ -38,14 +35,6 @@ class MoonShineUserRoleResource extends BaseModelResource
     protected bool $createInModal=false;
     protected bool $detailInModal=false;
 
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
 
     protected function activeActions(): ListOf
     {

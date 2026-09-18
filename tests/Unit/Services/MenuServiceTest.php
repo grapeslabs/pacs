@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use App\Models\Person;
 use App\Models\User;
 use App\MoonShine\Pages\Dashboard;
 use App\MoonShine\Pages\LogViewerPage;
@@ -22,7 +23,7 @@ class MenuServiceTest extends TestCase
 
     private function superAdmin(): User
     {
-        return (new User())->forceFill(['id' => 1]);
+        return (new User())->forceFill(['id' => 1, 'is_super' => true]);
     }
 
     public function test_home_points_to_dashboard(): void
@@ -83,6 +84,37 @@ class MenuServiceTest extends TestCase
         $persons = collect($skud['items'])->firstWhere('label', 'Персоны');
 
         $this->assertSame(0, $persons['badge']);
+    }
+
+    private function personBadge(): ?int
+    {
+        $menu = $this->service()->visibleMenu($this->superAdmin());
+        $skud = collect($menu['sections'])->firstWhere('key', 'skud');
+
+        return collect($skud['items'])->firstWhere('label', 'Персоны')['badge'];
+    }
+
+    public function test_badge_count_invalidates_immediately_on_create_and_delete(): void
+    {
+        $person = Person::factory()->create();
+
+        $this->assertSame(1, $this->personBadge());
+
+        Person::factory()->create();
+
+        $this->assertSame(2, $this->personBadge());
+
+        $person->delete();
+
+        $this->assertSame(1, $this->personBadge());
+    }
+
+    public function test_sections_are_built_once_per_instance(): void
+    {
+        $service = $this->service();
+
+        $this->assertSame($service->sections(), $service->sections());
+        $this->assertSame($service, $this->service());
     }
 
     public function test_super_admin_page_items_resolve_to_a_real_url(): void

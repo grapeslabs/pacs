@@ -2,6 +2,10 @@
 
 namespace App\MoonShine\Resources;
 
+use App\Jobs\PushKeysToControllers;
+use App\Jobs\PushPersonsToControllers;
+use MoonShine\Laravel\MoonShineAuth;
+use MoonShine\Support\Enums\ToastType;
 use App\Models\GrapeslabsSkudController;
 use App\Models\Key;
 use App\Models\Person;
@@ -11,21 +15,10 @@ use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\CustomTextarea;
 use App\MoonShine\Fields\SelectField;
-use App\MoonShine\Pages\CustomIndexPage;
-use App\Observers\PersonObserver;
-use App\Services\ControllerAccessService;
-use GrapesLabs\PinvideoSkud\ControllerFactory;
-use GrapesLabs\PinvideoSkud\Keys\FaceIdKey;
-use GrapesLabs\PinvideoSkud\Keys\RfidKey;
-use GrapesLabs\PinvideoSkud\Models\SkudController;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
+use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Switcher;
 use MoonShine\UI\Fields\Text;
@@ -34,6 +27,7 @@ class PersonPassageRuleResource extends BaseModelResource
 {
     protected string $model = PersonPassageRule::class;
     protected string $title = 'Правила прохода';
+    protected array $with = ['people', 'personTags', 'keys', 'controllers'];
     protected string $column = 'name';
 
     private const TYPE_OPTIONS = [
@@ -41,20 +35,10 @@ class PersonPassageRuleResource extends BaseModelResource
         PersonPassageRule::TYPE_DENY  => ['label' => 'Запретить', 'color' => 'red'],
     ];
 
-    private ControllerAccessService $access;
-
     private array $oldControllerIds = [];
+    private array|null $oldScope = null;
+    private bool $syncQueued = false;
 
-    public function __construct(CoreContract $core, ControllerAccessService $access)
-    {
-        parent::__construct($core);
-        $this->access = $access;
-    }
-
-    protected function pages(): array
-    {
-        return [CustomIndexPage::class, DetailPage::class, FormPage::class];
-    }
 
     public function deleteConfirmation(Model $item): array
     {
@@ -183,11 +167,6 @@ class PersonPassageRuleResource extends BaseModelResource
         ];
     }
 
-    public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
-    {
-        return parent::indexQuery()->with(['people', 'personTags', 'keys', 'controllers']);
-    }
-
     private function relationFilter(string $relation, string $qualifiedKey): \Closure
     {
         return function (Builder $query, $value) use ($relation, $qualifiedKey) {
@@ -218,6 +197,7 @@ class PersonPassageRuleResource extends BaseModelResource
     protected function beforeUpdating(mixed $item): mixed
     {
         $this->oldControllerIds = $item->controllers()->get(['grapeslabs_skud_controllers.id'])->pluck('id')->all();
+        $this->oldScope = $this->ruleScope($item);
 
         return $item;
     }
@@ -225,33 +205,50 @@ class PersonPassageRuleResource extends BaseModelResource
     protected function beforeDeleting(mixed $item): mixed
     {
         $this->oldControllerIds = $item->controllers()->get(['grapeslabs_skud_controllers.id'])->pluck('id')->all();
+        $this->oldScope = $this->ruleScope($item);
 
         return $item;
     }
 
     protected function afterCreated(mixed $item): mixed
     {
-        $this->reconcileControllers($this->ruleControllerIds($item->fresh()));
+        $fresh = $item->fresh();
+
+        $this->dispatchPush(
+            $this->ruleControllerIds($fresh),
+            $this->mergeScopes([$this->ruleScope($fresh)]),
+        );
 
         return $item;
     }
 
     protected function afterUpdated(mixed $item): mixed
     {
-        $affected = collect($this->oldControllerIds)
-            ->merge($this->ruleControllerIds($item->fresh()))
-            ->unique();
-        $this->oldControllerIds = [];
+        $fresh = $item->fresh();
 
-        $this->reconcileControllers($affected);
+        $affected = collect($this->oldControllerIds)
+            ->merge($this->ruleControllerIds($fresh))
+            ->unique();
+
+        $scope = $this->mergeScopes([$this->oldScope, $this->ruleScope($fresh)]);
+
+        $this->oldControllerIds = [];
+        $this->oldScope = null;
+
+        $this->dispatchPush($affected, $scope);
 
         return $item;
     }
 
     protected function afterDeleted(mixed $item): mixed
     {
-        $this->reconcileControllers(collect($this->oldControllerIds));
+        $scope = $this->mergeScopes([$this->oldScope]);
+        $controllerIds = collect($this->oldControllerIds);
+
         $this->oldControllerIds = [];
+        $this->oldScope = null;
+
+        $this->dispatchPush($controllerIds, $scope);
 
         return parent::afterDeleted($item);
     }
@@ -261,95 +258,103 @@ class PersonPassageRuleResource extends BaseModelResource
         return $rule->controllers()->get(['grapeslabs_skud_controllers.id'])->pluck('id');
     }
 
-    private function reconcileControllers(Collection $controllerIds): void
+    /**
+     * Субъекты правила: null в ветке означает «затронуты все» — правило без субъектов
+     * матчит каждого, поэтому пересчитывать приходится всю базу.
+     */
+    private function ruleScope(PersonPassageRule $rule): array
+    {
+        $rule->loadMissing(['keys', 'people', 'personTags.persons']);
+
+        if (! $rule->hasSubjects()) {
+            return ['keys' => null, 'persons' => null];
+        }
+
+        $personIds = $rule->people->pluck('id')
+            ->merge($rule->personTags->flatMap(fn ($tag) => $tag->persons->pluck('id')))
+            ->unique()
+            ->values();
+
+        $keyIds = $rule->keys->pluck('id')
+            ->merge(Key::query()->whereIn('person_id', $personIds)->pluck('id'))
+            ->unique()
+            ->values();
+
+        return ['keys' => $keyIds->all(), 'persons' => $personIds->all()];
+    }
+
+    private function mergeScopes(array $scopes): array
+    {
+        $keys = [];
+        $persons = [];
+
+        foreach (array_filter($scopes) as $scope) {
+            if ($scope['keys'] === null || $scope['persons'] === null) {
+                return ['keys' => null, 'persons' => null];
+            }
+
+            $keys = array_merge($keys, $scope['keys']);
+            $persons = array_merge($persons, $scope['persons']);
+        }
+
+        return [
+            'keys' => array_values(array_unique($keys)),
+            'persons' => array_values(array_unique($persons)),
+        ];
+    }
+
+    /**
+     * Смена «управляемости» контроллера требует полного прогона именно по нему:
+     * до первого правила он пускал всех, после удаления последнего — снова будет.
+     */
+    private function managementChanged(Collection $controllerIds): bool
+    {
+        $managed = PersonPassageRule::query()
+            ->where('is_active', true)
+            ->with('controllers')
+            ->get()
+            ->flatMap(fn (PersonPassageRule $rule) => $rule->controllers->pluck('id'))
+            ->unique();
+
+        return $controllerIds->contains(fn ($id) => ! $managed->contains($id));
+    }
+
+    private function dispatchPush(Collection $controllerIds, array $scope): void
     {
         $controllerIds = $controllerIds->unique()->filter()->values();
+
         if ($controllerIds->isEmpty()) {
             return;
         }
-        $this->access->flush();
-        $rfidTargets = GrapeslabsSkudController::whereIn('id', $controllerIds)
-            ->whereNotIn('type', ['pingate', 'pinterm'])->get();
-        $faceTargets = GrapeslabsSkudController::whereIn('id', $controllerIds)
-            ->where('type', 'pinterm')->get();
-        $personObserver = app(PersonObserver::class);
 
-        if ($rfidTargets->isNotEmpty()) {
-            Key::query()->with('person.tags')->chunkById(200, function ($keys) use ($rfidTargets, $personObserver) {
-                foreach ($keys as $key) {
-                    $frozen = $key->person
-                        && $personObserver->isCurrentlyFrozen($key->person->frozen_start, $key->person->frozen_end);
-                    $allowedIds = $frozen ? collect() : $this->access->rfidControllersForKey($key)->pluck('id');
-                    $rfidKey = new RfidKey(code: $key->key, type: $key->type);
-
-                    foreach ($rfidTargets as $controller) {
-                        $this->applyKey($controller, $rfidKey, $allowedIds->contains($controller->id), "rule resync rfid key {$key->id}");
-                    }
-                }
-            });
+        if ($this->managementChanged($controllerIds)) {
+            $scope = ['keys' => null, 'persons' => null];
         }
 
-        if ($faceTargets->isNotEmpty()) {
-            $faceTargetIds = $faceTargets->pluck('id');
-            Person::query()->with('tags')->chunkById(200, function ($people) use ($faceTargets, $faceTargetIds, $personObserver) {
-                foreach ($people as $person) {
-                    $frozen = $personObserver->isCurrentlyFrozen($person->frozen_start, $person->frozen_end);
-                    $allowedIds = $frozen ? collect() : $this->access->faceControllersForPerson($person)->pluck('id');
-                    $needImages = $allowedIds->intersect($faceTargetIds)->isNotEmpty();
+        $userId = MoonShineAuth::getGuard()->id();
+        $ids = $controllerIds->all();
 
-                    $faceKey = new FaceIdKey(
-                        uid: $person->key_uid ?? $person->getSkudUid(),
-                        images: $needImages ? $this->imagesData($person->photo) : [],
-                        name: $person->getFullName(),
-                    );
+        PushKeysToControllers::dispatch($ids, $scope['keys'], $userId)
+            ->onConnection('redis-sync')
+            ->delay(now()->addSeconds(10));
 
-                    foreach ($faceTargets as $controller) {
-                        $this->applyKey($controller, $faceKey, $allowedIds->contains($controller->id), "rule resync face person {$person->id}");
-                    }
-                }
-            });
-        }
+        PushPersonsToControllers::dispatch($ids, $scope['persons'], $userId)
+            ->onConnection('redis-sync')
+            ->delay(now()->addSeconds(10));
 
-        Person::query()->whereNotNull('frozen_start')->chunkById(200, function ($people) use ($personObserver) {
-            foreach ($people as $person) {
-                $personObserver->scheduleCommands($person);
-            }
-        });
+        $this->syncQueued = true;
     }
 
-    private function applyKey(GrapeslabsSkudController $controller, $key, bool $allowed, string $context): void
+    public function modifySaveResponse(MoonShineJsonResponse $response): MoonShineJsonResponse
     {
-        try {
-            $vendor = new SkudController();
-            $vendor->setRawAttributes($controller->getAttributes(), true);
-            $vendor->exists = $controller->exists;
-            $skud = ControllerFactory::create($vendor);
+        if ($this->syncQueued) {
+            $response->toast(
+                'Сохранено. Синхронизация запущена, изменения применятся в течение минуты',
+                ToastType::SUCCESS,
+            );
+        }
 
-            if ($allowed) {
-                $skud->writeKeys([$key]);
-            } else {
-                $skud->clearKeys([$key]);
-            }
-        } catch (\Exception $e) {
-            Log::error("SKUD $context exception on controller {$controller->serial_number}: " . $e->getMessage());
-        }
-    }
-
-    private function imagesData(?array $photos): array
-    {
-        if (empty($photos)) {
-            return [];
-        }
-        $images = [];
-        foreach ($photos as $photoPath) {
-            if (Storage::disk('public')->exists($photoPath)) {
-                $images[] = [
-                    'id' => pathinfo($photoPath, PATHINFO_FILENAME),
-                    'content' => Storage::disk('public')->get($photoPath),
-                ];
-            }
-        }
-        return $images;
+        return $response;
     }
 }
 

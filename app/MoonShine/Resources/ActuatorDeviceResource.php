@@ -2,6 +2,7 @@
 
 namespace App\MoonShine\Resources;
 
+use MoonShine\Laravel\Enums\Ability;
 use App\Actuators\ActuatorDriverManager;
 use App\Actuators\ActuatorService;
 use App\Models\ActuatorDevice;
@@ -280,6 +281,15 @@ class ActuatorDeviceResource extends BaseModelResource
 
         return $manager->has($key)
             && in_array($capability, $manager->driver($key)->capabilities(), true);
+    }
+
+    public function asyncMethodAbilities(): array
+    {
+        return array_merge(parent::asyncMethodAbilities(), [
+            'doOpen' => Ability::UPDATE,
+            'doClose' => Ability::UPDATE,
+            'doTest' => Ability::UPDATE,
+        ]);
     }
 
     public function doOpen(MoonShineRequest $request): MoonShineJsonResponse

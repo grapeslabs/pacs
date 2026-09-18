@@ -72,7 +72,11 @@
         if (!window.customPasswordFieldsInitialized) {
             window.customPasswordFieldsInitialized = true;
             document.addEventListener('submit', function(event) {
-                const errorField = document.querySelector('.cpf-error');
+                const form = event.target;
+                const scope = form instanceof HTMLFormElement ? form : document;
+                const errorField = [...scope.querySelectorAll('.cpf-error')]
+                    .find(el => el.isConnected && el.offsetParent !== null);
+
                 if (errorField) {
                     event.preventDefault();
                     event.stopImmediatePropagation();

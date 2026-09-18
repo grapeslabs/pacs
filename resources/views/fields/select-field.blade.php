@@ -267,6 +267,10 @@
                         return;
                     }
 
+                    if (entry.el.offsetParent === null) {
+                        return;
+                    }
+
                     if (!entry.validateNow() && firstInvalid === null) {
                         firstInvalid = entry.el;
                     }

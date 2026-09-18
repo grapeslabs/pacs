@@ -1,6 +1,6 @@
 x-logging: &default-logging
   options:
-    max-size: "10m"
+    max-size: "20m"
   driver: json-file
 
 services:
@@ -16,12 +16,12 @@ services:
       - --certificatesresolvers.le.acme.email=${CERT_ADMIN_EMAIL:-admin@example.ru}
       - --certificatesresolvers.le.acme.storage=/certs/acme.json
       - --certificatesresolvers.le.acme.tlschallenge=true
-      - --log.level=debug
+      - --log.level=INFO
     ports:
       - 80:80
       - 443:443
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - certs:/certs
     environment:
       TZ: "Europe/Moscow"
@@ -36,7 +36,6 @@ services:
     restart: unless-stopped
     environment:
       TZ: "Europe/Moscow"
-      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-50M}
     volumes:
       - public_storage:/var/www/html/public/storage
       - analytic_thumbnails:/var/www/html/public/analytic-storage/thumbnails
@@ -73,6 +72,7 @@ services:
       - lpr_logs:/var/www/html/lpr/logs:ro
       - analytic_server_logs:/var/www/html/analytic/logs/server:ro
       - analytic_api_logs:/var/www/html/analytic/logs/api:ro
+      - analytic_thumbnails:/var/www/html/analytic/thumbnails:ro
     depends_on:
       app-database:
         condition: service_healthy
@@ -92,6 +92,7 @@ services:
       - .env
     environment:
       LOG_SOURCE: php
+    logging: *default-logging
 
   horizon:
     image: ghcr.io/grapeslabs/pacs-horizon:${APP_VERSION}
@@ -123,6 +124,7 @@ services:
     volumes:
       - storage:/var/www/html/storage
       - public_storage:/var/www/html/storage/app/public
+      - analytic_thumbnails:/var/www/html/analytic/thumbnails:ro
     depends_on:
       - app-database
       - redis
@@ -185,7 +187,6 @@ services:
       - app_database:/var/lib/postgresql/data:delegated
     networks:
       - laravel
-      - traefik-public
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
       interval: 5s
@@ -225,7 +226,6 @@ services:
       - ./init_db.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - laravel
-      - traefik-public
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${ADB_USERNAME}"]
       interval: 10s

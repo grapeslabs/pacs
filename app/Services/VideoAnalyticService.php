@@ -65,7 +65,7 @@ class VideoAnalyticService extends BaseAnalyticService
 
     public function personInfo(string $personUid): array
     {
-        return $this->request('/api/v1/person/add', ['person_id' => $personUid], 'post');
+        return $this->request('/api/v1/person/getinfo', ['person_id' => $personUid]);
     }
 
     public function personCreate(string $name, array $photoPaths, string|int|null $personUid = null): array

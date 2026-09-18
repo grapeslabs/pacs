@@ -92,7 +92,11 @@
         if (!window.numberFieldsInitialized) {
             window.numberFieldsInitialized = true;
             document.addEventListener('submit', function(event) {
-                const errorField = document.querySelector('.cnf-error');
+                const form = event.target;
+                const scope = form instanceof HTMLFormElement ? form : document;
+                const errorField = [...scope.querySelectorAll('.cnf-error')]
+                    .find(el => el.isConnected && el.offsetParent !== null);
+
                 if (errorField) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
@@ -145,10 +149,11 @@
     },
     async checkAjax(rule, allAjaxRules) {
         try {
-            const response = await fetch('/moonshine/custom-field-validation', {
+            const response = await fetch('/field-validation', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': this.csrfToken
                 },
                 body: JSON.stringify({
@@ -159,6 +164,10 @@
                     modelId: this.modelId
                 })
             });
+            if (!response.ok) {
+                return;
+            }
+
             const data = await response.json();
             if (!data.is_valid) {
                 this.error = rule.message;

@@ -2,6 +2,7 @@
 
 namespace App\MoonShine\Resources;
 
+use MoonShine\Laravel\Enums\Ability;
 use App\Models\Car;
 use App\Models\CarPassageEvent;
 use App\Models\Stream;
@@ -187,6 +188,14 @@ class CarEventResource extends BaseModelResource
             ->canSee(fn($item) => $item->car_id === null && ! empty($item->plate_text));
     }
 
+    public function asyncMethodAbilities(): array
+    {
+        return array_merge(parent::asyncMethodAbilities(), [
+            'getIdentifyForm' => Ability::UPDATE,
+            'saveCar' => Ability::UPDATE,
+        ]);
+    }
+
     public function getIdentifyForm(MoonShineRequest $request): string
     {
         $itemId = $request->get('item_id');
@@ -201,7 +210,7 @@ class CarEventResource extends BaseModelResource
             ->async()
             ->fields([...app(CarResource::class)->formFields()])
             ->fill(['license_plate' => $item->plate_text])
-            ->submit('Сохранить', ['class' => 'btn-primary'])
+            ->submit('Сохранить', ['class' => 'js-form-sidebar-submit'])
             ->render();
     }
 
@@ -294,7 +303,6 @@ class CarEventResource extends BaseModelResource
     }
 
     private array $streamCache = [];
-    private array $streamLocCache = [];
 
     private function streamNameByUid(?string $uid): string
     {
@@ -307,21 +315,6 @@ class CarEventResource extends BaseModelResource
         }
 
         return $this->streamCache[$uid] ?? $uid;
-    }
-
-    private function streamLocationByUid(?string $uid): ?string
-    {
-        if (empty($uid)) {
-            return null;
-        }
-
-        if (! array_key_exists($uid, $this->streamLocCache)) {
-            $this->streamLocCache[$uid] = Stream::withTrashed()->where('uid', $uid)->value('location');
-        }
-
-        $location = $this->streamLocCache[$uid];
-
-        return $location ? \Illuminate\Support\Str::limit($location, 26) : null;
     }
 
     private function renderImageWithModal(string $src, string $id): string

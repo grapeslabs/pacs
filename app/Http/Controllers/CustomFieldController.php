@@ -10,6 +10,20 @@ use Illuminate\Support\Facades\Schema;
 
 class CustomFieldController extends Controller
 {
+    private const ALLOWED = [
+        'bots.name',
+        'car_brands.name',
+        'cars.license_plate',
+        'guests.external_id',
+        'keys.key',
+        'moonshine_user_roles.name',
+        'moonshine_users.email',
+        'organizations.inn',
+        'person.certificate_number',
+        'streams.name',
+        'triggers.name',
+    ];
+
     public function validate(Request $request)
     {
         $rule = $request->input('rule');
@@ -18,6 +32,8 @@ class CustomFieldController extends Controller
         $value = $request->input('value');
         $modelId = $request->input('modelId');
         $normalize = $request->input('normalize');
+
+        abort_unless(in_array("$table.$column", self::ALLOWED, true), 422);
 
         $normalizedValue = $this->normalizeValue($value, $normalize);
 
@@ -44,9 +60,13 @@ class CustomFieldController extends Controller
         }
 
         if ($rule === 'exists') {
-            $isValid = DB::table($table)->where($column, $normalizedValue)->exists();
+            $query = DB::table($table)->where($column, $normalizedValue);
 
-            return response()->json(['is_valid' => $isValid]);
+            if (Schema::hasColumn($table, 'deleted_at')) {
+                $query->whereNull('deleted_at');
+            }
+
+            return response()->json(['is_valid' => $query->exists()]);
         }
 
         return response()->json(['is_valid' => true]);

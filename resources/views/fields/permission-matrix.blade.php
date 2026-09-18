@@ -243,6 +243,61 @@
         background: #334155;
         color: #f8fafc;
     }
+
+    .perm-tri {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-top: 0.15rem;
+        flex-shrink: 0;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.35rem;
+        background: #fff;
+        font-size: 0.8rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #94a3b8;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .perm-tri.is-allow {
+        background: #4f46e5;
+        border-color: #4f46e5;
+        color: #fff;
+    }
+
+    .perm-tri.is-deny {
+        background: #dc2626;
+        border-color: #dc2626;
+        color: #fff;
+    }
+
+    .perm-tri-hint {
+        display: block;
+        font-size: 0.75rem;
+        color: #94a3b8;
+    }
+
+    .dark .perm-tri {
+        background: transparent;
+        border-color: #475569;
+        color: #64748b;
+    }
+
+    .dark .perm-tri.is-allow {
+        background: #6366f1;
+        border-color: #6366f1;
+        color: #fff;
+    }
+
+    .dark .perm-tri.is-deny {
+        background: #ef4444;
+        border-color: #ef4444;
+        color: #fff;
+    }
 </style>
 
 <div class="perm-matrix-container"
@@ -251,11 +306,10 @@
          @js($element->tree()),
          '{{ $element->getColumn() }}',
          @js($rolePermissions),
-         '{{ $roleField }}'
+         '{{ $roleField }}',
+         @js($inheritable)
      )"
      x-cloak>
-
-    <input type="hidden" name="is_customized_permissions" :value="isCustomized ? '1' : '0'" :disabled="!hasRoleContext">
 
     <div class="perm-header-bar" x-show="hasRoleContext && isCustomized" style="display: none;">
         <div class="perm-header-left">
@@ -268,7 +322,7 @@
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
-            Сбросить до настроек роли
+            Наследовать всё от роли
         </button>
     </div>
 
@@ -338,15 +392,34 @@
 
                                 @foreach($resource['actions'] as $actionKey => $actionLabel)
                                     <div class="perm-checkbox-group">
-                                        <input type="checkbox"
-                                               name="{{ $element->getColumn() }}[{{ $resource['class'] }}][{{ $actionKey }}]"
-                                               value="1"
-                                               class="form-checkbox"
-                                               x-model="values['{{ $resClassEscaped }}']['{{ $actionKey }}']"
-                                               @change="checkCustomization()"
-                                               id="perm_{{ md5($resource['class']) }}_{{ $actionKey }}">
-                                        <label
-                                            for="perm_{{ md5($resource['class']) }}_{{ $actionKey }}">{{ $actionLabel }}</label>
+                                        @if($inheritable)
+                                            <input type="hidden"
+                                                   name="{{ $element->getColumn() }}[{{ $resource['class'] }}][{{ $actionKey }}]"
+                                                   x-model="values['{{ $resClassEscaped }}']['{{ $actionKey }}']">
+                                            <button type="button"
+                                                    class="perm-tri"
+                                                    :class="triClass('{{ $resClassEscaped }}', '{{ $actionKey }}')"
+                                                    :title="triTitle('{{ $resClassEscaped }}', '{{ $actionKey }}')"
+                                                    @click="cycle('{{ $resClassEscaped }}', '{{ $actionKey }}')"
+                                                    x-text="triGlyph('{{ $resClassEscaped }}', '{{ $actionKey }}')"></button>
+                                            <label @click="cycle('{{ $resClassEscaped }}', '{{ $actionKey }}')">
+                                                {{ $actionLabel }}
+                                                <span class="perm-tri-hint"
+                                                      x-show="isInherited('{{ $resClassEscaped }}', '{{ $actionKey }}')"
+                                                      x-text="roleHint('{{ $resClassEscaped }}', '{{ $actionKey }}')"
+                                                      style="display: none;"></span>
+                                            </label>
+                                        @else
+                                            <input type="checkbox"
+                                                   name="{{ $element->getColumn() }}[{{ $resource['class'] }}][{{ $actionKey }}]"
+                                                   value="1"
+                                                   class="form-checkbox"
+                                                   x-model="values['{{ $resClassEscaped }}']['{{ $actionKey }}']"
+                                                   @change="checkCustomization()"
+                                                   id="perm_{{ md5($resource['class']) }}_{{ $actionKey }}">
+                                            <label
+                                                for="perm_{{ md5($resource['class']) }}_{{ $actionKey }}">{{ $actionLabel }}</label>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>
@@ -360,7 +433,7 @@
 
 <script>
     if (typeof window.permissionMatrixComponent === 'undefined') {
-        window.permissionMatrixComponent = function (initialValues, treeData, inputName, rolePermissions, roleField) {
+        window.permissionMatrixComponent = function (initialValues, treeData, inputName, rolePermissions, roleField, inheritable) {
             return {
                 tree: treeData,
                 values: {},
@@ -370,6 +443,7 @@
                 currentRoleId: null,
                 isCustomized: false,
                 roleField: roleField,
+                inheritable: inheritable,
                 hasRoleContext: false,
 
                 init() {
@@ -384,7 +458,7 @@
                             document.body.addEventListener('change', (e) => {
                                 if (e.target.name === this.roleField) {
                                     this.currentRoleId = e.target.value;
-                                    this.resetToRole();
+                                    this.checkCustomization();
                                 }
                             });
                         } else {
@@ -398,89 +472,112 @@
                 initValues(initial) {
                     let newValues = {};
 
-                    if (this.hasRoleContext) {
-                        const hasUserOverrides = initial && Object.keys(initial).length > 0;
-                        const source = hasUserOverrides ? initial : (this.rolePermissions[this.currentRoleId] || {});
-
-                        for (const cat in this.tree) {
-                            this.tree[cat].resources.forEach(res => {
-                                newValues[res.class] = {};
-                                for (const action in res.actions) {
-                                    newValues[res.class][action] = source[res.class]?.[action] === true || source[res.class]?.[action] == 1;
-                                }
-                            });
-                        }
-                        this.values = newValues;
-
-                        if (hasUserOverrides) {
-                            this.checkCustomization();
-                        } else {
-                            this.isCustomized = false;
-                        }
-                    } else {
-                        for (const cat in this.tree) {
-                            this.tree[cat].resources.forEach(res => {
-                                newValues[res.class] = {};
-                                for (const action in res.actions) {
-                                    newValues[res.class][action] = initial?.[res.class]?.[action] === true || initial?.[res.class]?.[action] == 1;
-                                }
-                            });
-                        }
-                        this.values = newValues;
-                        this.isCustomized = false;
-                    }
-                },
-
-                resetToRole() {
-                    if (!this.hasRoleContext) return;
-
-                    const rolePerms = this.rolePermissions[this.currentRoleId] || {};
-                    let newValues = {};
                     for (const cat in this.tree) {
                         this.tree[cat].resources.forEach(res => {
                             newValues[res.class] = {};
                             for (const action in res.actions) {
-                                newValues[res.class][action] = rolePerms[res.class]?.[action] === true || rolePerms[res.class]?.[action] == 1;
+                                newValues[res.class][action] = this.encode(initial?.[res.class], action);
                             }
                         });
                     }
+
                     this.values = newValues;
-                    this.isCustomized = false;
+                    this.checkCustomization();
+                },
+
+                encode(stored, action) {
+                    if (this.inheritable) {
+                        if (!stored || !Object.prototype.hasOwnProperty.call(stored, action)) {
+                            return '';
+                        }
+                        return stored[action] ? '1' : '0';
+                    }
+                    return stored?.[action] === true || stored?.[action] == 1;
+                },
+
+                isAllowed(resourceClass, action) {
+                    const value = this.values[resourceClass]?.[action];
+                    return value === true || value === '1';
+                },
+
+                isDenied(resourceClass, action) {
+                    return this.values[resourceClass]?.[action] === '0';
+                },
+
+                isInherited(resourceClass, action) {
+                    return this.inheritable && (this.values[resourceClass]?.[action] ?? '') === '';
+                },
+
+                setAllowed(resourceClass, action, allowed) {
+                    if (!this.values[resourceClass]) return;
+                    this.values[resourceClass][action] = this.inheritable ? (allowed ? '1' : '') : allowed;
+                },
+
+                cycle(resourceClass, action) {
+                    if (!this.values[resourceClass]) return;
+                    const value = this.values[resourceClass][action] ?? '';
+                    this.values[resourceClass][action] = value === '' ? '1' : (value === '1' ? '0' : '');
+                    this.checkCustomization();
+                },
+
+                triClass(resourceClass, action) {
+                    return {
+                        'is-allow': this.isAllowed(resourceClass, action),
+                        'is-deny': this.isDenied(resourceClass, action),
+                    };
+                },
+
+                triGlyph(resourceClass, action) {
+                    if (this.isAllowed(resourceClass, action)) return '✓';
+                    if (this.isDenied(resourceClass, action)) return '✕';
+                    return '–';
+                },
+
+                roleAllows(resourceClass, action) {
+                    const rolePerms = this.rolePermissions[this.currentRoleId] || {};
+                    return rolePerms[resourceClass]?.[action] === true || rolePerms[resourceClass]?.[action] == 1;
+                },
+
+                roleHint(resourceClass, action) {
+                    return this.roleAllows(resourceClass, action)
+                        ? 'наследуется от роли: разрешено'
+                        : 'наследуется от роли: запрещено';
+                },
+
+                triTitle(resourceClass, action) {
+                    if (this.isAllowed(resourceClass, action)) return 'Разрешено';
+                    if (this.isDenied(resourceClass, action)) return 'Запрещено';
+                    return this.roleHint(resourceClass, action);
+                },
+
+                resetToRole() {
+                    for (const cat in this.tree) {
+                        this.tree[cat].resources.forEach(res => {
+                            for (const action in res.actions) {
+                                this.values[res.class][action] = this.inheritable ? '' : false;
+                            }
+                        });
+                    }
+                    this.checkCustomization();
                 },
 
                 checkCustomization() {
-                    if (!this.hasRoleContext) {
+                    if (!this.inheritable) {
                         this.isCustomized = false;
                         return;
                     }
 
-                    if (!this.currentRoleId || !this.rolePermissions[this.currentRoleId]) {
-                        this.isCustomized = Object.keys(this.values).length > 0;
-                        return;
-                    }
-
-                    const rolePerms = this.rolePermissions[this.currentRoleId];
-                    let changed = false;
-
-                    for (const cat in this.tree) {
-                        this.tree[cat].resources.forEach(res => {
-                            for (const action in res.actions) {
-                                const currentVal = this.values[res.class]?.[action] === true;
-                                const roleVal = rolePerms[res.class]?.[action] === true || rolePerms[res.class]?.[action] == 1;
-
-                                if (currentVal !== roleVal) {
-                                    changed = true;
-                                }
-                            }
-                        });
-                    }
-                    this.isCustomized = changed;
+                    this.isCustomized = Object.values(this.values).some(actions =>
+                        Object.values(actions).some(value => value !== '')
+                    );
                 },
 
                 hasAnyPermission(category) {
                     if (!this.tree[category] || !this.values) return false;
                     return this.tree[category].resources.some(res => {
-                        return Object.keys(res.actions).some(action => this.values[res.class]?.[action]);
+                        return Object.keys(res.actions).some(action => this.inheritable
+                            ? (this.values[res.class]?.[action] ?? '') !== ''
+                            : this.isAllowed(res.class, action));
                     });
                 },
 
@@ -489,7 +586,7 @@
                     for (const cat in this.tree) {
                         this.tree[cat].resources.forEach(res => {
                             for (const action in res.actions) {
-                                this.values[res.class][action] = checked;
+                                this.setAllowed(res.class, action, checked);
                             }
                         });
                     }
@@ -508,7 +605,7 @@
                     const checked = event.target.checked;
                     this.tree[category].resources.forEach(res => {
                         for (const action in res.actions) {
-                            this.values[res.class][action] = checked;
+                            this.setAllowed(res.class, action, checked);
                         }
                     });
                     this.checkCustomization();
@@ -518,7 +615,7 @@
                     const checked = event.target.checked;
                     const resource = this.tree[category].resources.find(r => r.class === resourceClass);
                     for (const action in resource.actions) {
-                        this.values[resourceClass][action] = checked;
+                        this.setAllowed(resourceClass, action, checked);
                     }
                     this.checkCustomization();
                 },
@@ -528,7 +625,7 @@
                     let allChecked = true;
                     this.tree[category].resources.forEach(res => {
                         for (const action in res.actions) {
-                            if (!this.values[res.class]?.[action]) {
+                            if (!this.isAllowed(res.class, action)) {
                                 allChecked = false;
                             }
                         }
@@ -542,7 +639,7 @@
                     if (!resource) return false;
                     let allChecked = true;
                     for (const action in resource.actions) {
-                        if (!this.values[resourceClass]?.[action]) {
+                        if (!this.isAllowed(resourceClass, action)) {
                             allChecked = false;
                         }
                     }

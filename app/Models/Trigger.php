@@ -42,7 +42,7 @@ class Trigger extends Model
 
     public function stream(): BelongsTo
     {
-        return $this->belongsTo(Stream::class, 'stream_id', 'id');
+        return $this->belongsTo(Stream::class, 'device_id', 'id');
     }
     public function bot(): BelongsTo
     {

@@ -3,16 +3,16 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\BotChat;
-use App\MoonShine\Pages\CustomIndexPage;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\Support\ListOf;
-use MoonShine\Laravel\Notifications\MoonShineNotification;
+use MoonShine\Laravel\Enums\Ability;
+use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
+use MoonShine\Laravel\MoonShineRequest;
+use MoonShine\Support\Enums\ToastType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
@@ -21,14 +21,6 @@ class BotChatResource extends BaseModelResource
     protected string $model = BotChat::class;
     protected string $title = 'Чаты бота';
     protected ?string $editModalTitle = 'Редактирование чата';
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
 
     public function isDisplayInNavigation(): bool
     {
@@ -67,21 +59,10 @@ class BotChatResource extends BaseModelResource
     {
         return parent::indexButtons()
             ->prepend(
-                ActionButton::make('Тест', function (Model $item) {
-                    $result = $item->sendTestMessage();
-
-                    if ($result['success'] ?? false) {
-                        MoonShineNotification::send(
-                            message: '✅ ' . $result['message']
-                        );
-                    } else {
-                        MoonShineNotification::send(
-                            message: '❌ ' . ($result['message'] ?? 'Ошибка отправки')
-                        );
-                    }
-
-                    return '';
-                })
+                ActionButton::make('Тест', fn(Model $item) => $this->getAsyncMethodUrl(
+                    'sendTest',
+                    params: ['item_id' => $item->getKey()]
+                ))
                     ->withConfirm(
                         title: 'Тестовое сообщение',
                         content: 'Отправить тестовое сообщение в этот чат?',
@@ -89,7 +70,32 @@ class BotChatResource extends BaseModelResource
                     )
                     ->primary()
                     ->icon('play-circle')
+                    ->async()
             );
+    }
+
+    public function asyncMethodAbilities(): array
+    {
+        return array_merge(parent::asyncMethodAbilities(), [
+            'sendTest' => Ability::UPDATE,
+        ]);
+    }
+
+    public function sendTest(MoonShineRequest $request): MoonShineJsonResponse
+    {
+        $chat = BotChat::query()->find($request->get('item_id'));
+
+        if (! $chat) {
+            return MoonShineJsonResponse::make()->toast('Чат не найден', ToastType::ERROR);
+        }
+
+        $result = $chat->sendTestMessage();
+        $success = (bool) ($result['success'] ?? false);
+
+        return MoonShineJsonResponse::make()->toast(
+            ($success ? '✅ ' : '❌ ') . ($result['message'] ?? 'Ошибка отправки'),
+            $success ? ToastType::SUCCESS : ToastType::ERROR
+        );
     }
 
     public function rules(mixed $item): array

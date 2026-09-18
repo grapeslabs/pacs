@@ -23,7 +23,7 @@ class PersonPhotoImportService
 
         $lastPart = end($parts);
         if (is_numeric($lastPart) && count($parts) > 2) {
-            array_pop($parts); // убираем суффикс _1, _2 и т.д.
+            array_pop($parts);
         }
 
         if (count($parts) < 2) {

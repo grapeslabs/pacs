@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Observers;
 
+use App\Jobs\ProvisionStream;
+use App\Jobs\UpdateStreamProvisioning;
 use App\Models\Storage;
 use App\Models\Stream;
 use App\Services\MediaServerService;
@@ -10,6 +12,8 @@ use App\Services\VideoAnalyticService;
 use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class StreamObserverTest extends TestCase
@@ -38,103 +42,144 @@ class StreamObserverTest extends TestCase
         ], $overrides);
     }
 
-    private function mockMediaServerCreate(string $returnedUid = 'ms-generated-uid'): void
+    private function provision(Stream $stream): void
     {
-        $this->mock(MediaServerService::class, function ($mock) use ($returnedUid) {
-            $mock->shouldReceive('createStream')->once()->andReturn($returnedUid);
-        });
+        (new ProvisionStream($stream->id))->handle(
+            app(MediaServerService::class),
+            app(VideoAnalyticService::class),
+            app(VideoAnalyticLprService::class),
+        );
     }
 
-    public function test_creating_persists_the_uid_returned_by_media_server(): void
+    private function runLastUpdateProvisioning(): void
     {
-        $this->mockMediaServerCreate('ms-generated-uid');
+        Queue::pushed(UpdateStreamProvisioning::class)->last()->handle(
+            app(MediaServerService::class),
+            app(VideoAnalyticService::class),
+            app(VideoAnalyticLprService::class),
+        );
+    }
+
+    public function test_creating_generates_local_uid_without_calling_media_server(): void
+    {
+        Queue::fake();
+
+        $this->mock(MediaServerService::class, function ($mock) {
+            $mock->shouldNotReceive('createStream');
+        });
 
         $stream = Stream::create($this->baseAttributes());
 
-        $this->assertSame('ms-generated-uid', $stream->fresh()->uid);
+        $this->assertTrue(Str::isUuid($stream->fresh()->uid));
+        Queue::assertPushed(ProvisionStream::class);
     }
 
-    public function test_creating_an_inactive_stream_pauses_it_immediately(): void
+    public function test_provision_job_pauses_an_inactive_stream(): void
     {
-        $this->mock(MediaServerService::class, function ($mock) {
-            $mock->shouldReceive('createStream')->once()->andReturn('uid-1');
-            $mock->shouldReceive('pauseStream')->once()->with('uid-1')->andReturn([]);
+        Queue::fake();
+        $stream = Stream::create($this->baseAttributes(['is_active' => false]));
+
+        $this->mock(MediaServerService::class, function ($mock) use ($stream) {
+            $mock->shouldReceive('createStream')->once()->with('rtsp://cam.test/1', $stream->uid, 24);
+            $mock->shouldReceive('pauseStream')->once()->with($stream->uid)->andReturn([]);
         });
 
-        Stream::create($this->baseAttributes(['is_active' => false]));
+        $this->provision($stream);
     }
 
-    public function test_creating_an_active_stream_never_pauses_it(): void
+    public function test_provision_job_never_pauses_an_active_stream(): void
     {
+        Queue::fake();
+        $stream = Stream::create($this->baseAttributes(['is_active' => true]));
+
         $this->mock(MediaServerService::class, function ($mock) {
-            $mock->shouldReceive('createStream')->once()->andReturn('uid-1');
+            $mock->shouldReceive('createStream')->once();
             $mock->shouldNotReceive('pauseStream');
         });
 
-        Stream::create($this->baseAttributes(['is_active' => true]));
+        $this->provision($stream);
     }
 
-    public function test_creating_registers_camera_in_video_analytics_when_enabled(): void
+    public function test_provision_job_registers_camera_in_video_analytics_when_enabled(): void
     {
+        Queue::fake();
+        $stream = Stream::create($this->baseAttributes(['va_options' => ['is_face_detection' => 1]]));
+
         Config::set('services.va.enabled', true);
-        $this->mockMediaServerCreate('uid-1');
-        $this->mock(VideoAnalyticService::class, function ($mock) {
+
+        $this->mock(MediaServerService::class, function ($mock) {
+            $mock->shouldReceive('createStream')->once();
+        });
+        $this->mock(VideoAnalyticService::class, function ($mock) use ($stream) {
             $mock->shouldReceive('cameraCreate')->once()
-                ->with('uid-1', 'Camera 1', 'Entrance', ['is_face_detection' => 1])
+                ->with($stream->uid, 'Camera 1', 'Entrance', ['is_face_detection' => 1])
                 ->andReturn(['ok' => true]);
         });
 
-        Stream::create($this->baseAttributes(['va_options' => ['is_face_detection' => 1]]));
+        $this->provision($stream);
     }
 
-    public function test_creating_skips_video_analytics_and_lpr_when_both_disabled(): void
+    public function test_provision_job_skips_video_analytics_and_lpr_when_both_disabled(): void
     {
-        $this->mockMediaServerCreate('uid-1');
+        Queue::fake();
+        $stream = Stream::create($this->baseAttributes());
+
+        $this->mock(MediaServerService::class, function ($mock) {
+            $mock->shouldReceive('createStream')->once();
+        });
         $this->mock(VideoAnalyticService::class);
         $this->mock(VideoAnalyticLprService::class);
 
-        Stream::create($this->baseAttributes());
+        $this->provision($stream);
 
         $this->addToAssertionCount(1);
     }
 
-    public function test_creating_rolls_back_media_server_stream_and_rethrows_on_failure(): void
+    public function test_provision_job_lets_the_failure_through_so_the_queue_retries(): void
     {
+        Queue::fake();
+        $stream = Stream::create($this->baseAttributes());
+
         $this->mock(MediaServerService::class, function ($mock) {
             $mock->shouldReceive('createStream')->once()->andThrow(new Exception('media server down'));
-            $mock->shouldReceive('deleteStream')->once()->andReturn([]);
+            $mock->shouldNotReceive('deleteStream');
         });
 
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('media server down');
 
-        Stream::create($this->baseAttributes());
+        $this->provision($stream);
     }
 
     public function test_updating_rtsp_pushes_update_to_media_server(): void
     {
         $stream = $this->createPersistedStream();
 
+        $stream->update(['rtsp' => 'rtsp://new.test', 'archive_time' => 48]);
+        Queue::assertPushed(UpdateStreamProvisioning::class);
+
         $this->mock(MediaServerService::class, function ($mock) use ($stream) {
             $mock->shouldReceive('updateStream')->once()->with($stream->uid, 'rtsp://new.test', 48)->andReturn([]);
         });
 
-        $stream->update(['rtsp' => 'rtsp://new.test', 'archive_time' => 48]);
+        $this->runLastUpdateProvisioning();
     }
 
     public function test_updating_is_active_toggles_pause_and_resume(): void
     {
         $stream = $this->createPersistedStream(['is_active' => true]);
 
+        $stream->update(['is_active' => false]);
         $this->mock(MediaServerService::class, function ($mock) use ($stream) {
             $mock->shouldReceive('pauseStream')->once()->with($stream->uid)->andReturn([]);
         });
-        $stream->update(['is_active' => false]);
+        $this->runLastUpdateProvisioning();
 
+        $stream->update(['is_active' => true]);
         $this->mock(MediaServerService::class, function ($mock) use ($stream) {
             $mock->shouldReceive('resumeStream')->once()->with($stream->uid)->andReturn([]);
         });
-        $stream->update(['is_active' => true]);
+        $this->runLastUpdateProvisioning();
     }
 
     public function test_updating_unrelated_field_touches_nothing(): void
@@ -177,6 +222,9 @@ class StreamObserverTest extends TestCase
         ]]);
         Config::set('services.va.enabled', true);
 
+        $stream->update(['va_options' => ['global_enable' => 0]]);
+        Queue::assertPushed(UpdateStreamProvisioning::class);
+
         $this->mock(MediaServerService::class);
         $this->mock(VideoAnalyticService::class, function ($mock) {
             $mock->shouldReceive('cameraCreate')->once()
@@ -188,7 +236,7 @@ class StreamObserverTest extends TestCase
                 ->andReturn(['ok' => true]);
         });
 
-        $stream->update(['va_options' => ['global_enable' => 0]]);
+        $this->runLastUpdateProvisioning();
     }
 
     public function test_disabling_plate_recognition_forces_off_autocollect(): void
@@ -200,6 +248,9 @@ class StreamObserverTest extends TestCase
         ]]);
         Config::set('services.lpr.enabled', true);
 
+        $stream->update(['va_options' => ['global_enable' => 1, 'is_plate_recognition' => 0, 'is_plate_autocollect' => 1]]);
+        Queue::assertPushed(UpdateStreamProvisioning::class);
+
         $this->mock(MediaServerService::class);
         $this->mock(VideoAnalyticLprService::class, function ($mock) {
             $mock->shouldReceive('cameraCreate')->once()
@@ -207,14 +258,12 @@ class StreamObserverTest extends TestCase
                 ->andReturn(['ok' => true]);
         });
 
-        $stream->update(['va_options' => ['global_enable' => 1, 'is_plate_recognition' => 0, 'is_plate_autocollect' => 1]]);
+        $this->runLastUpdateProvisioning();
     }
 
     private function createPersistedStream(array $overrides = []): Stream
     {
-        $this->mock(MediaServerService::class, function ($mock) {
-            $mock->shouldReceive('createStream')->once()->andReturn('uid-'.uniqid());
-        });
+        Queue::fake();
 
         return Stream::create($this->baseAttributes($overrides));
     }

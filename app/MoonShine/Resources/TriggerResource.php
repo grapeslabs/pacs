@@ -2,6 +2,7 @@
 
 namespace App\MoonShine\Resources;
 
+use MoonShine\Laravel\Enums\Ability;
 use App\Models\Bot;
 use App\Models\Stream;
 use App\Models\Tag;
@@ -15,6 +16,7 @@ use Closure;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\Laravel\MoonShineRequest;
 use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
@@ -72,6 +74,13 @@ class TriggerResource extends BaseModelResource
             ])
             ->async()
             ->canSee(fn($item) => (bool) $item->bot_id);
+    }
+
+    public function asyncMethodAbilities(): array
+    {
+        return array_merge(parent::asyncMethodAbilities(), [
+            'sendTest' => Ability::UPDATE,
+        ]);
     }
 
     public function sendTest(MoonShineRequest $request): MoonShineJsonResponse
@@ -285,7 +294,8 @@ class TriggerResource extends BaseModelResource
                         if(evType) { evType.value = ''; evType.dispatchEvent(new Event('change')); }
                         if(evTypeCam) { evTypeCam.value = ''; evTypeCam.dispatchEvent(new Event('change')); }
                     "
-                ]),
+                ])
+                ->required('Выберите тип устройства'),
 
             SelectField::make('Устройство', 'device_id_camera')
                 ->options(Stream::query()->pluck('name', 'id')->toArray())
@@ -297,7 +307,8 @@ class TriggerResource extends BaseModelResource
                     return $item;
                 })
                 ->setValue($item->device_id ?? null)
-                ->icon($magnifierIcon),
+                ->icon($magnifierIcon)
+                ->required('Выберите камеру'),
 
             SelectField::make('Устройство', 'device_id_terminal')
                 ->options(SkudController::query()->where('type', 'pinterm')->pluck('serial_number', 'id')->toArray())
@@ -309,7 +320,8 @@ class TriggerResource extends BaseModelResource
                     return $item;
                 })
                 ->setValue($item->device_id ?? null)
-                ->icon($magnifierIcon),
+                ->icon($magnifierIcon)
+                ->required('Выберите устройство'),
 
             SelectField::make('Устройство', 'device_id_barier')
                 ->options(SkudController::query()->where('type', 'pingate')->pluck('serial_number', 'id')->toArray())
@@ -321,7 +333,8 @@ class TriggerResource extends BaseModelResource
                     return $item;
                 })
                 ->setValue($item->device_id ?? null)
-                ->icon($magnifierIcon),
+                ->icon($magnifierIcon)
+                ->required('Выберите устройство'),
 
             SelectField::make('Устройство', 'device_id_controller')
                 ->options(SkudController::query()->whereIn('type', ['z5rweb', 'ironlogic'])->pluck('serial_number', 'id')->toArray())
@@ -333,7 +346,8 @@ class TriggerResource extends BaseModelResource
                     return $item;
                 })
                 ->setValue($item->device_id ?? null)
-                ->icon($magnifierIcon),
+                ->icon($magnifierIcon)
+                ->required('Выберите устройство'),
 
 
             SelectField::make('Событие', 'event_type')
@@ -349,7 +363,8 @@ class TriggerResource extends BaseModelResource
                         $item->event_type = $value;
                     }
                     return $item;
-                }),
+                })
+                ->required('Выберите событие'),
 
             SelectField::make('Событие', 'event_type_camera')
                 ->options([
@@ -363,7 +378,8 @@ class TriggerResource extends BaseModelResource
                     }
                     return $item;
                 })
-                ->setValue($item->event_type ?? null),
+                ->setValue($item->event_type ?? null)
+                ->required('Выберите событие'),
 
             SelectField::make('Теги', 'tags')
                 ->icon('tag')
@@ -399,8 +415,46 @@ class TriggerResource extends BaseModelResource
 
     public function rules($item): array
     {
+        $deviceTypes = [
+            Trigger::DEVICE_CAMERA,
+            Trigger::DEVICE_TERMINAL,
+            Trigger::DEVICE_BARIER,
+            Trigger::DEVICE_CONTROLLER,
+        ];
+
         return [
             'name' => ['required', 'string', 'max:255'],
+            'device_type' => ['required', 'in:' . implode(',', $deviceTypes)],
+            'device_id_camera' => ['required_if:device_type,' . Trigger::DEVICE_CAMERA, 'nullable', 'exists:streams,id'],
+            'device_id_terminal' => ['required_if:device_type,' . Trigger::DEVICE_TERMINAL, 'nullable', 'integer'],
+            'device_id_barier' => ['required_if:device_type,' . Trigger::DEVICE_BARIER, 'nullable', 'integer'],
+            'device_id_controller' => ['required_if:device_type,' . Trigger::DEVICE_CONTROLLER, 'nullable', 'integer'],
+            'event_type_camera' => [
+                'required_if:device_type,' . Trigger::DEVICE_CAMERA,
+                'nullable',
+                'in:' . implode(',', [Trigger::EVENT_KNOWED, Trigger::EVENT_UNKNOWED]),
+            ],
+            'event_type' => [
+                Rule::requiredIf(fn() => request('device_type') && request('device_type') !== Trigger::DEVICE_CAMERA),
+                'nullable',
+                'in:' . implode(',', [Trigger::EVENT_INCOME, Trigger::EVENT_OUTCOME, Trigger::EVENT_MANUAL, Trigger::EVENT_DENIED]),
+            ],
+            'bot_id' => ['required', 'exists:bots,id'],
+        ];
+    }
+
+    public function validationMessages(): array
+    {
+        return [
+            'name.required' => 'Укажите название триггера',
+            'device_type.required' => 'Выберите тип устройства',
+            'device_id_camera.required_if' => 'Выберите камеру',
+            'device_id_terminal.required_if' => 'Выберите устройство',
+            'device_id_barier.required_if' => 'Выберите устройство',
+            'device_id_controller.required_if' => 'Выберите устройство',
+            'event_type_camera.required_if' => 'Выберите событие',
+            'event_type.required' => 'Выберите событие',
+            'bot_id.required' => 'Выберите бота',
         ];
     }
 

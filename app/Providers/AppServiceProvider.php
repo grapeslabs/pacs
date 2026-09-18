@@ -10,10 +10,13 @@ use App\Observers\PersonObserver;
 use App\Observers\StreamObserver;
 use App\Models\Key;
 use App\Observers\KeyObserver;
+use App\Services\MenuService;
 use App\Services\Otp\OtpManager;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\ServiceProvider;
@@ -37,6 +40,8 @@ class AppServiceProvider extends ServiceProvider
             $config = config('otp');
             return new OtpManager($config);
         });
+
+        $this->app->singleton(MenuService::class);
     }
 
     /**
@@ -50,6 +55,7 @@ class AppServiceProvider extends ServiceProvider
         Person::observe(PersonObserver::class);
         Stream::observe(StreamObserver::class);
         Car::observe(CarObserver::class);
+        $this->invalidateMenuBadgeCacheOnChange();
         if (config('app.docker_domain')) {
             URL::forceScheme('https');
         }
@@ -82,5 +88,26 @@ class AppServiceProvider extends ServiceProvider
                 InlineCss::make('<link rel="preload" href="/css/moonshine-custom.css" as="style">')
             ]);
         });
+    }
+
+    private function invalidateMenuBadgeCacheOnChange(): void
+    {
+        $models = collect($this->app->make(MenuService::class)->sections())
+            ->flatMap(fn (array $section) => $section['items'])
+            ->pluck('model')
+            ->filter()
+            ->unique();
+
+        foreach ($models as $model) {
+            $events = ['created', 'deleted'];
+            if (in_array(SoftDeletes::class, class_uses_recursive($model), true)) {
+                $events[] = 'restored';
+                $events[] = 'forceDeleted';
+            }
+
+            foreach ($events as $event) {
+                $model::$event(static fn () => Cache::forget('menu:count:' . $model));
+            }
+        }
     }
 }

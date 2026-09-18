@@ -66,7 +66,25 @@ return [
             'driver' => 'redis',
             'connection' => 'default',
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => 90,
+            'retry_after' => 120,
+            'block_for' => null,
+            'after_commit' => false,
+        ],
+
+        'redis-actuators' => [
+            'driver' => 'redis',
+            'connection' => 'default',
+            'queue' => 'actuators',
+            'retry_after' => 30,
+            'block_for' => null,
+            'after_commit' => false,
+        ],
+
+        'redis-sync' => [
+            'driver' => 'redis',
+            'connection' => 'default',
+            'queue' => 'sync',
+            'retry_after' => 700,
             'block_for' => null,
             'after_commit' => false,
         ],

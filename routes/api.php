@@ -11,8 +11,13 @@ use \App\Http\Controllers\Api\V1\KeyController;
 
 Route::prefix('skud')->group(function () {
     Route::post('/controller/message', [SkudApiController::class, 'handleControllerMessage']);
-    Route::post('/keys/write', [SkudApiController::class, 'writeKey']);
-    Route::post('/keys/clear', [SkudApiController::class, 'clearKey']);
+
+    Route::middleware(VerifyApiKey::class)->group(function () {
+        Route::post('/keys/write', [SkudApiController::class, 'writeKey']);
+        Route::post('/keys/clear', [SkudApiController::class, 'clearKey']);
+        Route::get('/controllers', [SkudApiController::class, 'getControllers']);
+        Route::get('/controllers/{controllerId}/events', [SkudApiController::class, 'getControllerEvents']);
+    });
 });
 
 Route::prefix('v1')->group(function () {

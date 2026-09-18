@@ -5,8 +5,13 @@ namespace App\Http\Controllers;
 use App\Jobs\GeneratePresenceReport;
 use App\Models\PresenceReport;
 use App\Models\Stream;
+use App\Models\User;
+use App\MoonShine\Pages\PresenceReportPage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use MoonShine\Laravel\Enums\Ability;
+use MoonShine\Laravel\MoonShineAuth;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -15,11 +20,13 @@ class PresenceReportController extends Controller
 {
     public function generate(Request $request): JsonResponse
     {
+        $this->authorizeAccess();
+
         $data = $request->validate([
             'date_from' => ['required', 'date'],
             'date_to' => ['required', 'date', 'after_or_equal:date_from'],
-            'entry_camera' => ['required', 'string'],
-            'exit_camera' => ['required', 'string'],
+            'entry_camera' => ['required', Rule::exists('streams', 'uid')->whereNull('deleted_at')],
+            'exit_camera' => ['required', Rule::exists('streams', 'uid')->whereNull('deleted_at')],
             'type' => ['required', 'in:day,week,month,year'],
             'break_minutes' => ['required', 'integer', 'min:1'],
             'person_id' => ['nullable', 'array'],
@@ -35,23 +42,34 @@ class PresenceReportController extends Controller
         $data['entry_camera_name'] = $cameraNames[$data['entry_camera']] ?? $data['entry_camera'];
         $data['exit_camera_name'] = $cameraNames[$data['exit_camera']] ?? $data['exit_camera'];
 
+        $hash = md5(json_encode($data));
+
+        $existing = PresenceReport::query()
+            ->where('params_hash', $hash)
+            ->where('user_id', auth()->id())
+            ->whereIn('status', [PresenceReport::STATUS_PENDING, PresenceReport::STATUS_PROCESSING])
+            ->where('created_at', '>', now()->subMinutes(15))
+            ->first();
+
+        if ($existing) {
+            return response()->json(['report_id' => $existing->id]);
+        }
+
         $report = PresenceReport::create([
             'user_id' => auth()->id(),
             'params' => $data,
+            'params_hash' => $hash,
             'status' => PresenceReport::STATUS_PENDING,
         ]);
 
-        if (config('queue.default') === 'sync') {
-            GeneratePresenceReport::dispatchAfterResponse($report->id);
-        } else {
-            GeneratePresenceReport::dispatch($report->id);
-        }
-
+        GeneratePresenceReport::dispatch($report->id);
         return response()->json(['report_id' => $report->id]);
     }
 
     public function status(PresenceReport $report): JsonResponse
     {
+        $this->authorizeReport($report);
+
         $payload = ['status' => $report->status];
 
         if ($report->status === PresenceReport::STATUS_DONE) {
@@ -68,6 +86,8 @@ class PresenceReportController extends Controller
 
     public function export(Request $request, PresenceReport $report)
     {
+        $this->authorizeReport($report);
+
         abort_unless($report->status === PresenceReport::STATUS_DONE && $report->result, 404);
 
         $model = $report;
@@ -94,6 +114,25 @@ class PresenceReportController extends Controller
         (new Xlsx($spreadsheet))->save($tmp);
 
         return response()->download($tmp, $fileName)->deleteFileAfterSend(true);
+    }
+
+    private function authorizeAccess(): User
+    {
+        $user = MoonShineAuth::getGuard()->user();
+
+        abort_if(
+            !$user instanceof User || !$user->hasPermission(PresenceReportPage::class, Ability::VIEW),
+            403
+        );
+
+        return $user;
+    }
+
+    private function authorizeReport(PresenceReport $report): void
+    {
+        $user = $this->authorizeAccess();
+
+        abort_unless($report->user_id === null || $report->user_id === $user->getKey(), 403);
     }
 
     protected function buildResultSheet($sheet, array $result): void

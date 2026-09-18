@@ -133,7 +133,7 @@ class KeyControllerTest extends TestCase
         ], $this->headers)->assertJsonValidationErrors(['key']);
     }
 
-    public function test_store_rejects_key_value_reused_from_a_soft_deleted_key(): void
+    public function test_store_allows_reusing_the_value_of_a_soft_deleted_key(): void
     {
         $deleted = Key::factory()->create(['key' => 'WAS-DELETED']);
         $deleted->delete();
@@ -143,7 +143,10 @@ class KeyControllerTest extends TestCase
             'key' => 'WAS-DELETED',
             'type' => 'Mifare',
             'person_id' => $person->id,
-        ], $this->headers)->assertJsonValidationErrors(['key']);
+        ], $this->headers)->assertStatus(201);
+
+        $this->assertSame(1, Key::query()->where('key', 'WAS-DELETED')->count());
+        $this->assertSame(2, Key::withTrashed()->where('key', 'WAS-DELETED')->count());
     }
 
     public function test_update_changes_only_provided_fields(): void

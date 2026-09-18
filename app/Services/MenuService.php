@@ -49,11 +49,16 @@ use App\MoonShine\Resources\TerminalResource;
 use App\MoonShine\Resources\TriggerResource;
 use App\MoonShine\Resources\UnknownReportResource;
 use App\MoonShine\Resources\VideoStreamResource;
+use Illuminate\Support\Facades\Cache;
 use MoonShine\Laravel\Enums\Ability;
 use MoonShine\Laravel\Pages\Page;
 
 class MenuService
 {
+    private ?array $sections = null;
+
+    private array $urls = [];
+
     public function home(): array
     {
         return [
@@ -65,7 +70,7 @@ class MenuService
 
     public function sections(): array
     {
-        return [
+        return $this->sections ??= [
             [
                 'key' => 'video',
                 'label' => 'Видео',
@@ -229,15 +234,19 @@ class MenuService
 
     private function url(string $class): string
     {
-        try {
-            if (is_subclass_of($class, Page::class)) {
-                return toPage($class);
-            }
-
-            return app($class)->getUrl();
-        } catch (\Throwable) {
-            return '#';
+        if (isset($this->urls[$class])) {
+            return $this->urls[$class];
         }
+
+        try {
+            $url = is_subclass_of($class, Page::class)
+                ? toPage($class)
+                : app($class)->getUrl();
+        } catch (\Throwable) {
+            $url = '#';
+        }
+
+        return $this->urls[$class] = $url;
     }
 
     /**
@@ -270,8 +279,6 @@ class MenuService
             return false;
         }
 
-        // Сравниваем только path: за прокси (https) схема/хост текущего запроса
-        // и сгенерированного URL могут различаться, и подсветка пропадает
         $current = rtrim((string) (parse_url((string) request()->url(), PHP_URL_PATH) ?: '/'), '/');
         $target = rtrim((string) (parse_url($url, PHP_URL_PATH) ?: '/'), '/');
 
@@ -287,7 +294,11 @@ class MenuService
     private function count(string $model): ?int
     {
         try {
-            return $model::count();
+            return (int) Cache::remember(
+                'menu:count:' . $model,
+                now()->addSeconds(60),
+                static fn (): int => $model::count(),
+            );
         } catch (\Throwable) {
             return null;
         }

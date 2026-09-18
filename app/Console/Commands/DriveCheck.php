@@ -28,10 +28,21 @@ class DriveCheck extends Command
         if(!$lock->get()) {
             return;
         }
+
+        try {
+            $this->check($mss, $vss);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    protected function check(MediaServerService $mss, VideoAnalyticService $vss): void
+    {
+        $vaEnabled = (bool) config('services.va.enabled');
         $is_autoresume = Setting::where('key', 'stream_autoresume')->value('value')??true;
         $is_stoped = Cache::get('drive_limit_stoped', false);
         $is_notificated = Cache::get('drive_limit_notificated', false);
-        $limitMB = (int) Setting::where('key', 'drive_limit')->value('value')??100;
+        $limitMB = (int) (Setting::where('key', 'drive_limit')->value('value') ?? 0);
         $limitBytes = $limitMB * 1048576;
         $freeBytes = disk_free_space(app_path());
         if (!$is_notificated && $freeBytes < ($limitBytes*1.15)) {
@@ -53,7 +64,10 @@ class DriveCheck extends Command
             $streams = Stream::all();
             foreach ($streams as $stream) {
                 $mss->pauseStream($stream->uid);
-                $vss->cameraDelete($stream->uid);
+
+                if ($vaEnabled) {
+                    $vss->cameraDelete($stream->uid);
+                }
             }
             Cache::forever('drive_limit_stoped', true);
             $notification = new SystemNotification(
@@ -69,8 +83,9 @@ class DriveCheck extends Command
                 foreach ($streams as $stream) {
                     if($stream->is_active) {
                         $mss->resumeStream($stream->uid);
-                        if($stream->is_recognize) {
-                            $vss->cameraCreate($stream->storage_id, $stream->uid, $stream->title, $stream->location);
+
+                        if ($vaEnabled) {
+                            $vss->cameraCreate($stream->uid, $stream->name, $stream->location, $stream->va_options ?? []);
                         }
                     }
                 }
@@ -85,6 +100,5 @@ class DriveCheck extends Command
                 Cache::forever('drive_limit_notificated', false);
             }
         }
-        $lock->release();
     }
 }

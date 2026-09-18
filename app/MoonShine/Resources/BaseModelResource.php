@@ -3,6 +3,7 @@
 namespace App\MoonShine\Resources;
 
 use App\MoonShine\Handlers\CsvExportHandler;
+use App\Models\ExportTask;
 use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Traits\HasUndoNotification;
 use Illuminate\Database\Eloquent\Model;
@@ -51,6 +52,13 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
 
     /** Полный заголовок сайдбара редактирования, напр. «Редактирование ключа». */
     protected ?string $editModalTitle = null;
+
+    public function asyncMethodAbilities(): array
+    {
+        return [
+            'restoreWithUndo' => Ability::RESTORE,
+        ];
+    }
 
     public function createButtonLabel(): string
     {
@@ -698,23 +706,29 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
 
         $csvHandler = CsvExportHandler::make('Экспорт CSV')
             ->csv()
-            ->filename('Экспорт ' . $this->getTitle())
+            ->disk('exports')
             ->setResource($this);
 
         $excelHandler = ExportHandler::make('Экспорт Excel')
-            ->filename('Экспорт ' . $this->getTitle())
+            ->disk('exports')
             ->setResource($this);
 
         $csvHandler->modifyButton(function (ActionButtonContract $button) {
             return $button->customView('null');
         });
 
-        $excelHandler->modifyButton(function (ActionButtonContract $button) use ($csvHandler) {
+        $excelHandler->modifyButton(function (ActionButtonContract $button) {
             return $button
                 ->customView('components.export-button')
                 ->customAttributes([
-                    'data-csv-url' => $csvHandler->getUrl(),
-                    'data-excel-url' => $button->getUrl(),
+                    'data-csv-url' => route('export-tasks.enqueue', [
+                        'resource' => $this->getUriKey(),
+                        'format' => ExportTask::FORMAT_CSV,
+                    ]),
+                    'data-excel-url' => route('export-tasks.enqueue', [
+                        'resource' => $this->getUriKey(),
+                        'format' => ExportTask::FORMAT_XLSX,
+                    ]),
                 ]);
         });
 
@@ -722,6 +736,17 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             ->add($excelHandler)
             ->add($csvHandler);
     }
+    public function delete(mixed $item, ?FieldsContract $fields = null): bool
+    {
+        if (! $this->softDelete) {
+            return parent::delete($item, $fields);
+        }
+
+        $item = $this->beforeDeleting($item);
+
+        return (bool) tap($item->delete(), fn (): mixed => $this->afterDeleted($item));
+    }
+
     protected function afterDeleted(mixed $item): mixed
     {
         if($this->softDelete) {

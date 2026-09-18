@@ -32,7 +32,7 @@ class AllPersonPhotosExportService
         }
 
         $tsvLines = [];
-        $usedNames = []; // для предотвращения коллизий имён внутри архива
+        $usedNames = [];
         $totalFiles = 0;
 
         foreach ($persons as $person) {
@@ -65,7 +65,6 @@ class AllPersonPhotosExportService
                 $absolutePath = $disk->path($relativePath);
                 $extension = pathinfo($relativePath, PATHINFO_EXTENSION);
 
-                // Уникальное имя файла в архиве с учётом возможных дубликатов
                 if ($counter !== null) {
                     $newNameBase = $baseName . '_' . $counter;
                     $counter++;

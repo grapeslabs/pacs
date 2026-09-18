@@ -416,7 +416,6 @@ const onTrackMouseMove = (e) => {
     const minPan = -(trackWidth - viewportWidth);
 
     panX.value = Math.max(minPan, Math.min(0, newPanX));
-    console.log(panX.value);
 };
 
 const onTrackMouseUp = (e) => {

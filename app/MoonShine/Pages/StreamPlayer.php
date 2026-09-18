@@ -46,12 +46,12 @@ class StreamPlayer extends Page
                 try {
                     $faces = VideoAnalyticReport::with('person')
                         ->where('camera_id', $stream->uid)
-                        ->whereDate('datetime', today())
+                        ->whereBetween('datetime', [today()->startOfDay(), today()->endOfDay()])
                         ->orderByDesc('datetime')
                         ->limit(50)
                         ->get()
                         ->map(function ($e) {
-                            $person = optional($e->person)->fio ?? optional($e->person)->name ?? null;
+                            $person = $e->person?->getFullName();
 
                             return [
                                 'type'     => 'face',
@@ -68,7 +68,7 @@ class StreamPlayer extends Page
             }
             try {
                 $plates = CarPassageEvent::where('camera_id', $stream->uid)
-                    ->whereDate('recognized_at', today())
+                    ->whereBetween('recognized_at', [today()->startOfDay(), today()->endOfDay()])
                     ->orderByDesc('recognized_at')
                     ->limit(50)
                     ->get()
