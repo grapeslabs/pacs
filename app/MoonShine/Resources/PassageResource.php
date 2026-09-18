@@ -43,35 +43,21 @@ class PassageResource extends BaseModelResource
                 ->required(),
 
             Box::make('Въезд', [
-                Grid::make([
-                    Column::make([
-                        SelectField::make('Исп. устройство', 'entry_actuator_device_id')
-                            ->nullable()
-                            ->options($this->actuatorDeviceOptions()),
-                    ], colSpan: 4, adaptiveColSpan: 12),
-
-                    Column::make([
-                        SelectField::make('Камеры', 'entryCameras')
-                            ->multiple()
-                            ->options($this->lprCameraOptions()),
-                    ], colSpan: 8, adaptiveColSpan: 12),
-                ]),
+                SelectField::make('Исп. устройство', 'entry_actuator_device_id')
+                    ->nullable()
+                    ->options($this->actuatorDeviceOptions()),
+                SelectField::make('Камеры', 'entryCameras')
+                    ->multiple()
+                    ->options($this->lprCameraOptions()),
             ]),
 
             Box::make('Выезд', [
-                Grid::make([
-                    Column::make([
-                        SelectField::make('Исп. устройство', 'exit_actuator_device_id')
-                            ->nullable()
-                            ->options($this->actuatorDeviceOptions()),
-                    ], colSpan: 4, adaptiveColSpan: 12),
-
-                    Column::make([
-                        SelectField::make('Камеры', 'exitCameras')
-                            ->multiple()
-                            ->options($this->lprCameraOptions()),
-                    ], colSpan: 8, adaptiveColSpan: 12),
-                ]),
+                SelectField::make('Исп. устройство', 'exit_actuator_device_id')
+                    ->nullable()
+                    ->options($this->actuatorDeviceOptions()),
+                SelectField::make('Камеры', 'exitCameras')
+                    ->multiple()
+                    ->options($this->lprCameraOptions()),
             ]),
 
             CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию')->nullable(),

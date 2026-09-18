@@ -17,6 +17,7 @@ use App\MoonShine\Fields\CustomTextarea;
 use App\MoonShine\Fields\SelectField;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Switcher;
 use MoonShine\UI\Fields\Text;
@@ -35,6 +36,7 @@ class PersonPassageRuleResource extends BaseModelResource
 
     private array $oldControllerIds = [];
     private array|null $oldScope = null;
+    private bool $syncQueued = false;
 
 
     public function indexFields(): iterable
@@ -316,6 +318,18 @@ class PersonPassageRuleResource extends BaseModelResource
             ->onConnection('redis-sync')
             ->delay(now()->addSeconds(10));
 
-        toast('Синхронизация запущена, изменения применятся в течение минуты', ToastType::INFO);
+        $this->syncQueued = true;
+    }
+
+    public function modifySaveResponse(MoonShineJsonResponse $response): MoonShineJsonResponse
+    {
+        if ($this->syncQueued) {
+            $response->toast(
+                'Сохранено. Синхронизация запущена, изменения применятся в течение минуты',
+                ToastType::SUCCESS,
+            );
+        }
+
+        return $response;
     }
 }

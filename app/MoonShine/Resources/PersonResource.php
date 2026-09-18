@@ -565,7 +565,7 @@ class PersonResource extends BaseModelResource
                     PersonBindingField::make('', 'person_card')
                         ->person($personName, $personPhoto, 'Ключ привяжется к этой персоне')
                         ->withoutWrapper(),
-                    Hidden::make('person_id')->default((int) $itemId),
+                    Hidden::make('person_id')->default((string) $itemId),
                     CustomText::make('Ключ', 'key')
                         ->leadingIcon(file_get_contents(public_path('icons/btn-addkey.svg')))
                         ->placeholder('XXXXXXXXXXXX')
@@ -581,7 +581,7 @@ class PersonResource extends BaseModelResource
                         ->default('Mifare'),
                 ]
             )
-            ->submit('Сохранить', ['class' => 'btn-primary', 'style' => 'margin-left: 1.5rem']);
+            ->submit('Сохранить', ['class' => 'js-form-sidebar-submit']);
     }
 
     public function saveKey(MoonShineRequest $request)

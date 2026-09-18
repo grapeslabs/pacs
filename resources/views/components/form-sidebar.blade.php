@@ -9,9 +9,12 @@
         open: false,
         isDirty: false,
         isSubmitting: false,
+        hasErrors: false,
+        watchdog: null,
         modalId: '{{ $name }}',
         modalTitle: '{{ is_callable($title) ? $title() : $title }}',
         modalSubtitle: '{{ is_callable($subtitle) ? $subtitle() : $subtitle }}',
+        modalSubmitLabel: 'Сохранить',
 
         registerInStack() { Alpine.store('overlays')?.register(this.modalId, () => this.tryClose()); },
         unregisterFromStack() { Alpine.store('overlays')?.unregister(this.modalId); },
@@ -21,8 +24,14 @@
             this.open ? this.registerInStack() : this.unregisterFromStack();
             this.toggleBodyScroll();
             if(!this.open) {
-                this.isSubmitting = false;
+                this.stopSubmitting();
             }
+        },
+
+        stopSubmitting() {
+            clearTimeout(this.watchdog);
+            this.watchdog = null;
+            this.isSubmitting = false;
         },
 
         tryClose() {
@@ -38,7 +47,7 @@
             this.open = false;
             setTimeout(() => {
                 this.isDirty = false;
-                this.isSubmitting = false;
+                this.stopSubmitting();
             }, 300);
             this.unregisterFromStack();
             this.toggleBodyScroll();
@@ -46,7 +55,7 @@
 
         forceClose() {
             this.isDirty = false;
-            this.isSubmitting = false;
+            this.stopSubmitting();
             this.closeModal();
         },
 
@@ -54,10 +63,60 @@
             if (this.isSubmitting) return;
 
             const form = document.querySelector(`#${this.modalId}_content form`);
-            if (form) {
-                this.isSubmitting = true;
-                form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+            if (!form) return;
+
+            const invalid = this.firstInvalidField(form);
+            if (invalid) {
+                this.hasErrors = true;
+                invalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                (invalid.matches('input, select, textarea') ? invalid : invalid.querySelector('input, select, textarea'))?.focus();
+                return;
             }
+
+            this.isSubmitting = true;
+            this.watchdog = setTimeout(() => { this.stopSubmitting(); }, 20000);
+            form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        },
+
+        isVisible(el) {
+            return !!(el && el.isConnected && el.offsetParent !== null);
+        },
+
+        firstInvalidField(form) {
+            let invalid = null;
+
+            (window.selectFieldsRegistry || []).forEach(entry => {
+                if (!this.isVisible(entry.el) || entry.el.closest('form') !== form) return;
+                if (!entry.validateNow() && invalid === null) {
+                    invalid = entry.el;
+                }
+            });
+
+            (window.cdfFields || []).forEach(field => {
+                if (!this.isVisible(field.$el) || !form.contains(field.$el)) return;
+                field.touched = true;
+                field.validate();
+                if (field.error !== null && invalid === null) {
+                    invalid = field.$el;
+                }
+            });
+
+            if (invalid === null) {
+                invalid = [...form.querySelectorAll('.ctf-error, .cnf-error, .cpf-error, .cdf-error, .cta-error, .select-error')].find(el => this.isVisible(el)) ?? null;
+            }
+
+            return invalid;
+        },
+
+        syncErrorState() {
+            const content = document.getElementById(this.modalId + '_content');
+            const form = content && content.querySelector('form');
+            if (!form) {
+                this.hasErrors = false;
+                return;
+            }
+
+            this.hasErrors = [...form.querySelectorAll('.ctf-error, .cnf-error, .cpf-error, .cdf-error, .cta-error, .select-error')].some(el => this.isVisible(el));
         },
 
         toggleBodyScroll() {
@@ -71,13 +130,16 @@
         init() {
             const c = document.getElementById(this.modalId + '_content');
             if (c) {
-                this.observer = new MutationObserver(() => {
-                    this.syncTitleFromContent();
-                    if (this.isSubmitting) {
-                        this.isSubmitting = false;
+                this.observer = new MutationObserver((mutations) => {
+                    if (mutations.some(m => m.type === 'childList')) {
+                        this.syncTitleFromContent();
+                        if (this.isSubmitting) {
+                            this.stopSubmitting();
+                        }
                     }
+                    this.syncErrorState();
                 });
-                this.observer.observe(c, { childList: true, subtree: true });
+                this.observer.observe(c, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
             }
         },
 
@@ -101,6 +163,10 @@
             modalSubtitle = (typeof $event.detail === 'object' && typeof $event.detail.subtitle !== 'undefined')
                 ? $event.detail.subtitle
                 : '{{ is_callable($subtitle) ? $subtitle() : $subtitle }}';
+            modalSubmitLabel = (typeof $event.detail === 'object' && $event.detail.submitLabel)
+                ? $event.detail.submitLabel
+                : 'Сохранить';
+            hasErrors = false;
             toggleModal();
         }
     "
@@ -109,7 +175,7 @@
             if (event.detail.type === 'success' || event.detail.type === 'warning') {
                 forceClose();
             } else if (event.detail.type === 'error') {
-                isSubmitting = false;
+                stopSubmitting();
             }
         }
     "
@@ -158,7 +224,9 @@
 
                     <div style="flex: 1 1 0%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; position: relative;"
                          :style="isSubmitting ? { opacity: 0.6, pointerEvents: 'none' } : {}">
-                        <div id="{{ $name }}_content" style="padding: 1.5rem;" @input="isDirty = true" @change="isDirty = true">
+                        <div id="{{ $name }}_content" style="padding: 1.5rem;"
+                             @input="isDirty = true; $nextTick(() => syncErrorState())"
+                             @change="isDirty = true; $nextTick(() => syncErrorState())">
                             {{ $slot ?? '' }}
                         </div>
                         <style>#{{ $name }}_content .js-form-sidebar-submit { display: none !important; }</style>
@@ -173,10 +241,10 @@
                             Отмена
                         </button>
                         <button @click="saveAndClose()"
-                                :disabled="isSubmitting"
+                                :disabled="isSubmitting || hasErrors"
                                 type="button"
                                 style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.5rem; border-radius: 9999px; background-color: #6972F0; color: #ffffff; cursor: pointer; font-weight: 700; border: none; font-size: 0.875rem; transition: all .2s;"
-                                :style="isSubmitting ? { opacity: 0.7, cursor: 'not-allowed' } : {}">
+                                :style="(isSubmitting || hasErrors) ? { opacity: 0.7, cursor: 'not-allowed' } : {}">
 
                             <svg x-show="!isSubmitting" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M16.6673 5L7.50065 14.1667L3.33398 10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -187,7 +255,7 @@
                                 <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
 
-                            <span x-text="isSubmitting ? 'Сохранение...' : 'Сохранить'"></span>
+                            <span x-text="isSubmitting ? 'Сохранение...' : modalSubmitLabel"></span>
                         </button>
                     </div>
 

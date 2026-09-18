@@ -210,7 +210,7 @@ class CarEventResource extends BaseModelResource
             ->async()
             ->fields([...app(CarResource::class)->formFields()])
             ->fill(['license_plate' => $item->plate_text])
-            ->submit('Сохранить', ['class' => 'btn-primary'])
+            ->submit('Сохранить', ['class' => 'js-form-sidebar-submit'])
             ->render();
     }
 

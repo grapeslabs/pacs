@@ -273,7 +273,7 @@ class UnknownReportResource extends BaseModelResource
                     ])->columnSpan(6)
                 ])
             ])
-            ->submit('Сохранить', ['class' => 'btn-primary']);
+            ->submit('Сохранить', ['class' => 'js-form-sidebar-submit']);
     }
 
     public function savePerson(MoonShineRequest $request)

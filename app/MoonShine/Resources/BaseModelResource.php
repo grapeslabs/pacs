@@ -736,6 +736,17 @@ class BaseModelResource extends ModelResource implements HasImportExportContract
             ->add($excelHandler)
             ->add($csvHandler);
     }
+    public function delete(mixed $item, ?FieldsContract $fields = null): bool
+    {
+        if (! $this->softDelete) {
+            return parent::delete($item, $fields);
+        }
+
+        $item = $this->beforeDeleting($item);
+
+        return (bool) tap($item->delete(), fn (): mixed => $this->afterDeleted($item));
+    }
+
     protected function afterDeleted(mixed $item): mixed
     {
         if($this->softDelete) {

@@ -104,7 +104,7 @@
             document.addEventListener('submit', function(event) {
                 window.cdfFields = (window.cdfFields || []).filter(f => document.contains(f.$el));
 
-                const fields = window.cdfFields.filter(f => event.target.contains(f.$el));
+                const fields = window.cdfFields.filter(f => event.target.contains(f.$el) && f.$el.offsetParent !== null);
                 fields.forEach(f => {
                     f.touched = true;
                     f.validate();
