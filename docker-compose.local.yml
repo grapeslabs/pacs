@@ -16,6 +16,7 @@ services:
     volumes:
       - ./:/var/www/html:delegated
       - ./analytic/thumbnails:/var/www/html/public/analytic-storage/thumbnails
+      - ./analytic/crossings:/var/www/html/public/analytic-storage/crossings
       - ./lpr/events:/var/www/html/public/lpr-events
     environment:
       TZ: "Europe/Moscow"
@@ -310,6 +311,7 @@ services:
     volumes:
       - ./test:/app/captured_images
       - ./analytic/thumbnails:/app/thumbnails
+      - ./analytic/crossings:/app/crossings
       - ./analytic/logs/server:/app/logs
     depends_on:
       analytic-api:

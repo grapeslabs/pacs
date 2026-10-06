@@ -38,6 +38,7 @@ class Trigger extends Model
     public const EVENT_OUTCOME = 'outcome';
     public const EVENT_MANUAL = 'manual';
     public const EVENT_DENIED = 'denied';
+    public const EVENT_CROSSING = 'crossing';
 
 
     public function stream(): BelongsTo

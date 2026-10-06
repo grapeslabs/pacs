@@ -40,6 +40,7 @@ class StreamMotionZonesEditorPage extends Page
                         ->saveUrl($resource->getIndexPageUrl())
                         ->disableMultiType()
                         ->disablePolygons()
+                        ->disableRectangles()
                         ->saveText('Зоны детекции движения успешно сохранены!')
                 ])
                 ->hideSubmit()

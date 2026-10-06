@@ -110,7 +110,7 @@ class VideoAnalyticServiceTest extends TestCase
             $this->assertSame('rtsp://media.test:8554/rtsp/cam-1', $r['stream_info']['url']);
             $this->assertSame('Camera 1', $r['stream_info']['name']);
             $this->assertSame(0, $r['detection_face']['is_detection']);
-            $this->assertSame(75, $r['detection_face']['threshold']);
+            $this->assertSame(25, $r['detection_face']['threshold']);
             $this->assertSame([], $r['detection_face']['zone']);
             $this->assertSame([], $r['detection_figure']['zones']);
 
@@ -125,7 +125,6 @@ class VideoAnalyticServiceTest extends TestCase
         $this->service()->cameraCreate('cam-1', vaOptions: [
             'is_face_detection' => true,
             'is_face_recognition' => true,
-            'face_recognition_sensitivity' => 90,
             'has_face_detection_zone' => true,
             'face_detection_zone' => ['x1' => 0.1, 'y1' => 0.2, 'x2' => 0.9, 'y2' => 0.8],
             'video_width' => 1000,
@@ -135,7 +134,7 @@ class VideoAnalyticServiceTest extends TestCase
         Http::assertSent(function (Request $r) {
             $this->assertSame(1, $r['detection_face']['is_detection']);
             $this->assertSame(1, $r['detection_face']['is_recognize']);
-            $this->assertSame(90, $r['detection_face']['threshold']);
+            $this->assertSame(25, $r['detection_face']['threshold']);
             $this->assertSame(
                 ['x1' => 100, 'y1' => 100, 'x2' => 900, 'y2' => 400],
                 $r['detection_face']['zone'],
@@ -178,7 +177,7 @@ class VideoAnalyticServiceTest extends TestCase
         Http::assertSent(fn (Request $r) => $r['detection_face']['zone'] === []);
     }
 
-    public function test_camera_create_converts_rectangle_motion_zones_to_pixels(): void
+    public function test_camera_create_sends_normalized_lines(): void
     {
         Http::fake(['va.test/*' => Http::response(['ok' => true], 200)]);
 
@@ -188,52 +187,40 @@ class VideoAnalyticServiceTest extends TestCase
             'has_motion_detection_zone' => true,
             'motion_detection_zones' => [
                 ['type' => 'rectangles', 'zones' => [['x1' => 0.0, 'y1' => 0.0, 'x2' => 0.5, 'y2' => 0.5]]],
+                ['type' => 'lines', 'zones' => [
+                    ['x1' => 0.1, 'y1' => 0.2, 'x2' => 0.3, 'y2' => 0.4],
+                    ['x1' => 0.99, 'y1' => 0.14, 'x2' => 1.2, 'y2' => 0.123456],
+                ]],
             ],
             'video_width' => 1000,
-            'video_height' => 1000,
+            'video_height' => 500,
         ]);
 
         Http::assertSent(function (Request $r) {
             $this->assertSame(1, $r['detection_figure']['is_active']);
             $this->assertSame('B', $r['detection_figure']['direction']);
-            $this->assertSame(
-                ['rectangles' => [['x1' => 0, 'y1' => 0, 'x2' => 500, 'y2' => 500]]],
-                $r['detection_figure']['zones'],
-            );
+            $this->assertSame([
+                ['x1' => 0.1, 'y1' => 0.2, 'x2' => 0.3, 'y2' => 0.4],
+                ['x1' => 0.99, 'y1' => 0.14, 'x2' => 1.0, 'y2' => 0.1235],
+            ], $r['detection_figure']['zones']);
 
             return true;
         });
     }
 
-    public function test_camera_create_converts_polygon_motion_zones_remapping_point_keys(): void
+    public function test_camera_create_skips_lines_when_zone_disabled(): void
     {
         Http::fake(['va.test/*' => Http::response(['ok' => true], 200)]);
 
         $this->service()->cameraCreate('cam-1', vaOptions: [
-            'has_motion_detection_zone' => true,
+            'is_motion_detection' => true,
+            'has_motion_detection_zone' => false,
             'motion_detection_zones' => [
-                [
-                    'type' => 'polygons',
-                    'zones' => [
-                        [
-                            ['x1' => 0.1, 'y1' => 0.1],
-                            ['x1' => 0.5, 'y1' => 0.9],
-                        ],
-                    ],
-                ],
+                ['type' => 'lines', 'zones' => [['x1' => 0.1, 'y1' => 0.2, 'x2' => 0.3, 'y2' => 0.4]]],
             ],
-            'video_width' => 100,
-            'video_height' => 100,
         ]);
 
-        Http::assertSent(function (Request $r) {
-            $this->assertSame(
-                ['polygons' => [[['x' => 10, 'y' => 10], ['x' => 50, 'y' => 90]]]],
-                $r['detection_figure']['zones'],
-            );
-
-            return true;
-        });
+        Http::assertSent(fn (Request $r) => $r['detection_figure']['zones'] === []);
     }
 
     public function test_camera_delete_posts_cam_id(): void

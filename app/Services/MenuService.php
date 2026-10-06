@@ -33,6 +33,7 @@ use App\MoonShine\Resources\CarEventResource;
 use App\MoonShine\Resources\CarPassageRuleResource;
 use App\MoonShine\Resources\CarResource;
 use App\MoonShine\Resources\ControllerResource;
+use App\MoonShine\Resources\CrossingEventResource;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\GuestResource;
 use App\MoonShine\Resources\KeyResource;
@@ -115,6 +116,7 @@ class MenuService
                     ['label' => 'Отчёты автомобилей', 'class' => CarEventResource::class, 'icon' => $this->iconFile('plate'), 'feature' => 'services.lpr.enabled'],
                     ['label' => 'Отчёты проезда', 'class' => PassageEventResource::class, 'icon' => $this->iconFile('document'), 'feature' => 'services.lpr.enabled'],
                     ['label' => 'Отчёты по событиям', 'class' => EventReportResource::class, 'icon' => $this->iconFile('pulse'), 'feature' => 'services.va.enabled'],
+                    ['label' => 'Отчёты пересечений', 'class' => CrossingEventResource::class, 'icon' => $this->iconFile('route'), 'feature' => 'services.va.enabled'],
                     ['label' => 'Отчёты по персонам', 'class' => PeopleReportResource::class, 'icon' => $this->iconFile('user-list'), 'feature' => 'services.va.enabled'],
                     ['label' => 'Отчёты по неизвестным', 'class' => UnknownReportResource::class, 'icon' => $this->iconFile('suspension'), 'feature' => 'services.va.enabled'],
                     ['label' => 'Отчёт по пребыванию', 'class' => PresenceReportPage::class, 'icon' => $this->iconFile('document'), 'feature' => 'services.va.enabled'],

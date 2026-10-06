@@ -26,6 +26,14 @@ return [
             'enabled' => true,
         ],
 
+        'crossings' => [
+            'label' => 'Обработка пересечений',
+            'path' => storage_path('logs/crossings'),
+            'format' => 'laravel',
+            'writable' => true,
+            'enabled' => (bool) env('ANALYTIC_ENABLED', false),
+        ],
+
         'lpr-rules' => [
             'label' => 'Обработка ГРЗ',
             'path' => storage_path('logs/lpr-rules'),
