@@ -183,6 +183,7 @@ class TriggerResource extends BaseModelResource
             Trigger::EVENT_OUTCOME => 'Выход',
             Trigger::EVENT_MANUAL => 'Открыто вручную',
             Trigger::EVENT_DENIED => 'Отказано',
+            Trigger::EVENT_CROSSING => 'Пересечение линии',
         ][$type] ?? (string) $type;
     }
 
@@ -210,6 +211,7 @@ class TriggerResource extends BaseModelResource
                 ->options([
                     Trigger::EVENT_KNOWED   => ['label' => 'Появление известного лица', 'color' => 'green'],
                     Trigger::EVENT_UNKNOWED => ['label' => 'Появление неизвестного лица', 'color' => 'yellow'],
+                    Trigger::EVENT_CROSSING => ['label' => 'Пересечение линии', 'color' => 'orange'],
                     Trigger::EVENT_INCOME   => ['label' => 'Вход', 'color' => 'gray'],
                     Trigger::EVENT_OUTCOME  => ['label' => 'Выход', 'color' => 'gray'],
                     Trigger::EVENT_MANUAL   => ['label' => 'Открыто вручную', 'color' => 'blue'],
@@ -221,6 +223,7 @@ class TriggerResource extends BaseModelResource
                             WHEN '" . Trigger::EVENT_OUTCOME . "' THEN 'Выход'
                             WHEN '" . Trigger::EVENT_DENIED . "' THEN 'Отказано'
                             WHEN '" . Trigger::EVENT_MANUAL . "' THEN 'Открыто вручную'
+                            WHEN '" . Trigger::EVENT_CROSSING . "' THEN 'Пересечение линии'
                             WHEN '" . Trigger::EVENT_KNOWED . "' THEN 'Появление известного лица'
                             WHEN '" . Trigger::EVENT_UNKNOWED . "' THEN 'Появление неизвестного лица'
                             ELSE $column
@@ -370,6 +373,7 @@ class TriggerResource extends BaseModelResource
                 ->options([
                     Trigger::EVENT_KNOWED => 'Появление известного лица',
                     Trigger::EVENT_UNKNOWED => 'Появление неизвестного лица',
+                    Trigger::EVENT_CROSSING => 'Пересечение линии',
                 ])
                 ->showWhen('device_type', '=', Trigger::DEVICE_CAMERA)
                 ->onApply(function ($item, $value) {
@@ -386,7 +390,14 @@ class TriggerResource extends BaseModelResource
                 ->optionsIcon('tag')
                 ->placeholder('Введите тег')
                 ->options(Tag::select('id', 'name')->get())
-                ->multiple(true),
+                ->multiple(true)
+                ->showWhen('event_type_camera', '!=', Trigger::EVENT_CROSSING)
+                ->onAfterApply(function ($item) {
+                    if (request('device_type') == Trigger::DEVICE_CAMERA && request('event_type_camera') === Trigger::EVENT_CROSSING) {
+                        $item->tags()->detach();
+                    }
+                    return $item;
+                }),
 
             SelectField::make('Бот', 'bot_id')
                 ->options(Bot::query()->pluck('name', 'id')->toArray())
@@ -402,7 +413,7 @@ class TriggerResource extends BaseModelResource
                         ? request('event_type_camera')
                         : request('event_type');
 
-                    if ($eventType === Trigger::EVENT_UNKNOWED) {
+                    if ($eventType === Trigger::EVENT_UNKNOWED || $eventType === Trigger::EVENT_CROSSING) {
                         $data = TriggerContentField::withoutPersonOnly($data);
                     }
 
@@ -432,7 +443,7 @@ class TriggerResource extends BaseModelResource
             'event_type_camera' => [
                 'required_if:device_type,' . Trigger::DEVICE_CAMERA,
                 'nullable',
-                'in:' . implode(',', [Trigger::EVENT_KNOWED, Trigger::EVENT_UNKNOWED]),
+                'in:' . implode(',', [Trigger::EVENT_KNOWED, Trigger::EVENT_UNKNOWED, Trigger::EVENT_CROSSING]),
             ],
             'event_type' => [
                 Rule::requiredIf(fn() => request('device_type') && request('device_type') !== Trigger::DEVICE_CAMERA),
@@ -496,6 +507,7 @@ class TriggerResource extends BaseModelResource
                 ->options([
                     Trigger::EVENT_UNKNOWED => 'Неизвестное лицо',
                     Trigger::EVENT_KNOWED => 'Известное лицо',
+                    Trigger::EVENT_CROSSING => 'Пересечение линии',
                     Trigger::EVENT_INCOME => 'Вход',
                     Trigger::EVENT_OUTCOME => 'Выход',
                     Trigger::EVENT_MANUAL => 'Открыто вручную',

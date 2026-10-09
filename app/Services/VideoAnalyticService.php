@@ -35,7 +35,7 @@ class VideoAnalyticService extends BaseAnalyticService
             'detection_face' => [
                 'is_detection' => (int)($vaOptions['is_face_detection'] ?? 0),
                 'min_area' => 1600,
-                'threshold' => $vaOptions['face_recognition_sensitivity'] ?? 75,
+                'threshold' => 25,
                 'face_width_max' => 45,
                 'zone' => $this->zoneToPixels($vaOptions),
                 'is_recognize' => (int)($vaOptions['is_face_recognition'] ?? 0),
@@ -46,7 +46,7 @@ class VideoAnalyticService extends BaseAnalyticService
             'detection_figure' => [
                 'is_active' => (int)($vaOptions['is_motion_detection'] ?? 0),
                 'direction' => $vaOptions['motion_detection_direction'] ?? 'A',
-                'zones' => $this->zonesToPixels($vaOptions),
+                'zones' => $this->normalizedLines($vaOptions),
             ],
         ];
 
@@ -104,6 +104,41 @@ class VideoAnalyticService extends BaseAnalyticService
         return $this->request('/api/v1/person/del', ['person_id' => $personUid], 'delete');
     }
 
+    private function normalizedLines(array $vaOptions): array
+    {
+        if (empty($vaOptions['is_motion_detection']) || empty($vaOptions['has_motion_detection_zone'])) {
+            return [];
+        }
+
+        $groups = $vaOptions['motion_detection_zones'] ?? [];
+        if (is_string($groups)) {
+            $groups = json_decode($groups, true);
+        }
+        if (!is_array($groups)) {
+            return [];
+        }
+
+        $lines = [];
+        foreach ($groups as $group) {
+            if (!is_array($group) || ($group['type'] ?? null) !== 'lines' || !is_array($group['zones'] ?? null)) {
+                continue;
+            }
+            foreach ($group['zones'] as $z) {
+                if (!is_array($z) || !isset($z['x1'], $z['y1'], $z['x2'], $z['y2'])) {
+                    continue;
+                }
+                $lines[] = [
+                    'x1' => round(min(max((float)$z['x1'], 0), 1), 4),
+                    'y1' => round(min(max((float)$z['y1'], 0), 1), 4),
+                    'x2' => round(min(max((float)$z['x2'], 0), 1), 4),
+                    'y2' => round(min(max((float)$z['y2'], 0), 1), 4),
+                ];
+            }
+        }
+
+        return $lines;
+    }
+
     private function zoneToPixels(array $vaOptions): array
     {
         if (empty($vaOptions['has_face_detection_zone']) || empty($vaOptions['face_detection_zone'])) {
@@ -127,55 +162,5 @@ class VideoAnalyticService extends BaseAnalyticService
             'x2' => (int)round($z['x2'] * $w),
             'y2' => (int)round($z['y2'] * $h),
         ];
-    }
-
-    private function zonesToPixels(array $vaOptions): array
-    {
-        if (empty($vaOptions['has_motion_detection_zone']) || empty($vaOptions['motion_detection_zones'])) {
-            return [];
-        }
-
-        $z = $vaOptions['motion_detection_zones'];
-        if (is_string($z)) {
-            $z = json_decode($z, true);
-        }
-        if (!is_array($z)) {
-            return [];
-        }
-
-        $w = $vaOptions['video_width'] ?? 1920;
-        $h = $vaOptions['video_height'] ?? 1080;
-        $result = [];
-
-        foreach ($z as $group) {
-            $type = $group['type'] ?? null;
-            $zones = $group['zones'] ?? [];
-
-            if (!$type || !is_array($zones)) {
-                continue;
-            }
-
-            foreach ($zones as $zone) {
-                if ($type === 'rectangles' || $type === 'lines') {
-                    $result[$type][] = [
-                        'x1' => (int)round($zone['x1'] * $w),
-                        'y1' => (int)round($zone['y1'] * $h),
-                        'x2' => (int)round($zone['x2'] * $w),
-                        'y2' => (int)round($zone['y2'] * $h),
-                    ];
-                } elseif ($type === 'polygons' && is_array($zone)) {
-                    $points = [];
-                    foreach ($zone as $point) {
-                        $points[] = [
-                            'x' => (int)round($point['x1'] * $w),
-                            'y' => (int)round($point['y1'] * $h),
-                        ];
-                    }
-                    $result['polygons'][] = $points;
-                }
-            }
-        }
-
-        return $result;
     }
 }

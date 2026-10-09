@@ -16,6 +16,7 @@ services:
     volumes:
       - ./:/var/www/html:delegated
       - ./analytic/thumbnails:/var/www/html/public/analytic-storage/thumbnails
+      - ./analytic/crossings:/var/www/html/public/analytic-storage/crossings
       - ./lpr/events:/var/www/html/public/lpr-events
     environment:
       TZ: "Europe/Moscow"
@@ -306,10 +307,13 @@ services:
       - EUCLIDEAN_THRESHOLD=${EUCLIDEAN_THRESHOLD}
       - MAX_FACES_IN_LIST=${MAX_FACES_IN_LIST}
       - CAMERA_POLL_INTERVAL=${CAMERA_POLL_INTERVAL}
+      - OMP_NUM_THREADS=${ANALYTIC_OMP_NUM_THREADS:-2}
+      - MKL_NUM_THREADS=${ANALYTIC_OMP_NUM_THREADS:-2}
       - TZ=Europe/Moscow
     volumes:
       - ./test:/app/captured_images
       - ./analytic/thumbnails:/app/thumbnails
+      - ./analytic/crossings:/app/crossings
       - ./analytic/logs/server:/app/logs
     depends_on:
       analytic-api:

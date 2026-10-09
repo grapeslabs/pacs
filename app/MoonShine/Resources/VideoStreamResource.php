@@ -252,19 +252,11 @@ class VideoStreamResource extends BaseModelResource
                                     ->setupUrl($this->getPageUrl(StreamFaceZoneEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
                                     ->showWhen('va_options->has_face_detection_zone', '=', true),
                                 FeatureCheckbox::make('Распознавание персоны', 'va_options->is_face_recognition'),
-                                FeatureSlider::make('Чувствительность', 'va_options->face_recognition_sensitivity')
-                                    ->showWhen('va_options->is_face_recognition', '=', true)
-                                    ->default(75)
-                                    ->min(0)
-                                    ->max(100)
-                                    ->step(1)
-                                    ->wrapperStyle('padding-left: 30px'),
                             ]),
                         Divider::make(),
-                        FeatureSpoiler::make('Детекция движения', 'va_options->is_motion_detection')
+                        FeatureSpoiler::make('Детекция пересечения', 'va_options->is_motion_detection')
                             ->nested([
-                                FeatureCheckbox::make('Детекция человека', 'va_options->is_human_motion_detection'),
-                                FeatureCheckbox::make('Задать зону детекции движения', 'va_options->has_motion_detection_zone'),
+                                FeatureCheckbox::make('Задать линии пересечения', 'va_options->has_motion_detection_zone'),
                                 MultiZonePreviewField::make('Превью зон', 'va_options->motion_detection_zones')
                                     ->colorLines('#ef4444')
                                     ->colorRectangles('#ef4444')

@@ -39,6 +39,7 @@ services:
     volumes:
       - public_storage:/var/www/html/public/storage
       - analytic_thumbnails:/var/www/html/public/analytic-storage/thumbnails
+      - analytic_crossings:/var/www/html/public/analytic-storage/crossings
       - lpr_events:/var/www/html/public/lpr-events
     depends_on:
       - php
@@ -73,6 +74,7 @@ services:
       - analytic_server_logs:/var/www/html/analytic/logs/server:ro
       - analytic_api_logs:/var/www/html/analytic/logs/api:ro
       - analytic_thumbnails:/var/www/html/analytic/thumbnails:ro
+      - analytic_crossings:/var/www/html/analytic/crossings:ro
     depends_on:
       app-database:
         condition: service_healthy
@@ -101,6 +103,7 @@ services:
       - storage:/var/www/html/storage
       - public_storage:/var/www/html/storage/app/public
       - analytic_thumbnails:/var/www/html/analytic/thumbnails:ro
+      - analytic_crossings:/var/www/html/analytic/crossings:ro
       - lpr_events:/var/www/html/lpr/events:ro
     depends_on:
       app-database:
@@ -240,9 +243,12 @@ services:
       EUCLIDEAN_THRESHOLD: "${EUCLIDEAN_THRESHOLD}"
       MAX_FACES_IN_LIST: "${MAX_FACES_IN_LIST}"
       CAMERA_POLL_INTERVAL: "${CAMERA_POLL_INTERVAL}"
+      OMP_NUM_THREADS: "${ANALYTIC_OMP_NUM_THREADS:-2}"
+      MKL_NUM_THREADS: "${ANALYTIC_OMP_NUM_THREADS:-2}"
     volumes:
       - analytic_captured_images:/app/captured_images
       - analytic_thumbnails:/app/thumbnails
+      - analytic_crossings:/app/crossings
       - analytic_server_logs:/app/logs
     depends_on:
       analytic-api:
@@ -335,6 +341,7 @@ volumes:
   certs:
   analytic_database:
   analytic_thumbnails:
+  analytic_crossings:
   analytic_captured_images:
   analytic_person_photos:
   analytic_server_logs:

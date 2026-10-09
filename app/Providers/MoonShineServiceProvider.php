@@ -10,6 +10,7 @@ use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Pages\PresenceReportPage;
 use App\MoonShine\Pages\VideoWallPage;
 use App\MoonShine\Resources\CarEventResource;
+use App\MoonShine\Resources\CrossingEventResource;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\PeopleReportResource;
 use App\MoonShine\Resources\StorageResource;
@@ -88,6 +89,7 @@ class MoonShineServiceProvider extends ServiceProvider
                     PeopleReportResource::class,
                     UnknownReportResource::class,
                     CarEventResource::class,
+                    CrossingEventResource::class,
                 ]:[],
             ])
             ->pages([
