@@ -254,9 +254,9 @@ class VideoStreamResource extends BaseModelResource
                                 FeatureCheckbox::make('Распознавание персоны', 'va_options->is_face_recognition'),
                             ]),
                         Divider::make(),
-                        FeatureSpoiler::make('Детекция движения', 'va_options->is_motion_detection')
+                        FeatureSpoiler::make('Детекция пересечения', 'va_options->is_motion_detection')
                             ->nested([
-                                FeatureCheckbox::make('Задать зону детекции движения', 'va_options->has_motion_detection_zone'),
+                                FeatureCheckbox::make('Задать линии пересечения', 'va_options->has_motion_detection_zone'),
                                 MultiZonePreviewField::make('Превью зон', 'va_options->motion_detection_zones')
                                     ->colorLines('#ef4444')
                                     ->colorRectangles('#ef4444')

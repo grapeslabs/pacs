@@ -35,7 +35,7 @@ class StreamMotionZonesEditorPage extends Page
             FormBuilder::make($methodUrl)
                 ->fillCast($item, new ModelCaster(Stream::class))
                 ->fields([
-                    MultiZoneEditorField::make('Редактирование зон детекции движения', 'va_options->motion_detection_zones')
+                    MultiZoneEditorField::make('Редактирование зон пересечения', 'va_options->motion_detection_zones')
                         ->cancelUrl($resource->getIndexPageUrl())
                         ->saveUrl($resource->getIndexPageUrl())
                         ->disableMultiType()
