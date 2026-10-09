@@ -243,6 +243,8 @@ services:
       EUCLIDEAN_THRESHOLD: "${EUCLIDEAN_THRESHOLD}"
       MAX_FACES_IN_LIST: "${MAX_FACES_IN_LIST}"
       CAMERA_POLL_INTERVAL: "${CAMERA_POLL_INTERVAL}"
+      OMP_NUM_THREADS: "${ANALYTIC_OMP_NUM_THREADS:-2}"
+      MKL_NUM_THREADS: "${ANALYTIC_OMP_NUM_THREADS:-2}"
     volumes:
       - analytic_captured_images:/app/captured_images
       - analytic_thumbnails:/app/thumbnails
