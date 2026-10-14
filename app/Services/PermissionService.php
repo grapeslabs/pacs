@@ -5,8 +5,6 @@ namespace App\Services;
 use App\Models\CarColor;
 use App\MoonShine\Pages\SettingsPage;
 use App\MoonShine\Resources\ApiKeyResource;
-use App\MoonShine\Resources\BarrierEventResource;
-use App\MoonShine\Resources\BarrierResource;
 use App\MoonShine\Resources\BotResource;
 use App\MoonShine\Resources\CarBrandResource;
 use App\MoonShine\Resources\CarColorResource;

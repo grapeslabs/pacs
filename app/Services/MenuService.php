@@ -18,10 +18,12 @@ use App\Models\Role;
 use App\Models\Stream;
 use App\Models\Trigger;
 use App\Models\User;
+use App\Models\VideoWall;
 use App\MoonShine\Pages\Dashboard;
 use App\MoonShine\Pages\LogViewerPage;
 use App\MoonShine\Pages\PresenceReportPage;
 use App\MoonShine\Pages\SettingsPage;
+use App\MoonShine\Pages\VideoWallPage;
 use App\MoonShine\Resources\ActuatorDeviceResource;
 use App\MoonShine\Resources\ApiKeyResource;
 use App\MoonShine\Resources\BotResource;
@@ -31,6 +33,7 @@ use App\MoonShine\Resources\CarEventResource;
 use App\MoonShine\Resources\CarPassageRuleResource;
 use App\MoonShine\Resources\CarResource;
 use App\MoonShine\Resources\ControllerResource;
+use App\MoonShine\Resources\CrossingEventResource;
 use App\MoonShine\Resources\EventReportResource;
 use App\MoonShine\Resources\GuestResource;
 use App\MoonShine\Resources\KeyResource;
@@ -47,11 +50,16 @@ use App\MoonShine\Resources\TerminalResource;
 use App\MoonShine\Resources\TriggerResource;
 use App\MoonShine\Resources\UnknownReportResource;
 use App\MoonShine\Resources\VideoStreamResource;
+use Illuminate\Support\Facades\Cache;
 use MoonShine\Laravel\Enums\Ability;
 use MoonShine\Laravel\Pages\Page;
 
 class MenuService
 {
+    private ?array $sections = null;
+
+    private array $urls = [];
+
     public function home(): array
     {
         return [
@@ -63,7 +71,7 @@ class MenuService
 
     public function sections(): array
     {
-        return [
+        return $this->sections ??= [
             [
                 'key' => 'video',
                 'label' => 'Видео',
@@ -71,6 +79,7 @@ class MenuService
                 'feature' => 'services.ms.enabled',
                 'items' => [
                     ['label' => 'Видеопотоки', 'class' => VideoStreamResource::class, 'icon' => $this->iconFile('camera'), 'model' => Stream::class],
+                    ['label' => 'Видеостены', 'class' => VideoWallPage::class, 'icon' => $this->iconFile('videowall'), 'model' => VideoWall::class],
                 ],
             ],
             [
@@ -107,6 +116,7 @@ class MenuService
                     ['label' => 'Отчёты автомобилей', 'class' => CarEventResource::class, 'icon' => $this->iconFile('plate'), 'feature' => 'services.lpr.enabled'],
                     ['label' => 'Отчёты проезда', 'class' => PassageEventResource::class, 'icon' => $this->iconFile('document'), 'feature' => 'services.lpr.enabled'],
                     ['label' => 'Отчёты по событиям', 'class' => EventReportResource::class, 'icon' => $this->iconFile('pulse'), 'feature' => 'services.va.enabled'],
+                    ['label' => 'Отчёты пересечений', 'class' => CrossingEventResource::class, 'icon' => $this->iconFile('route'), 'feature' => 'services.va.enabled'],
                     ['label' => 'Отчёты по персонам', 'class' => PeopleReportResource::class, 'icon' => $this->iconFile('user-list'), 'feature' => 'services.va.enabled'],
                     ['label' => 'Отчёты по неизвестным', 'class' => UnknownReportResource::class, 'icon' => $this->iconFile('suspension'), 'feature' => 'services.va.enabled'],
                     ['label' => 'Отчёт по пребыванию', 'class' => PresenceReportPage::class, 'icon' => $this->iconFile('document'), 'feature' => 'services.va.enabled'],
@@ -139,7 +149,7 @@ class MenuService
                     ['label' => 'Пользователи', 'class' => MoonShineUserResource::class, 'icon' => $this->iconFile('persons'), 'model' => User::class],
                     ['label' => 'Роли', 'class' => MoonShineUserRoleResource::class, 'icon' => $this->iconFile('group'), 'model' => Role::class],
                     ['label' => 'Ключи API', 'class' => ApiKeyResource::class, 'icon' => $this->iconFile('key'), 'model' => ApiKey::class],
-                    ['label' => 'Настройки', 'class' => SettingsPage::class, 'icon' => $this->iconFile('gear'), 'feature' => 'services.ms.enabled'],
+                    ['label' => 'Настройки', 'class' => SettingsPage::class, 'icon' => $this->iconFile('gear')],
                     ['label' => 'Журнал логов', 'class' => LogViewerPage::class, 'icon' => $this->iconFile('logs')],
                 ],
             ],
@@ -226,15 +236,19 @@ class MenuService
 
     private function url(string $class): string
     {
-        try {
-            if (is_subclass_of($class, Page::class)) {
-                return toPage($class);
-            }
-
-            return app($class)->getUrl();
-        } catch (\Throwable) {
-            return '#';
+        if (isset($this->urls[$class])) {
+            return $this->urls[$class];
         }
+
+        try {
+            $url = is_subclass_of($class, Page::class)
+                ? toPage($class)
+                : app($class)->getUrl();
+        } catch (\Throwable) {
+            $url = '#';
+        }
+
+        return $this->urls[$class] = $url;
     }
 
     /**
@@ -267,8 +281,6 @@ class MenuService
             return false;
         }
 
-        // Сравниваем только path: за прокси (https) схема/хост текущего запроса
-        // и сгенерированного URL могут различаться, и подсветка пропадает
         $current = rtrim((string) (parse_url((string) request()->url(), PHP_URL_PATH) ?: '/'), '/');
         $target = rtrim((string) (parse_url($url, PHP_URL_PATH) ?: '/'), '/');
 
@@ -284,7 +296,11 @@ class MenuService
     private function count(string $model): ?int
     {
         try {
-            return $model::count();
+            return (int) Cache::remember(
+                'menu:count:' . $model,
+                now()->addSeconds(60),
+                static fn (): int => $model::count(),
+            );
         } catch (\Throwable) {
             return null;
         }

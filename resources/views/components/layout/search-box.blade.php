@@ -220,7 +220,7 @@
                 },
                 async search() {
                     const term = this.q.trim();
-                    if (term.length < 1) { this.open = false; this.results = pacsEmptyResults(); return; }
+                    if (term.length < 2) { this.open = false; this.results = pacsEmptyResults(); return; }
                     this.open = true;
                     this.loading = true;
                     if (this._ctrl) { this._ctrl.abort(); }

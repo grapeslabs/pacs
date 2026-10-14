@@ -2,21 +2,20 @@
 
 namespace App\MoonShine\Resources;
 
+use MoonShine\Laravel\Enums\Ability;
 use App\Models\Key;
+use Illuminate\Validation\Rule;
 use App\Models\Person;
 use App\MoonShine\Fields\AvatarField;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
-use App\MoonShine\Pages\CustomIndexPage;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
 use MoonShine\Laravel\MoonShineRequest;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\Support\Enums\ToastType;
@@ -32,6 +31,7 @@ class KeyResource extends BaseModelResource
 {
     protected string $model = Key::class;
     protected string $title = 'Ключи';
+    protected array $with = ['person'];
     public function indexSubtitle(): ?string
     {
         return $this->countSubtitle('ключ доступа', 'ключа доступа', 'ключей доступа');
@@ -40,14 +40,6 @@ class KeyResource extends BaseModelResource
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить ключ';
 
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
 
     public function detailSidebarData(Model $item): array
     {
@@ -198,6 +190,13 @@ class KeyResource extends BaseModelResource
             ->async();
     }
 
+    public function asyncMethodAbilities(): array
+    {
+        return array_merge(parent::asyncMethodAbilities(), [
+            'toggleBlock' => Ability::UPDATE,
+        ]);
+    }
+
     public function toggleBlock(MoonShineRequest $request): MoonShineJsonResponse
     {
         $key = Key::query()->find($request->get('item_id'));
@@ -229,11 +228,15 @@ class KeyResource extends BaseModelResource
             SelectField::make('Персона', 'person_id')
                 ->icon('magnifier')
                 ->optionsIcon('person')
-                ->options(Person::query()->get()->map(fn($p) => [
-                    'id'      => $p->id,
-                    'name'    => trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '') . ' ' . ($p->middle_name ?? '')),
-                    'subtext' => $p->certificate_number ? $p->certificate_number : null,
-                ])->toArray())
+                ->options(Person::query()
+                    ->select(['id', 'last_name', 'first_name', 'middle_name', 'certificate_number'])
+                    ->get()
+                    ->map(fn($p) => [
+                        'id'      => $p->id,
+                        'name'    => trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '') . ' ' . ($p->middle_name ?? '')),
+                        'subtext' => $p->certificate_number ? $p->certificate_number : null,
+                    ])
+                    ->toArray())
                 ->required()
                 ->default(request()->person_id??null),
             Date::make('Выдан', 'issued_at'),
@@ -254,9 +257,20 @@ class KeyResource extends BaseModelResource
         ];
     }
 
-    public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
+    public function rules($item): array
     {
-        return parent::indexQuery()->with('person');
+        return [
+            'key' => ['required', 'string', 'max:255', 'regex:/^[0-9A-Za-z-]+$/', Rule::unique('keys', 'key')->ignore($item?->id)->withoutTrashed()],
+            'type' => ['required', Rule::in(Key::TYPES)],
+            'person_id' => ['required', 'integer', 'exists:person,id'],
+        ];
+    }
+
+    public function validationMessages(): array
+    {
+        return [
+            'key.regex' => 'Ключ может содержать только латинские буквы, цифры и дефис',
+        ];
     }
 
     public function search(): array
@@ -278,7 +292,8 @@ class KeyResource extends BaseModelResource
                 ->placeholder('Фильтрация по типу ключа')
                 ->options([
                     'Mifare' => 'Mifare',
-                ]),
+                ])
+                ->nullable(),
             SelectField::make('Персона', 'person_id')
                 ->options(Person::query()->pluck('last_name', 'id')->toArray())
                 ->placeholder('Фильтрация по имени')

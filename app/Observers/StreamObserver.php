@@ -2,13 +2,16 @@
 
 namespace App\Observers;
 
+use App\Jobs\ProvisionStream;
+use App\Jobs\UpdateStreamProvisioning;
 use App\Models\Stream;
+use App\Models\VideoWall;
 use App\Services\MediaServerService;
 use App\Services\VideoAnalyticLprService;
 use App\Services\VideoAnalyticService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Exception;
+use MoonShine\Laravel\MoonShineAuth;
 
 class StreamObserver
 {
@@ -21,65 +24,33 @@ class StreamObserver
     public function creating(Stream $stream): void
     {
         $stream->uid = (string)Str::uuid();
+    }
 
-        try {
-            $stream->uid = $this->mediaServer->createStream(
-                $stream->rtsp,
-                $stream->uid,
-                (int)$stream->archive_time
-            );
-
-            if (!$stream->is_active) {
-                $this->mediaServer->pauseStream($stream->uid);
-            }
-
-            $vaOptions = $stream->va_options ?? [];
-
-            if (config('services.va.enabled')) {
-                $this->vas->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
-            }
-
-            if (config('services.lpr.enabled')) {
-                $this->lpr->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
-            }
-
-        } catch (Exception $e) {
-            if (!empty($stream->uid)) {
-                try {
-                    $this->mediaServer->deleteStream($stream->uid);
-                } catch (\Throwable) {
-                }
-            }
-            Log::error('StreamObserver: error on creating', ['error' => $e->getMessage()]);
-            throw $e;
-        }
+    public function created(Stream $stream): void
+    {
+        ProvisionStream::dispatch($stream->id, MoonShineAuth::getGuard()->id())
+            ->afterCommit();
     }
 
     public function updating(Stream $stream): void
     {
-        if ($stream->isDirty(['rtsp', 'archive_time'])) {
-            $this->mediaServer->updateStream($stream->uid, $stream->rtsp, (int)$stream->archive_time);
-        }
-
-        if ($stream->isDirty('is_active')) {
-            $stream->is_active
-                ? $this->mediaServer->resumeStream($stream->uid)
-                : $this->mediaServer->pauseStream($stream->uid);
-        }
-
         if ($stream->isDirty('va_options')) {
             $this->normalizeVaOptions($stream);
-
-            $vaOptions = $stream->va_options ?? [];
-
-            if (config('services.va.enabled')) {
-                $this->vas->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
-            }
-
-            if (config('services.lpr.enabled')) {
-                $this->lpr->cameraCreate($stream->uid, $stream->name, $stream->location, $vaOptions);
-            }
         }
+    }
+
+    public function updated(Stream $stream): void
+    {
+        $rtspOrArchiveChanged = $stream->wasChanged(['rtsp', 'archive_time']);
+        $activeChanged = $stream->wasChanged('is_active');
+        $vaOptionsChanged = $stream->wasChanged('va_options');
+
+        if (! $rtspOrArchiveChanged && ! $activeChanged && ! $vaOptionsChanged) {
+            return;
+        }
+
+        UpdateStreamProvisioning::dispatch($stream->id, $rtspOrArchiveChanged, $activeChanged, $vaOptionsChanged)
+            ->afterCommit();
     }
 
     public function deleting(Stream $stream): void
@@ -97,6 +68,28 @@ class StreamObserver
             $result = $this->lpr->cameraDelete($stream->uid);
             if (empty($result['ok'])) {
                 Log::warning('StreamObserver: LPR camera delete failed', ['uid' => $stream->uid]);
+            }
+        }
+
+        $this->removeFromVideoWalls($stream);
+    }
+
+    private function removeFromVideoWalls(Stream $stream): void
+    {
+        foreach (VideoWall::all() as $wall) {
+            $layout = array_values(array_filter(
+                array_map(static fn (array $column): array => [
+                    'w' => $column['w'] ?? 1,
+                    'items' => array_values(array_filter(
+                        $column['items'] ?? [],
+                        static fn ($item): bool => is_array($item) && (int) ($item['id'] ?? 0) !== $stream->id
+                    )),
+                ], $wall->layout ?? []),
+                static fn (array $column): bool => $column['items'] !== []
+            ));
+
+            if ($layout !== ($wall->layout ?? [])) {
+                $wall->update(['layout' => $layout]);
             }
         }
     }

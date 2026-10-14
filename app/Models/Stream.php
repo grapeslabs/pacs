@@ -19,7 +19,6 @@ class Stream extends Model
         'rtsp',
         'archive_time',
         'is_active',
-        'is_recognize',
         'va_options',
         'va_options->global_enable',
         'va_options->is_face_detection',

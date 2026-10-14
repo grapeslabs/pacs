@@ -16,9 +16,16 @@ class UpdateKeyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'key' => ['sometimes', 'string', 'max:255', Rule::unique('keys', 'key')->ignore($this->route('keyItem'))],
+            'key' => ['sometimes', 'string', 'max:255', 'regex:/^[0-9A-Za-z-]+$/', Rule::unique('keys', 'key')->ignore($this->route('keyItem'))->withoutTrashed()],
             'type' => ['sometimes', Rule::in(Key::TYPES)],
             'person_id' => ['sometimes', 'integer', 'exists:person,id'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'key.regex' => 'Ключ может содержать только латинские буквы, цифры и дефис',
         ];
     }
 }

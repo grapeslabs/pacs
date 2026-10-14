@@ -141,7 +141,11 @@
         if (!window.textFieldsInitialized) {
             window.textFieldsInitialized = true;
             document.addEventListener('submit', function(event) {
-                const errorField = document.querySelector('.ctf-error');
+                const form = event.target;
+                const scope = form instanceof HTMLFormElement ? form : document;
+                const errorField = [...scope.querySelectorAll('.ctf-error')]
+                    .find(el => el.isConnected && el.offsetParent !== null);
+
                 if (errorField) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
@@ -203,6 +207,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': this.csrfToken
                 },
                 body: JSON.stringify({
@@ -214,6 +219,10 @@
                     normalize: rule.normalize ?? null
                 })
             });
+            if (!response.ok) {
+                this.loading = false;
+                return;
+            }
             const data = await response.json();
             if (!data.is_valid) {
                 this.error = rule.message;

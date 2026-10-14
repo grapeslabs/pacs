@@ -68,6 +68,10 @@ class BotChat extends Model
      */
     public function sendTestMessage(): array
     {
-        return $this->bot->sendTestMessage($this->chat_id);
+        if (! $this->bot) {
+            return ['success' => false, 'message' => 'Бот не найден'];
+        }
+
+        return $this->bot->sendMessage((string) $this->chat_id, 'Тестовое сообщение');
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\MoonShine\Resources;
 
+use MoonShine\Laravel\Enums\Ability;
 use App\Models\CarTag;
 use App\Models\Setting;
 use App\Models\Stream;
@@ -251,19 +252,11 @@ class VideoStreamResource extends BaseModelResource
                                     ->setupUrl($this->getPageUrl(StreamFaceZoneEditorPage::class, ['resourceItem' => $this->getItem()?->getKey()]))
                                     ->showWhen('va_options->has_face_detection_zone', '=', true),
                                 FeatureCheckbox::make('Распознавание персоны', 'va_options->is_face_recognition'),
-                                FeatureSlider::make('Чувствительность', 'va_options->face_recognition_sensitivity')
-                                    ->showWhen('va_options->is_face_recognition', '=', true)
-                                    ->default(75)
-                                    ->min(0)
-                                    ->max(100)
-                                    ->step(1)
-                                    ->wrapperStyle('padding-left: 30px'),
                             ]),
                         Divider::make(),
-                        FeatureSpoiler::make('Детекция движения', 'va_options->is_motion_detection')
+                        FeatureSpoiler::make('Детекция пересечения', 'va_options->is_motion_detection')
                             ->nested([
-                                FeatureCheckbox::make('Детекция человека', 'va_options->is_human_motion_detection'),
-                                FeatureCheckbox::make('Задать зону детекции движения', 'va_options->has_motion_detection_zone'),
+                                FeatureCheckbox::make('Задать линии пересечения', 'va_options->has_motion_detection_zone'),
                                 MultiZonePreviewField::make('Превью зон', 'va_options->motion_detection_zones')
                                     ->colorLines('#ef4444')
                                     ->colorRectangles('#ef4444')
@@ -350,6 +343,29 @@ class VideoStreamResource extends BaseModelResource
     }
 
 
+    public function asyncMethodAbilities(): array
+    {
+        return array_merge(parent::asyncMethodAbilities(), [
+            'saveFaceDetectionZone' => Ability::UPDATE,
+            'saveMotionDetectionZones' => Ability::UPDATE,
+            'savePlateDetectionZone' => Ability::UPDATE,
+        ]);
+    }
+
+    private function validateZone(mixed $zoneData): void
+    {
+        if (empty($zoneData)) {
+            return;
+        }
+
+        validator($zoneData, [
+            'x1' => ['required', 'numeric', 'min:0', 'max:1'],
+            'y1' => ['required', 'numeric', 'min:0', 'max:1'],
+            'x2' => ['required', 'numeric', 'min:0', 'max:1', 'gt:x1'],
+            'y2' => ['required', 'numeric', 'min:0', 'max:1', 'gt:y1'],
+        ])->validate();
+    }
+
     public function saveFaceDetectionZone(MoonShineRequest $request): MoonShineJsonResponse
     {
         $item = $this->getItem();
@@ -359,6 +375,8 @@ class VideoStreamResource extends BaseModelResource
         if (is_string($zoneData)) {
             $zoneData = json_decode($zoneData, true);
         }
+
+        $this->validateZone($zoneData);
 
         $options = $item->va_options ?? [];
         $options['global_enable'] = true;
@@ -391,7 +409,7 @@ class VideoStreamResource extends BaseModelResource
         $options = $item->va_options ?? [];
         $options['global_enable'] = true;
         $options['is_motion_detection'] = true;
-        $options['has_motion_detection_zones'] = true;
+        $options['has_motion_detection_zone'] = true;
         $options['motion_detection_zones'] = $zoneData;
 
         $videoWidth = (int)$request->input('video_width', 0);
@@ -417,6 +435,8 @@ class VideoStreamResource extends BaseModelResource
         if (is_string($zoneData)) {
             $zoneData = json_decode($zoneData, true);
         }
+
+        $this->validateZone($zoneData);
 
         $options = $item->va_options ?? [];
         $options['global_enable'] = true;

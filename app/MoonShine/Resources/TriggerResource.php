@@ -2,6 +2,7 @@
 
 namespace App\MoonShine\Resources;
 
+use MoonShine\Laravel\Enums\Ability;
 use App\Models\Bot;
 use App\Models\Stream;
 use App\Models\Tag;
@@ -15,6 +16,7 @@ use Closure;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\Laravel\MoonShineRequest;
 use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
@@ -72,6 +74,13 @@ class TriggerResource extends BaseModelResource
             ])
             ->async()
             ->canSee(fn($item) => (bool) $item->bot_id);
+    }
+
+    public function asyncMethodAbilities(): array
+    {
+        return array_merge(parent::asyncMethodAbilities(), [
+            'sendTest' => Ability::UPDATE,
+        ]);
     }
 
     public function sendTest(MoonShineRequest $request): MoonShineJsonResponse
@@ -174,6 +183,7 @@ class TriggerResource extends BaseModelResource
             Trigger::EVENT_OUTCOME => 'Выход',
             Trigger::EVENT_MANUAL => 'Открыто вручную',
             Trigger::EVENT_DENIED => 'Отказано',
+            Trigger::EVENT_CROSSING => 'Пересечение линии',
         ][$type] ?? (string) $type;
     }
 
@@ -201,6 +211,7 @@ class TriggerResource extends BaseModelResource
                 ->options([
                     Trigger::EVENT_KNOWED   => ['label' => 'Появление известного лица', 'color' => 'green'],
                     Trigger::EVENT_UNKNOWED => ['label' => 'Появление неизвестного лица', 'color' => 'yellow'],
+                    Trigger::EVENT_CROSSING => ['label' => 'Пересечение линии', 'color' => 'orange'],
                     Trigger::EVENT_INCOME   => ['label' => 'Вход', 'color' => 'gray'],
                     Trigger::EVENT_OUTCOME  => ['label' => 'Выход', 'color' => 'gray'],
                     Trigger::EVENT_MANUAL   => ['label' => 'Открыто вручную', 'color' => 'blue'],
@@ -212,6 +223,7 @@ class TriggerResource extends BaseModelResource
                             WHEN '" . Trigger::EVENT_OUTCOME . "' THEN 'Выход'
                             WHEN '" . Trigger::EVENT_DENIED . "' THEN 'Отказано'
                             WHEN '" . Trigger::EVENT_MANUAL . "' THEN 'Открыто вручную'
+                            WHEN '" . Trigger::EVENT_CROSSING . "' THEN 'Пересечение линии'
                             WHEN '" . Trigger::EVENT_KNOWED . "' THEN 'Появление известного лица'
                             WHEN '" . Trigger::EVENT_UNKNOWED . "' THEN 'Появление неизвестного лица'
                             ELSE $column
@@ -285,7 +297,8 @@ class TriggerResource extends BaseModelResource
                         if(evType) { evType.value = ''; evType.dispatchEvent(new Event('change')); }
                         if(evTypeCam) { evTypeCam.value = ''; evTypeCam.dispatchEvent(new Event('change')); }
                     "
-                ]),
+                ])
+                ->required('Выберите тип устройства'),
 
             SelectField::make('Устройство', 'device_id_camera')
                 ->options(Stream::query()->pluck('name', 'id')->toArray())
@@ -297,7 +310,8 @@ class TriggerResource extends BaseModelResource
                     return $item;
                 })
                 ->setValue($item->device_id ?? null)
-                ->icon($magnifierIcon),
+                ->icon($magnifierIcon)
+                ->required('Выберите камеру'),
 
             SelectField::make('Устройство', 'device_id_terminal')
                 ->options(SkudController::query()->where('type', 'pinterm')->pluck('serial_number', 'id')->toArray())
@@ -309,7 +323,8 @@ class TriggerResource extends BaseModelResource
                     return $item;
                 })
                 ->setValue($item->device_id ?? null)
-                ->icon($magnifierIcon),
+                ->icon($magnifierIcon)
+                ->required('Выберите устройство'),
 
             SelectField::make('Устройство', 'device_id_barier')
                 ->options(SkudController::query()->where('type', 'pingate')->pluck('serial_number', 'id')->toArray())
@@ -321,7 +336,8 @@ class TriggerResource extends BaseModelResource
                     return $item;
                 })
                 ->setValue($item->device_id ?? null)
-                ->icon($magnifierIcon),
+                ->icon($magnifierIcon)
+                ->required('Выберите устройство'),
 
             SelectField::make('Устройство', 'device_id_controller')
                 ->options(SkudController::query()->whereIn('type', ['z5rweb', 'ironlogic'])->pluck('serial_number', 'id')->toArray())
@@ -333,7 +349,8 @@ class TriggerResource extends BaseModelResource
                     return $item;
                 })
                 ->setValue($item->device_id ?? null)
-                ->icon($magnifierIcon),
+                ->icon($magnifierIcon)
+                ->required('Выберите устройство'),
 
 
             SelectField::make('Событие', 'event_type')
@@ -349,12 +366,14 @@ class TriggerResource extends BaseModelResource
                         $item->event_type = $value;
                     }
                     return $item;
-                }),
+                })
+                ->required('Выберите событие'),
 
             SelectField::make('Событие', 'event_type_camera')
                 ->options([
                     Trigger::EVENT_KNOWED => 'Появление известного лица',
                     Trigger::EVENT_UNKNOWED => 'Появление неизвестного лица',
+                    Trigger::EVENT_CROSSING => 'Пересечение линии',
                 ])
                 ->showWhen('device_type', '=', Trigger::DEVICE_CAMERA)
                 ->onApply(function ($item, $value) {
@@ -363,14 +382,22 @@ class TriggerResource extends BaseModelResource
                     }
                     return $item;
                 })
-                ->setValue($item->event_type ?? null),
+                ->setValue($item->event_type ?? null)
+                ->required('Выберите событие'),
 
             SelectField::make('Теги', 'tags')
                 ->icon('tag')
                 ->optionsIcon('tag')
                 ->placeholder('Введите тег')
                 ->options(Tag::select('id', 'name')->get())
-                ->multiple(true),
+                ->multiple(true)
+                ->showWhen('event_type_camera', '!=', Trigger::EVENT_CROSSING)
+                ->onAfterApply(function ($item) {
+                    if (request('device_type') == Trigger::DEVICE_CAMERA && request('event_type_camera') === Trigger::EVENT_CROSSING) {
+                        $item->tags()->detach();
+                    }
+                    return $item;
+                }),
 
             SelectField::make('Бот', 'bot_id')
                 ->options(Bot::query()->pluck('name', 'id')->toArray())
@@ -386,7 +413,7 @@ class TriggerResource extends BaseModelResource
                         ? request('event_type_camera')
                         : request('event_type');
 
-                    if ($eventType === Trigger::EVENT_UNKNOWED) {
+                    if ($eventType === Trigger::EVENT_UNKNOWED || $eventType === Trigger::EVENT_CROSSING) {
                         $data = TriggerContentField::withoutPersonOnly($data);
                     }
 
@@ -399,8 +426,46 @@ class TriggerResource extends BaseModelResource
 
     public function rules($item): array
     {
+        $deviceTypes = [
+            Trigger::DEVICE_CAMERA,
+            Trigger::DEVICE_TERMINAL,
+            Trigger::DEVICE_BARIER,
+            Trigger::DEVICE_CONTROLLER,
+        ];
+
         return [
             'name' => ['required', 'string', 'max:255'],
+            'device_type' => ['required', 'in:' . implode(',', $deviceTypes)],
+            'device_id_camera' => ['required_if:device_type,' . Trigger::DEVICE_CAMERA, 'nullable', 'exists:streams,id'],
+            'device_id_terminal' => ['required_if:device_type,' . Trigger::DEVICE_TERMINAL, 'nullable', 'integer'],
+            'device_id_barier' => ['required_if:device_type,' . Trigger::DEVICE_BARIER, 'nullable', 'integer'],
+            'device_id_controller' => ['required_if:device_type,' . Trigger::DEVICE_CONTROLLER, 'nullable', 'integer'],
+            'event_type_camera' => [
+                'required_if:device_type,' . Trigger::DEVICE_CAMERA,
+                'nullable',
+                'in:' . implode(',', [Trigger::EVENT_KNOWED, Trigger::EVENT_UNKNOWED, Trigger::EVENT_CROSSING]),
+            ],
+            'event_type' => [
+                Rule::requiredIf(fn() => request('device_type') && request('device_type') !== Trigger::DEVICE_CAMERA),
+                'nullable',
+                'in:' . implode(',', [Trigger::EVENT_INCOME, Trigger::EVENT_OUTCOME, Trigger::EVENT_MANUAL, Trigger::EVENT_DENIED]),
+            ],
+            'bot_id' => ['required', 'exists:bots,id'],
+        ];
+    }
+
+    public function validationMessages(): array
+    {
+        return [
+            'name.required' => 'Укажите название триггера',
+            'device_type.required' => 'Выберите тип устройства',
+            'device_id_camera.required_if' => 'Выберите камеру',
+            'device_id_terminal.required_if' => 'Выберите устройство',
+            'device_id_barier.required_if' => 'Выберите устройство',
+            'device_id_controller.required_if' => 'Выберите устройство',
+            'event_type_camera.required_if' => 'Выберите событие',
+            'event_type.required' => 'Выберите событие',
+            'bot_id.required' => 'Выберите бота',
         ];
     }
 
@@ -442,6 +507,7 @@ class TriggerResource extends BaseModelResource
                 ->options([
                     Trigger::EVENT_UNKNOWED => 'Неизвестное лицо',
                     Trigger::EVENT_KNOWED => 'Известное лицо',
+                    Trigger::EVENT_CROSSING => 'Пересечение линии',
                     Trigger::EVENT_INCOME => 'Вход',
                     Trigger::EVENT_OUTCOME => 'Выход',
                     Trigger::EVENT_MANUAL => 'Открыто вручную',

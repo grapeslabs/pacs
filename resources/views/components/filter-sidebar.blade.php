@@ -6,6 +6,8 @@
     'count' => 0,
 ])
 
+@include('components.filter-runtime')
+
 <script>
     document.addEventListener('alpine:init', () => {
         if (! Alpine.store('filters')) {
@@ -18,6 +20,8 @@
     x-data="{
         open: false,
         modalId: '{{ $name }}',
+
+        init() { window.msFilters.root = '#' + this.modalId + '_content'; },
 
         registerInStack() { Alpine.store('overlays')?.register(this.modalId, () => this.closeModal()); },
         unregisterFromStack() { Alpine.store('overlays')?.unregister(this.modalId); },
@@ -34,41 +38,17 @@
             this.toggleBodyScroll();
         },
 
-        countActiveFilters() {
-            const form = document.querySelector(`#${this.modalId}_content form`);
-            if (! form) { return 0; }
-
-            const seen = new Set();
-            form.querySelectorAll('[name^=\'filter[\']').forEach((el) => {
-                const name = el.getAttribute('name');
-                if (! name) { return; }
-                if ((el.type === 'checkbox' || el.type === 'radio') && ! el.checked) { return; }
-                const value = el.value;
-                if (value === '' || value === null || value === '0') { return; }
-                seen.add(name.replace(/\]\[.*$/, ']'));
-            });
-
-            return seen.size;
-        },
-
         applyFilters() {
-            const form = document.querySelector(`#${this.modalId}_content form`);
-            if (form) {
-                form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-            }
+            window.msFilters.apply();
         },
 
         onFiltersSubmit() {
-            Alpine.store('filters').count = this.countActiveFilters();
             this.closeModal();
         },
 
         resetFilters() {
-            const reset = document.querySelector(`#${this.modalId}_content .js-async-reset-button`);
-            if (reset) {
-                reset.click();
-            }
-            Alpine.store('filters').count = 0;
+            window.msFilters.clearAll();
+            window.msFilters.apply(true);
             this.closeModal();
         },
 

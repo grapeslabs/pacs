@@ -71,10 +71,6 @@ class Person extends Model
         return $this->hasMany(Key::class);
     }
 
-    public function photos()
-    {
-        return $this->hasMany(PersonPhoto::class);
-    }
 
     public function getTagsListAttribute()
     {

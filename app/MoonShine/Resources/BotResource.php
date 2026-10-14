@@ -6,7 +6,6 @@ use App\Models\Bot;
 use App\MoonShine\Fields\BotChatsField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\SelectField;
-use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Pages\BotFormPage;
 use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
 use MoonShine\UI\Fields\ID;
@@ -14,14 +13,12 @@ use MoonShine\UI\Fields\Text;
 use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Url;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Support\ListOf;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Fields\Relationships\HasMany;
 use MoonShine\UI\Components\ActionButton;
 use MoonShine\Laravel\Notifications\MoonShineNotification;
-use Illuminate\Contracts\Database\Eloquent\Builder;
+use MoonShine\Support\Enums\SortDirection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
@@ -32,6 +29,8 @@ class BotResource extends BaseModelResource
 {
     protected string $model = Bot::class;
     protected string $title = 'Боты';
+    protected string $sortColumn = 'name';
+    protected SortDirection $sortDirection = SortDirection::ASC;
 
     public function indexSubtitle(): ?string
     {
@@ -148,14 +147,6 @@ class BotResource extends BaseModelResource
         ][$type] ?? (string) $type;
     }
 
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
 
     protected function afterSave(mixed $item, FieldsContract $fields): mixed
     {
@@ -331,12 +322,6 @@ class BotResource extends BaseModelResource
                 ->placeholder('Фильтр по API URL')
                 ->hint('Ищет по части URL'),
         ];
-    }
-
-    // Запрос для индексной страницы
-    public function indexQuery(): Builder
-    {
-        return parent::indexQuery()->orderBy('name');
     }
 
     public function testChat(MoonShineRequest $request): JsonResponse

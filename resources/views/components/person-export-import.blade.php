@@ -64,7 +64,7 @@
         }
     </style>
 
-    <a href="{{ $exportUrl }}" target="_blank" class="btn btn-primary split-btn-main" title="Экспорт фотографий персон">
+    <a href="{{ $exportUrl }}" data-role="zip" class="btn btn-primary split-btn-main" title="Экспорт фотографий персон">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
         </svg>
@@ -85,7 +85,7 @@
          x-transition:leave-start="transform opacity-100 scale-100"
          x-transition:leave-end="transform opacity-0 scale-95"
          class="split-dropdown bg-white border border-gray-100">
-        <a href="{{ $exportUrl }}" target="_blank" class="split-dropdown-item text-gray-700">
+        <a href="{{ $exportUrl }}" data-role="zip" class="split-dropdown-item text-gray-700">
             Экспорт
         </a>
         <button type="button" class="split-dropdown-item text-gray-700"

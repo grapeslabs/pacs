@@ -18,14 +18,32 @@
         </include>
     </source>
     <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="BCRYPT_ROUNDS" value="4"/>
-        <env name="CACHE_DRIVER" value="array"/>
-        <!-- <env name="DB_CONNECTION" value="sqlite"/> -->
-        <!-- <env name="DB_DATABASE" value=":memory:"/> -->
-        <env name="MAIL_MAILER" value="array"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="SESSION_DRIVER" value="array"/>
-        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_DEBUG" value="false" force="true"/>
+        <env name="BCRYPT_ROUNDS" value="4" force="true"/>
+        <env name="CACHE_DRIVER" value="array" force="true"/>
+        <env name="DB_CONNECTION" value="pgsql" force="true"/>
+        <env name="DB_HOST" value="app-database" force="true"/>
+        <env name="DB_PORT" value="5432" force="true"/>
+        <env name="DB_DATABASE" value="pacs_testing" force="true"/>
+        <env name="DB_USERNAME" value="pacs_testing" force="true"/>
+        <env name="DB_PASSWORD" value="pacs_testing" force="true"/>
+        <env name="ADB_HOST" value="127.0.0.1" force="true"/>
+        <env name="ADB_PORT" value="5432" force="true"/>
+        <env name="ADB_DATABASE" value="analytic_unused_testing" force="true"/>
+        <env name="ADB_USERNAME" value="unused" force="true"/>
+        <env name="ADB_PASSWORD" value="unused" force="true"/>
+        <env name="LPR_DB_HOST" value="127.0.0.1" force="true"/>
+        <env name="LPR_DB_PORT" value="5432" force="true"/>
+        <env name="LPR_DB_DATABASE" value="lpr_unused_testing" force="true"/>
+        <env name="LPR_DB_USERNAME" value="unused" force="true"/>
+        <env name="LPR_DB_PASSWORD" value="unused" force="true"/>
+        <env name="MEDIA_SERVER_ENABLED" value="true" force="true"/>
+        <env name="ANALYTIC_ENABLED" value="true" force="true"/>
+        <env name="LPR_ENABLED" value="true" force="true"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="TELESCOPE_ENABLED" value="false" force="true"/>
     </php>
 </phpunit>

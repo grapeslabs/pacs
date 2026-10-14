@@ -15,7 +15,7 @@ use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Fields\Relationships\BelongsTo;
-use MoonShine\Laravel\Models\MoonshineUserRole;
+use App\Models\Role;
 use MoonShine\Laravel\Pages\Crud\DetailPage;
 use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
@@ -126,7 +126,7 @@ class MoonShineUserResource extends BaseModelResource
                 Grid::make([
                     Column::make([
                         SelectField::make('Роль','moonshine_user_role_id')
-                            ->options(MoonshineUserRole::all()->pluck('name', 'id')),
+                            ->options(Role::query()->pluck('name', 'id')),
                     ])->columnSpan(3),
                     Column::make([
                         CustomDate::make('Дата создания', 'created_at')
@@ -161,7 +161,8 @@ class MoonShineUserResource extends BaseModelResource
                     ])->columnSpan(6)
                 ]),
                 PermissionMatrixField::make('Права', 'permissions')
-                    ->roleField('moonshine_user_role_id'),
+                    ->roleField('moonshine_user_role_id')
+                    ->inheritable(),
                 ActionButton::make('Сохранить')
                     ->customAttributes(['type' => 'submit', 'style' => 'width: 136px'])
                     ->primary(),
@@ -205,7 +206,8 @@ class MoonShineUserResource extends BaseModelResource
     {
         return [
             SelectField::make('Роль', 'moonshine_user_role_id')
-                ->options(MoonshineUserRole::all()->pluck('name', 'id')->toArray()),
+                ->options(Role::query()->pluck('name', 'id')->toArray())
+                ->nullable(),
             CustomText::make('E-mail', 'email')
                 ->onApply(function (Builder $query, string $value, Field $field) {
                     if ($value) {

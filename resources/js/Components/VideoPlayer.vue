@@ -108,12 +108,10 @@ const initHls = async () => {
                 if (props.live) {
                     const lastFragment = fragments[fragments.length - 1];
                     startPosition = lastFragment.start;
-                    console.log(`[HLS] LIVE detected. Jumping to end: ${startPosition}s`);
                 } else {
                     const firstValid = fragments.find(f => !f.gap);
                     if (firstValid && firstValid.start > 0) {
                         startPosition = firstValid.start + 0.1;
-                        console.log(`[HLS] Обнаружен стартовый GAP. Перенос старта на ${startPosition} сек.`);
                     }
                 }
             }

@@ -1,6 +1,6 @@
 x-logging: &default-logging
   options:
-    max-size: "10m"
+    max-size: "20m"
   driver: json-file
 
 services:
@@ -16,12 +16,12 @@ services:
       - --certificatesresolvers.le.acme.email=${CERT_ADMIN_EMAIL:-admin@example.ru}
       - --certificatesresolvers.le.acme.storage=/certs/acme.json
       - --certificatesresolvers.le.acme.tlschallenge=true
-      - --log.level=debug
+      - --log.level=INFO
     ports:
       - 80:80
       - 443:443
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - certs:/certs
     environment:
       TZ: "Europe/Moscow"
@@ -36,10 +36,10 @@ services:
     restart: unless-stopped
     environment:
       TZ: "Europe/Moscow"
-      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-50M}
     volumes:
       - public_storage:/var/www/html/public/storage
       - analytic_thumbnails:/var/www/html/public/analytic-storage/thumbnails
+      - analytic_crossings:/var/www/html/public/analytic-storage/crossings
       - lpr_events:/var/www/html/public/lpr-events
     depends_on:
       - php
@@ -73,6 +73,8 @@ services:
       - lpr_logs:/var/www/html/lpr/logs:ro
       - analytic_server_logs:/var/www/html/analytic/logs/server:ro
       - analytic_api_logs:/var/www/html/analytic/logs/api:ro
+      - analytic_thumbnails:/var/www/html/analytic/thumbnails:ro
+      - analytic_crossings:/var/www/html/analytic/crossings:ro
     depends_on:
       app-database:
         condition: service_healthy
@@ -86,10 +88,13 @@ services:
       - "ofelia.job-exec.drive-check.command=php /var/www/html/artisan drive:check"
       - "ofelia.job-exec.demo-user.schedule=@daily"
       - "ofelia.job-exec.demo-user.command=php /var/www/html/artisan demo:manage-demo-user"
+      - "ofelia.job-exec.frp-sync.schedule=@every 5m"
+      - "ofelia.job-exec.frp-sync.command=php /var/www/html/artisan frp:sync"
     env_file:
       - .env
     environment:
       LOG_SOURCE: php
+    logging: *default-logging
 
   horizon:
     image: ghcr.io/grapeslabs/pacs-horizon:${APP_VERSION}
@@ -97,6 +102,9 @@ services:
     volumes:
       - storage:/var/www/html/storage
       - public_storage:/var/www/html/storage/app/public
+      - analytic_thumbnails:/var/www/html/analytic/thumbnails:ro
+      - analytic_crossings:/var/www/html/analytic/crossings:ro
+      - lpr_events:/var/www/html/lpr/events:ro
     depends_on:
       app-database:
         condition: service_healthy
@@ -107,48 +115,12 @@ services:
     environment:
       TZ: Europe/Moscow
       LOG_SOURCE: horizon
+      SUPERVISOR_HTTP_USER: ${SUPERVISOR_HTTP_USER:-supervisor}
+      SUPERVISOR_HTTP_PASS: ${SUPERVISOR_HTTP_PASS:-supervisor}
+    expose:
+      - 9001
     networks:
       - laravel
-    entrypoint: ["php", "/var/www/html/artisan", "queue:work", "--sleep=1", "--tries=3", "--timeout=90"]
-    logging: *default-logging
-
-  events-processor:
-    image: ghcr.io/grapeslabs/pacs:${APP_VERSION}
-    restart: unless-stopped
-    volumes:
-      - storage:/var/www/html/storage
-      - public_storage:/var/www/html/storage/app/public
-    depends_on:
-      - app-database
-      - redis
-    env_file:
-      - .env
-    environment:
-      TZ: Europe/Moscow
-      LOG_SOURCE: events
-    networks:
-      - laravel
-    entrypoint: ["php", "/var/www/html/artisan", "events:process-new"]
-    logging: *default-logging
-
-  lpr-rules-processor:
-    image: ghcr.io/grapeslabs/pacs:${APP_VERSION}
-    restart: unless-stopped
-    volumes:
-      - storage:/var/www/html/storage
-      - public_storage:/var/www/html/storage/app/public
-      - lpr_events:/var/www/html/lpr/events:ro
-    depends_on:
-      - app-database
-      - redis
-    env_file:
-      - .env
-    environment:
-      TZ: Europe/Moscow
-      LOG_SOURCE: lpr-rules
-    networks:
-      - laravel
-    entrypoint: ["php", "/var/www/html/artisan", "lpr:process-rules"]
     logging: *default-logging
 
   redis:
@@ -180,7 +152,6 @@ services:
       - app_database:/var/lib/postgresql/data:delegated
     networks:
       - laravel
-      - traefik-public
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
       interval: 5s
@@ -197,6 +168,8 @@ services:
       - laravel
     expose:
       - 8081
+    ports:
+      - "${MEDIA_SERVER_WEBRTC_UDP_PORT:-8189}:${MEDIA_SERVER_WEBRTC_UDP_PORT:-8189}/udp"
     user: "0:0"
     working_dir: /cfg
     volumes:
@@ -218,7 +191,6 @@ services:
       - ./init_db.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - laravel
-      - traefik-public
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${ADB_USERNAME}"]
       interval: 10s
@@ -271,9 +243,12 @@ services:
       EUCLIDEAN_THRESHOLD: "${EUCLIDEAN_THRESHOLD}"
       MAX_FACES_IN_LIST: "${MAX_FACES_IN_LIST}"
       CAMERA_POLL_INTERVAL: "${CAMERA_POLL_INTERVAL}"
+      OMP_NUM_THREADS: "${ANALYTIC_OMP_NUM_THREADS:-2}"
+      MKL_NUM_THREADS: "${ANALYTIC_OMP_NUM_THREADS:-2}"
     volumes:
       - analytic_captured_images:/app/captured_images
       - analytic_thumbnails:/app/thumbnails
+      - analytic_crossings:/app/crossings
       - analytic_server_logs:/app/logs
     depends_on:
       analytic-api:
@@ -366,6 +341,7 @@ volumes:
   certs:
   analytic_database:
   analytic_thumbnails:
+  analytic_crossings:
   analytic_captured_images:
   analytic_person_photos:
   analytic_server_logs:

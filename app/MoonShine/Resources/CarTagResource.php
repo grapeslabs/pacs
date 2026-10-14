@@ -4,9 +4,6 @@ namespace App\MoonShine\Resources;
 
 use App\Models\CarTag;
 use App\MoonShine\Fields\CustomText;
-use App\MoonShine\Pages\CustomIndexPage;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
 
@@ -17,10 +14,6 @@ class CarTagResource extends BaseModelResource
     protected ?string $editModalTitle = 'Редактирование тега';
     protected string $column = 'name';
 
-    protected function pages(): array
-    {
-        return [CustomIndexPage::class, DetailPage::class, FormPage::class];
-    }
 
     public function indexFields(): iterable
     {

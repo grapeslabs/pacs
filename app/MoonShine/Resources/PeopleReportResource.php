@@ -44,12 +44,7 @@ class PeopleReportResource extends BaseModelResource
 
     protected function modifyQueryBuilder(Builder $builder): Builder
     {
-        return $builder->where('is_unknown', false);
-    }
-
-    public function query(): Builder
-    {
-        return parent::query()->with(['person', 'stream']);
+        return $builder->with(['person', 'stream'])->where('is_unknown', false);
     }
 
     public function indexFields(): iterable

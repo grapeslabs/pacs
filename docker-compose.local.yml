@@ -16,10 +16,10 @@ services:
     volumes:
       - ./:/var/www/html:delegated
       - ./analytic/thumbnails:/var/www/html/public/analytic-storage/thumbnails
+      - ./analytic/crossings:/var/www/html/public/analytic-storage/crossings
       - ./lpr/events:/var/www/html/public/lpr-events
     environment:
       TZ: "Europe/Moscow"
-      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-20M}
     depends_on:
       - php
     networks:
@@ -82,6 +82,8 @@ services:
       - "ofelia.job-exec.drive-check.command=php /var/www/html/artisan drive:check"
       - "ofelia.job-exec.demo-user.schedule=@daily"
       - "ofelia.job-exec.demo-user.command=php /var/www/html/artisan demo:manage-demo-user"
+      - "ofelia.job-exec.frp-sync.schedule=@every 5m"
+      - "ofelia.job-exec.frp-sync.command=php /var/www/html/artisan frp:sync"
     networks:
       - laravel
       - traefik-public
@@ -190,12 +192,15 @@ services:
     depends_on:
       - app-database
       - redis
+    expose:
+      - 9001
     environment:
       TZ: Europe/Moscow
       LOG_SOURCE: horizon
+      SUPERVISOR_HTTP_USER: ${SUPERVISOR_HTTP_USER:-supervisor}
+      SUPERVISOR_HTTP_PASS: ${SUPERVISOR_HTTP_PASS:-supervisor}
     networks:
       - laravel
-    entrypoint: ["php", "/var/www/html/artisan", "queue:work", "--sleep=1", "--tries=3", "--timeout=90"]
     logging: *default-logging
 
   adminer:
@@ -228,6 +233,8 @@ services:
       - laravel
     expose:
       - 8081
+    ports:
+      - "${MEDIA_SERVER_WEBRTC_UDP_PORT:-8189}:${MEDIA_SERVER_WEBRTC_UDP_PORT:-8189}/udp"
     user: "0:0"
     working_dir: /cfg
     volumes:
@@ -300,10 +307,13 @@ services:
       - EUCLIDEAN_THRESHOLD=${EUCLIDEAN_THRESHOLD}
       - MAX_FACES_IN_LIST=${MAX_FACES_IN_LIST}
       - CAMERA_POLL_INTERVAL=${CAMERA_POLL_INTERVAL}
+      - OMP_NUM_THREADS=${ANALYTIC_OMP_NUM_THREADS:-2}
+      - MKL_NUM_THREADS=${ANALYTIC_OMP_NUM_THREADS:-2}
       - TZ=Europe/Moscow
     volumes:
       - ./test:/app/captured_images
       - ./analytic/thumbnails:/app/thumbnails
+      - ./analytic/crossings:/app/crossings
       - ./analytic/logs/server:/app/logs
     depends_on:
       analytic-api:
@@ -375,49 +385,6 @@ services:
         required: false
     networks:
       - laravel
-    logging: *default-logging
-
-  events-processor:
-    build:
-      context: ./docker/php
-      dockerfile: Dockerfile
-      target: app
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    restart: unless-stopped
-    volumes:
-      - ./:/var/www/html:delegated
-    depends_on:
-      - app-database
-      - redis
-    environment:
-      TZ: Europe/Moscow
-      LOG_SOURCE: events
-    networks:
-      - laravel
-    entrypoint: ["php", "/var/www/html/artisan", "events:process-new"]
-    logging: *default-logging
-  lpr-rules-processor:
-    build:
-      context: ./docker/php
-      dockerfile: Dockerfile
-      target: app
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    restart: unless-stopped
-    volumes:
-      - ./:/var/www/html:delegated
-    depends_on:
-      - app-database
-      - redis
-    environment:
-      TZ: Europe/Moscow
-      LOG_SOURCE: lpr-rules
-    networks:
-      - laravel
-    entrypoint: ["php", "/var/www/html/artisan", "lpr:process-rules"]
     logging: *default-logging
 
   ofelia:

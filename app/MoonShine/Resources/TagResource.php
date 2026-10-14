@@ -3,9 +3,6 @@
 namespace App\MoonShine\Resources;
 
 use App\Models\Tag;
-use App\MoonShine\Pages\CustomIndexPage;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Fields\ID;
@@ -17,14 +14,6 @@ class TagResource extends BaseModelResource
 
     protected string $title = 'Теги';
     protected ?string $editModalTitle = 'Редактирование тега';
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
 
     public function indexFields(): iterable
     {

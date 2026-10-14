@@ -4,15 +4,18 @@
         values: @js($values),
         template: @js($template),
         personOnly: @js(array_values($personOnly)),
-        personLabels: @js(array_values(array_intersect_key($options, array_flip($personOnly)))),
+        optionLabels: @js($options),
         eventType: @js($eventType),
-        get personAvailable() { return this.eventType !== 'unknowed'; },
-        available(key) { return this.personAvailable || this.personOnly.indexOf(key) === -1; },
+        get personAvailable() { return this.eventType !== 'unknowed' && this.eventType !== 'crossing'; },
+        available(key) {
+            return this.personAvailable || this.personOnly.indexOf(key) === -1;
+        },
         dropUnavailable() {
-            if (this.personAvailable) return;
-            this.personOnly.forEach(key => { this.values[key] = false; });
-            this.personLabels.forEach(label => {
-                this.template = this.template.split('{' + label + '}').join('');
+            Object.keys(this.optionLabels).forEach(key => {
+                if (!this.available(key)) {
+                    this.values[key] = false;
+                    this.template = this.template.split('{' + this.optionLabels[key] + '}').join('');
+                }
             });
             this.template = this.template.replace(/[ \t]{2,}/g, ' ');
         },

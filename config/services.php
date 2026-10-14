@@ -41,6 +41,7 @@ return [
         "url" => env("MEDIA_SERVER_API_URL"),
         "rtsp_url" => env("MEDIA_SERVER_RTSP"),
         "timeout" => env("MEDIA_SERVER_API_TIMEOUT", 5),
+        "webrtc_profile" => env("MEDIA_SERVER_WEBRTC_PROFILE", "original"),
     ],
     "va" => [
         "enabled" => env("ANALYTIC_ENABLED", false) || env("LPR_ENABLED", false),
@@ -58,5 +59,16 @@ return [
         "enabled" => env("YACAPTCHA_ENABLED"),
         "secret" => env("YACAPTCHA_SECRET"),
         "client" => env("YACAPTCHA_CLIENT"),
+    ],
+    "frp" => [
+        "portal_url" => env("FRP_PORTAL_URL", "https://my.grapespacs.ru"),
+        "server_addr" => env("FRP_SERVER_ADDR", "my.grapespacs.ru"),
+        "server_port" => env("FRP_SERVER_PORT", 7000),
+        "local_host" => env("FRP_LOCAL_HOST", "app"),
+        "local_port" => env("FRP_LOCAL_PORT", 80),
+        "timeout" => env("FRP_TIMEOUT", 10),
+        "supervisor_url" => env("FRP_SUPERVISOR_URL", "http://horizon:9001"),
+        "supervisor_user" => env("SUPERVISOR_HTTP_USER", "supervisor"),
+        "supervisor_pass" => env("SUPERVISOR_HTTP_PASS", "supervisor"),
     ],
 ];

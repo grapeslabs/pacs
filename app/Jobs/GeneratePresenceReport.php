@@ -105,7 +105,7 @@ class GeneratePresenceReport implements ShouldQueue
             $last = end($passes);
             if ($last !== false
                 && $last['role'] === $role
-                && $time->diffInSeconds($last['time']) <= self::COLLAPSE_GAP_SECONDS) {
+                && $time->diffInSeconds($last['time'], true) <= self::COLLAPSE_GAP_SECONDS) {
                 continue;
             }
             $passes[] = ['role' => $role, 'time' => $time];
@@ -182,7 +182,7 @@ class GeneratePresenceReport implements ShouldQueue
             }
 
             if ($openEntry !== null) {
-                $gap = $pass['time']->diffInSeconds($openEntry);
+                $gap = (int) $pass['time']->diffInSeconds($openEntry, true);
                 if ($gap <= $breakSeconds) {
                     [$key, $label, $sublabel, $order] = $this->periodOf($openEntry, $type);
                     $this->ensurePeriod($periodKeys, $key, $label, $sublabel, $order);

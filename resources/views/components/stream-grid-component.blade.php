@@ -251,18 +251,15 @@
             uid: '{{ $item->uid }}',
             timestamp: Math.floor(Date.now() / 1000),
             hasError: false,
-            interval: null,
+            interval: 2000,
+            lastFrame: 0,
             init() {
                 @if(!$isStaticError)
-                this.interval = setInterval(() => {
-                    this.timestamp = Math.floor(Date.now() / 1000);
-                }, 2000);
+                window.camPreviewScheduler.register(this, $el);
                 @endif
             },
             destroy() {
-                if (this.interval) {
-                    clearInterval(this.interval);
-                }
+                window.camPreviewScheduler.unregister(this, $el);
             },
             get previewUrl() {
                 return '/media/' + this.uid + '/' + this.timestamp + '.jpg';
@@ -302,7 +299,7 @@
             <div class="cam-top-name">
                     <span class="cam-title">{{ $item->name ?? $item->uid }}</span>
 
-                    @if(!empty($item->is_recognize))
+                    @if(!empty($o['global_enable']))
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M8.375 9.32292C8.14017 9.32292 7.91496 9.4162 7.74892 9.58225C7.58287 9.7483 7.48958 9.97351 7.48958 10.2083C7.48958 10.4432 7.58287 10.6684 7.74892 10.8344C7.91496 11.0005 8.14017 11.0938 8.375 11.0938C8.49127 11.0938 8.60641 11.0708 8.71383 11.0264C8.82126 10.9819 8.91887 10.9166 9.00108 10.8344C9.0833 10.7522 9.14852 10.6546 9.19302 10.5472C9.23751 10.4397 9.26042 10.3246 9.26042 10.2083C9.26042 10.0921 9.23751 9.97692 9.19302 9.8695C9.14852 9.76208 9.0833 9.66447 9.00108 9.58225C8.91887 9.50003 8.82126 9.43481 8.71383 9.39032C8.60641 9.34582 8.49127 9.32292 8.375 9.32292ZM12.625 9.32292C12.3902 9.32292 12.165 9.4162 11.9989 9.58225C11.8329 9.7483 11.7396 9.97351 11.7396 10.2083C11.7396 10.4432 11.8329 10.6684 11.9989 10.8344C12.165 11.0005 12.3902 11.0938 12.625 11.0938C12.8598 11.0938 13.085 11.0005 13.2511 10.8344C13.4171 10.6684 13.5104 10.4432 13.5104 10.2083C13.5104 9.97351 13.4171 9.7483 13.2511 9.58225C13.085 9.4162 12.8598 9.32292 12.625 9.32292ZM10.5 2.41667C9.5698 2.41667 8.64872 2.59988 7.78933 2.95585C6.92994 3.31182 6.14908 3.83358 5.49133 4.49133C4.16294 5.81971 3.41667 7.62138 3.41667 9.5C3.41667 11.3786 4.16294 13.1803 5.49133 14.5087C6.14908 15.1664 6.92994 15.6882 7.78933 16.0441C8.64872 16.4001 9.5698 16.5833 10.5 16.5833C12.3786 16.5833 14.1803 15.8371 15.5087 14.5087C16.8371 13.1803 17.5833 11.3786 17.5833 9.5C17.5833 8.5698 17.4001 7.64872 17.0441 6.78933C16.6882 5.92994 16.1664 5.14908 15.5087 4.49133C14.8509 3.83358 14.0701 3.31182 13.2107 2.95585C12.3513 2.59988 11.4302 2.41667 10.5 2.41667ZM10.5 15.1667C8.99711 15.1667 7.55577 14.5696 6.49306 13.5069C5.43036 12.4442 4.83333 11.0029 4.83333 9.5C4.81144 9.29753 4.81144 9.0933 4.83333 8.89083C6.52055 8.15259 7.856 6.78921 8.55917 5.08708C9.21238 6.01273 10.0783 6.76801 11.0841 7.28941C12.0899 7.8108 13.2062 8.08308 14.3392 8.08333C14.8775 8.08333 15.4088 8.01958 15.9329 7.89917C16.8183 10.9167 15.1042 14.0546 12.1008 14.9329C11.5625 15.0887 11.0383 15.1667 10.5 15.1667ZM2 2.41667C2 2.04094 2.14926 1.68061 2.41493 1.41493C2.68061 1.14926 3.04094 1 3.41667 1H6.25V2.41667H3.41667V5.25H2V2.41667ZM19 16.5833C19 16.9591 18.8507 17.3194 18.5851 17.5851C18.3194 17.8507 17.9591 18 17.5833 18H14.75V16.5833H17.5833V13.75H19V16.5833ZM3.41667 18C3.04094 18 2.68061 17.8507 2.41493 17.5851C2.14926 17.3194 2 16.9591 2 16.5833V13.75H3.41667V16.5833H6.25V18H3.41667ZM17.5833 1C17.9591 1 18.3194 1.14926 18.5851 1.41493C18.8507 1.68061 19 2.04094 19 2.41667V5.25H17.5833V2.41667H14.75V1H17.5833Z" fill="url(#paint0_linear_1016_39402)"/>
                             <defs>
@@ -383,6 +380,70 @@
 
 @once
 <script>
+window.camPreviewScheduler = (function () {
+    const intervals = { visible: 2000, hidden: 30000 };
+    const tiles = new Map();
+    const byElement = new WeakMap();
+    let observer = null;
+    let timer = null;
+
+    function start() {
+        if (observer === null) {
+            observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    const tile = byElement.get(entry.target);
+
+                    if (tile) {
+                        tile.interval = entry.isIntersecting ? intervals.visible : intervals.hidden;
+                    }
+                });
+            }, { rootMargin: '100px' });
+        }
+
+        if (timer === null) {
+            timer = setInterval(tick, 500);
+        }
+    }
+
+    function tick() {
+        const now = Date.now();
+
+        tiles.forEach(function (element, tile) {
+            if (now - tile.lastFrame >= tile.interval) {
+                tile.lastFrame = now;
+                tile.timestamp = Math.floor(now / 1000);
+            }
+        });
+    }
+
+    return {
+        register(tile, element) {
+            tile.lastFrame = Date.now();
+            tiles.set(tile, element);
+            byElement.set(element, tile);
+            start();
+            observer.observe(element);
+        },
+        unregister(tile, element) {
+            const target = element || tiles.get(tile);
+
+            if (target && observer !== null) {
+                observer.unobserve(target);
+                tiles.delete(byElement.get(target) || tile);
+                byElement.delete(target);
+            }
+
+            if (tiles.size === 0 && timer !== null) {
+                clearInterval(timer);
+                timer = null;
+            }
+        },
+        get size() {
+            return tiles.size;
+        },
+    };
+})();
+
 document.addEventListener('alpine:init', () => {
     Alpine.store('streamView', {
         mode: localStorage.getItem('streamViewMode') || 'grid',

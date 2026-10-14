@@ -15,9 +15,6 @@ use Carbon\Carbon;
 use Dflydev\DotAccessData\Data;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Support\ListOf;
-use App\MoonShine\Pages\CustomIndexPage;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Laravel\Pages\Crud\IndexPage;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\UI\Components\Layout\Column;
@@ -45,14 +42,6 @@ class GuestResource extends BaseModelResource
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить гостя';
 
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
 
     public function detailSidebarData(Model $item): array
     {
@@ -297,10 +286,5 @@ class GuestResource extends BaseModelResource
             'photo.*.mimes' => 'Допустимые форматы: JPG, JPEG, PNG, WEBP',
             'photo.*.max' => 'Размер фотографии не должен превышать 5 МБ',
         ];
-    }
-
-    public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
-    {
-        return parent::indexQuery()->withCount('visits');
     }
 }

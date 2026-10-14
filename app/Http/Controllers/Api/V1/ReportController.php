@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Jobs\MarkReportsIdentified;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Analytics\Event;
 use App\Models\VideoAnalyticReport;
@@ -50,7 +52,7 @@ class ReportController extends Controller
             $query->where('datetime', '<=', Carbon::parse($request->input('datetime_to')));
         }
         if ($request->filled('camera_id')) {
-            $query->whereHas('stream', fn($q) => $q->where('uid', $request->input('camera_id')));
+            $query->where('camera_id', $request->input('camera_id'));
         }
         if ($request->filled('person_photobank_id')) {
             $query->where('person_photobank_id', $request->input('person_photobank_id'));
@@ -72,7 +74,7 @@ class ReportController extends Controller
             $query->where('datetime', '<=', Carbon::parse($request->input('datetime_to')));
         }
         if ($request->filled('camera_id')) {
-            $query->whereHas('stream', fn($q) => $q->where('uid', $request->input('camera_id')));
+            $query->where('camera_id', $request->input('camera_id'));
         }
 
         $reports = $query->orderBy('id', 'desc')->paginate($request->input('per_page', 15));
@@ -85,20 +87,24 @@ class ReportController extends Controller
         $report = VideoAnalyticReport::where('is_unknown', true)->findOrFail($reportId);
         $data = $request->validated();
 
-        $person = Person::create([
-            'grapesva_uuid' => $data['grapesva_uuid'],
-            'last_name' => $data['last_name'],
-            'first_name' => $data['first_name'],
-            'middle_name' => $data['middle_name'] ?? null,
-            'birth_date' => $data['birth_date'] ?? null,
-            'certificate_number' => $data['certificate_number'] ?? null,
-            'organization_id' => $data['organization_id'] ?? null,
-            'comment' => $data['comment'] ?? null,
-        ]);
+        $person = DB::transaction(function () use ($data) {
+            $person = Person::create([
+                'grapesva_uuid' => $data['grapesva_uuid'],
+                'last_name' => $data['last_name'],
+                'first_name' => $data['first_name'],
+                'middle_name' => $data['middle_name'] ?? null,
+                'birth_date' => $data['birth_date'] ?? null,
+                'certificate_number' => $data['certificate_number'] ?? null,
+                'organization_id' => $data['organization_id'] ?? null,
+                'comment' => $data['comment'] ?? null,
+            ]);
 
-        if (!empty($data['tags'])) {
-            $person->tags()->sync($data['tags']);
-        }
+            if (!empty($data['tags'])) {
+                $person->tags()->sync($data['tags']);
+            }
+
+            return $person;
+        });
 
         $finalPhotos = [];
 
@@ -124,9 +130,7 @@ class ReportController extends Controller
         $person->photo = $finalPhotos;
         $person->saveQuietly();
 
-        VideoAnalyticReport::query()->toBase()
-            ->where('person_photobank_id', $person->grapesva_uuid)
-            ->update(['is_unknown' => false]);
+        MarkReportsIdentified::dispatch($person->grapesva_uuid);
 
         return response()->json([
             'message' => 'Персона успешно идентифицирована',

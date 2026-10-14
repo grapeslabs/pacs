@@ -23,5 +23,8 @@ php artisan view:cache
 echo "Running migrations..."
 php artisan migrate --force
 
+echo "Registering FRP instance..."
+php artisan frp:register || true
+
 # Запуск основного процесса (PHP-FPM)
 exec docker-php-entrypoint "$@"

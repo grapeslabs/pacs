@@ -2,8 +2,9 @@
 
 namespace App\Observers;
 
+use App\Jobs\UpdatePersonVideoAnalytics;
 use App\Models\Person;
-use App\Models\SkudCommand;
+use GrapesLabs\PinvideoSkud\Models\SkudCommand;
 use App\Models\GrapeslabsSkudController;
 use App\Services\ControllerAccessService;
 use GrapesLabs\PinvideoSkud\Models\SkudController;
@@ -24,8 +25,6 @@ class PersonObserver
 
     protected ControllerAccessService $access;
 
-    protected array $deletedRfidKeysCache = [];
-
     public function __construct(VideoAnalyticService $vas, ControllerAccessService $access)
     {
         $this->vas = $vas;
@@ -42,7 +41,7 @@ class PersonObserver
             $person->grapesva_uuid = Str::uuid();;
             $person->saveQuietly();
         }
-        $this->updateVas($person);
+        UpdatePersonVideoAnalytics::dispatch($person->id);
         $person->load('keys');
 
         if (!$this->isCurrentlyFrozen($person->frozen_start, $person->frozen_end)) {
@@ -94,27 +93,37 @@ class PersonObserver
         }
 
         if ($person->wasChanged('photo') && !$isFrozen) {
-            $this->updateVas($person);
+            UpdatePersonVideoAnalytics::dispatch($person->id);
             $faceControllers = $this->access->faceControllersForPerson($person);
             $keysToClear = !empty($person->getOriginal('photo')) ? [$this->createFaceKey($person, $person->getOriginal('photo'))] : [];
             $this->syncWithControllers($faceControllers, [$this->createFaceKey($person, $person->photo)], $keysToClear, "update person photo {$person->id}");
         }
     }
 
+    private function likeLiteral(string $value): string
+    {
+        return addcslashes($value, '%_\\');
+    }
+
     public function deleting(Person $person): void
     {
-        $this->deletedRfidKeysCache[$person->id] = $person->keys->pluck('key')->toArray();
+        $person->setRelation('keys', $person->keys()->get());
     }
 
     public function deleted(Person $person): void
     {
         $uid = $person->key_uid ?? $person->getSkudUid();
+        $cards = $person->keys->pluck('key')->all();
+
+        SkudCommand::where('message', 'LIKE', '%"person":"' . $this->likeLiteral($uid) . '"%')->delete();
+        foreach ($cards as $cardNum) {
+            SkudCommand::where('message', 'LIKE', '%"card":"' . $this->likeLiteral($cardNum) . '"%')->delete();
+        }
 
         foreach ($this->getFaceControllers() as $controller) {
             $this->createSkudCommand($controller->id, Carbon::now(), 'del_persons', ['persons' => [['person' => $uid]]]);
         }
 
-        $cards = $this->deletedRfidKeysCache[$person->id] ?? [];
         if (!empty($cards)) {
             $rfidCardsDel = array_map(fn($c) => ['card' => (string)$c], $cards);
             foreach ($this->getRfidControllers() as $controller) {
@@ -122,14 +131,8 @@ class PersonObserver
             }
         }
 
-        SkudCommand::where('message', 'LIKE', '%"person":"' . $uid . '"%')->delete();
-        foreach ($cards as $cardNum) {
-            SkudCommand::where('message', 'LIKE', '%"card":"' . $cardNum . '"%')->delete();
-        }
-
         $this->vas->personDelete($person->grapesva_uuid);
         $person->keys()->getQuery()->delete();
-        unset($this->deletedRfidKeysCache[$person->id]);
     }
 
     public function scheduleCommands(Person $person): void
@@ -139,14 +142,14 @@ class PersonObserver
         $now = Carbon::now();
         $uid = $person->key_uid ?? $person->getSkudUid();
 
-        SkudCommand::where('message', 'LIKE', '%"person":"' . $uid . '"%')
+        SkudCommand::where('message', 'LIKE', '%"person":"' . $this->likeLiteral($uid) . '"%')
             ->where('execute_at', '>', $now)
             ->delete();
 
         $cardNumbers = $person->keys->pluck('key')->toArray();
         if (!empty($cardNumbers)) {
             foreach ($cardNumbers as $cardNum) {
-                SkudCommand::where('message', 'LIKE', '%"card":"' . $cardNum . '"%')
+                SkudCommand::where('message', 'LIKE', '%"card":"' . $this->likeLiteral($cardNum) . '"%')
                     ->where('execute_at', '>', $now)
                     ->delete();
             }
@@ -278,19 +281,6 @@ class PersonObserver
             }
         }
         return $images;
-    }
-
-    protected function updateVas(Person $person): void
-    {
-        if (empty($person->photo)) return;
-        $photosFullPaths = [];
-        foreach ($person->photo as $photoPath) {
-            $fullPath = Storage::disk('public')->path($photoPath);
-            if (file_exists($fullPath)) $photosFullPaths[] = $fullPath;
-        }
-        if (!empty($photosFullPaths)) {
-            $this->vas->personCreate($person->getFullName(), $photosFullPaths, $person->grapesva_uuid);
-        }
     }
 
     public function isCurrentlyFrozen(?string $start, ?string $end): bool

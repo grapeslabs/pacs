@@ -2,8 +2,10 @@
 
 namespace App\MoonShine\Resources;
 
+use MoonShine\Laravel\Enums\Ability;
 use App\Models\Key;
 use App\Models\Person;
+use Illuminate\Validation\Rule;
 use App\Models\Organization;
 use App\Models\VideoAnalyticReport;
 use App\MoonShine\Fields\AvatarField;
@@ -16,7 +18,6 @@ use App\Models\Tag;
 use App\MoonShine\Fields\SelectField;
 use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\TagsField;
-use App\MoonShine\Pages\CustomIndexPage;
 use App\MoonShine\Resources\OrganizationResource;
 use Carbon\Carbon;
 use Closure;
@@ -25,8 +26,6 @@ use MoonShine\Laravel\Fields\Relationships\BelongsTo;
 use MoonShine\Laravel\Fields\Relationships\BelongsToMany;
 use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
 use MoonShine\Laravel\MoonShineRequest;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use App\Services\VideoAnalyticService;
 use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
 use MoonShine\Support\Enums\ToastType;
@@ -89,6 +88,26 @@ class PersonResource extends BaseModelResource
     protected string $model = Person::class;
     protected string $title = 'Персоны';
 
+    private ?array $organizationOptions = null;
+
+    private function organizationOptions(): array
+    {
+        return $this->organizationOptions ??= Organization::query()
+            ->select(['id', 'short_name', 'inn'])
+            ->get()
+            ->map(fn($o) => [
+                'id'      => $o->id,
+                'name'    => $o->short_name,
+                'subtext' => $o->inn ? 'ИНН ' . $o->inn : null,
+            ])
+            ->toArray();
+    }
+
+    protected function modifyQueryBuilder(Builder $builder): Builder
+    {
+        return $builder->with(['tags', 'organization'])->withCount('keys');
+    }
+
     public function indexSubtitle(): ?string
     {
         return $this->countSubtitle('персона', 'персоны', 'персон');
@@ -98,14 +117,6 @@ class PersonResource extends BaseModelResource
     protected bool $detailSidebar = true;
     protected ?string $createLabel = 'Добавить персону';
 
-    protected function pages(): array
-    {
-        return [
-            CustomIndexPage::class,
-            DetailPage::class,
-            FormPage::class,
-        ];
-    }
 
     public function detailSidebarData(Model $item): array
     {
@@ -257,11 +268,6 @@ class PersonResource extends BaseModelResource
         return parent::indexButtons()->prepend($this->getKeyButton());
     }
 
-    public function indexQuery(): \Illuminate\Database\Eloquent\Builder
-    {
-        return parent::indexQuery()->with('tags');
-    }
-
     public function trAttributes(): ?Closure
     {
         $parentClosure = parent::trAttributes() ?? fn() => [];
@@ -303,7 +309,7 @@ class PersonResource extends BaseModelResource
             ID::make()->sortable(),
             AvatarField::make('ФИО', 'last_name')
                 ->text(fn($item) => trim(($item->last_name ?? '') . ' ' . ($item->first_name ?? '') . ' ' . ($item->middle_name ?? '')))
-                ->subtext(fn($item) => $item->certificate_number)
+                ->subtext(fn($item) => '№' . $item->certificate_number)
                 ->photo(fn($item) => is_array($item->photo) ? ($item->photo[0] ?? null) : $item->photo)
                 ->indicator(fn($item) => $item && $item->isFrozen()
                     ? '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M4.5 6l15 12M19.5 6l-15 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 6.5 9.5 5m2.5 1.5L14.5 5M12 17.5 9.5 19m2.5-1.5L14.5 19M5.5 8.8 5 6m.5 2.8L3 9.4M18.5 8.8 19 6m-.5 2.8L21 9.4M5.5 15.2 5 18m.5-2.8L3 14.6M18.5 15.2 19 18m-.5-2.8L21 14.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
@@ -315,7 +321,7 @@ class PersonResource extends BaseModelResource
                 ->sortable(),
             BelongsTo::make('Организация', 'organization', fn($item) => $item->short_name, resource: OrganizationResource::class)
                 ->sortable(),
-            CountField::make('Ключи', 'id', fn($item) => $item->keys()->count())
+            CountField::make('Ключи', 'id', fn($item) => (int) $item->keys_count)
                 ->sortable(),
             TagsField::make('Теги', 'tags', fn($item) => $item->tags->pluck('name')->all()),
             ColoredSelectField::make('Статус', 'frozen_start', fn($item) => $item && $item->isFrozen() ? 'frozen' : 'active')
@@ -383,11 +389,7 @@ class PersonResource extends BaseModelResource
                         ->placeholder('Выберите организацию')
                         ->icon('magnifier')
                         ->optionsIcon('organization')
-                        ->options(Organization::query()->get()->map(fn($o) => [
-                            'id'      => $o->id,
-                            'name'    => $o->short_name,
-                            'subtext' => $o->inn ? 'ИНН ' . $o->inn : null,
-                        ])->toArray())
+                        ->options($this->organizationOptions())
                         ->nullable(),
                 ])->columnSpan(6),
             ]),
@@ -445,19 +447,23 @@ class PersonResource extends BaseModelResource
                 ->placeholder('Фильтрация по организации')
                 ->icon('magnifier')
                 ->optionsIcon('organization')
-                ->options(Organization::query()->get()->map(fn($o) => [
-                    'id'      => $o->id,
-                    'name'    => $o->short_name,
-                    'subtext' => $o->inn ? 'ИНН ' . $o->inn : null,
-                ])->toArray())
+                ->options($this->organizationOptions())
                 ->nullable(),
 
-            SelectField::make('Теги', 'tags')
+            SelectField::make('Теги', 'tags_filter')
                 ->icon('tag')
                 ->optionsIcon('tag')
                 ->placeholder('Введите тег')
                 ->options(Tag::select('id', 'name')->get())
-                ->multiple(true),
+                ->multiple(true)
+                ->nullable()
+                ->onApply(function (Builder $query, $value) {
+                    if (empty($value)) {
+                        return $query;
+                    }
+
+                    return $query->whereHas('tags', fn($q) => $q->whereIn('tags.id', (array) $value));
+                }),
 
             SelectField::make('Статус', 'status_filter')
                 ->icon('check')
@@ -541,6 +547,14 @@ class PersonResource extends BaseModelResource
             ->async(selector: "#{$this->safeModalName}_content");
     }
 
+    public function asyncMethodAbilities(): array
+    {
+        return array_merge(parent::asyncMethodAbilities(), [
+            'getKeyForm' => Ability::UPDATE,
+            'saveKey' => Ability::UPDATE,
+        ]);
+    }
+
     public function getKeyForm(MoonShineRequest $request): string
     {
         $itemId = $request->get('item_id');
@@ -559,7 +573,7 @@ class PersonResource extends BaseModelResource
                     PersonBindingField::make('', 'person_card')
                         ->person($personName, $personPhoto, 'Ключ привяжется к этой персоне')
                         ->withoutWrapper(),
-                    Hidden::make('person_id')->default((int) $itemId),
+                    Hidden::make('person_id')->default((string) $itemId),
                     CustomText::make('Ключ', 'key')
                         ->leadingIcon(file_get_contents(public_path('icons/btn-addkey.svg')))
                         ->placeholder('XXXXXXXXXXXX')
@@ -575,17 +589,25 @@ class PersonResource extends BaseModelResource
                         ->default('Mifare'),
                 ]
             )
-            ->submit('Сохранить', ['class' => 'btn-primary', 'style' => 'margin-left: 1.5rem']);
+            ->submit('Сохранить', ['class' => 'js-form-sidebar-submit']);
     }
 
     public function saveKey(MoonShineRequest $request)
     {
-        $data = $request->all();
-        $key = Key::create([
-            'person_id' => $data['person_id'] ?? null,
-            'type' => $data['type'] ?? null,
-            'key' => $data['key'] ?? null,
+        $data = $request->validate([
+            'person_id' => ['required', 'integer', 'exists:person,id'],
+            'type' => ['required', Rule::in(Key::TYPES)],
+            'key' => ['required', 'string', 'max:255', 'regex:/^[0-9A-Za-z-]+$/', Rule::unique('keys', 'key')->withoutTrashed()],
+        ], [
+            'key.regex' => 'Ключ может содержать только латинские буквы, цифры и дефис',
         ]);
+
+        Key::create([
+            'person_id' => $data['person_id'],
+            'type' => $data['type'],
+            'key' => $data['key'],
+        ]);
+
         return MoonShineJsonResponse::make()
             ->toast('Ключ успешно добавлен!', ToastType::SUCCESS)
             ->redirect(app(KeyResource::class)->getUrl());

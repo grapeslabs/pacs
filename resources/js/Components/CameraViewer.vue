@@ -5,6 +5,7 @@ import axios from 'axios';
 
 import DatePicker from './DatePicker.vue';
 import VideoPlayer from './VideoPlayer.vue';
+import WhepPlayer from './WhepPlayer.vue';
 
 const props = defineProps({
     camera: { type: Object, required: true }
@@ -16,6 +17,8 @@ const trackRef = ref(null);
 
 const isPlaying = ref(false);
 const isLive = ref(true);
+const whepFailed = ref(false);
+const useWhep = computed(() => isLive.value && !whepFailed.value);
 const volume = ref(50);
 const speed = ref(1);
 const isSpeedMenuOpen = ref(false);
@@ -413,7 +416,6 @@ const onTrackMouseMove = (e) => {
     const minPan = -(trackWidth - viewportWidth);
 
     panX.value = Math.max(minPan, Math.min(0, newPanX));
-    console.log(panX.value);
 };
 
 const onTrackMouseUp = (e) => {
@@ -468,8 +470,7 @@ const onPlayheadMouseUp = (e) => {
 
     const percent = seekFromMouseEvent(e.clientX);
     const seekSeconds = (percent / 100) * 86400;
-    console.log(percent, seekSeconds);
-    playerRef.value?.seek(seekSeconds);
+    playerRef.value?.seek?.(seekSeconds);
 
 };
 
@@ -481,6 +482,7 @@ const togglePlay = () => {
 const toggleLive = () => {
     isLive.value = !isLive.value;
     if (isLive.value) {
+        whepFailed.value = false;
         selectedDate.value = new Date().toISOString().split('T')[0];
         showDownloadModal.value = false;
         setScale(1);
@@ -540,7 +542,19 @@ const setPlaying = (val) => isPlaying.value = val;
         <div class="video-screen">
             <template v-if="streamUrl">
                 <div class="video-content">
+                    <WhepPlayer
+                        v-if="useWhep"
+                        ref="playerRef"
+                        :uid="camera.uid"
+                        :volume="volume / 100"
+                        :muted="false"
+                        @unsupported="whepFailed = true"
+                        @timeupdate="onTimeUpdate"
+                        @play="setPlaying(true)"
+                        @pause="setPlaying(false)"
+                    />
                     <VideoPlayer
+                        v-else
                         ref="playerRef"
                         :src="streamUrl"
                         :volume="volume / 100"
@@ -670,7 +684,7 @@ const setPlaying = (val) => isPlaying.value = val;
 
                 <div class="controls-bar">
                     <div class="controls-left">
-                        <div class="speed-control-wrapper">
+                        <div v-if="!useWhep" class="speed-control-wrapper">
                             <div v-if="isSpeedMenuOpen" class="speed-dropdown-menu">
                                 <div v-for="s in speeds" :key="s"  class="speed-option" :class="{ active: speed === s }" @click="selectSpeed(s)">
                                     x{{ s }}

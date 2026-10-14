@@ -6,13 +6,12 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpFoundation\Response;
-use function Laravel\Prompts\confirm;
 
 class CheckCaptcha
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->is('authenticate') && $request->isMethod('post') && config('services.yacaptcha.enabled')) {
+        if ($request->routeIs('moonshine.authenticate') && config('services.yacaptcha.enabled')) {
 
             $data = $request->validate([
                 'smart-token' => 'required|string',
@@ -24,7 +23,7 @@ class CheckCaptcha
                 'ip'     => $request->ip(),
             ]);
 
-            if ($response->status() <> 200) {
+            if ($response->failed() || $response->json('status') !== 'ok') {
                 return redirect()->back();
             }
         }

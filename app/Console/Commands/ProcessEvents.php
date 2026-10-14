@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 use App\Jobs\SendNotification;
 use App\Models\Person;
-use App\Models\Stream;
 use App\Models\Trigger;
 use App\Models\VideoAnalyticReport;
 use Carbon\Carbon;
@@ -15,12 +14,16 @@ use Illuminate\Support\Facades\Storage;
 class ProcessEvents extends Command
 {
     protected $signature = 'events:process-new';
-    protected int $lockTimeout = 120;
-
     protected int $heartbeatEvery = 300;
 
     public function handle(): int
     {
+        if (! config('services.va.enabled')) {
+            sleep(60);
+
+            return 0;
+        }
+
         $this->info('Служба обработки событий распознавания лиц запущена...');
         Log::info('Служба обработки событий запущена');
 
@@ -44,7 +47,7 @@ class ProcessEvents extends Command
 
     protected function process(int $iteration = 0): void
     {
-        $triggers = Trigger::where('is_active', true)->get();
+        $triggers = Trigger::where('is_active', true)->with(['stream', 'bot.chats'])->get();
 
         if ($iteration % $this->heartbeatEvery === 0) {
             Log::info('Служба обработки событий активна', [
@@ -64,17 +67,27 @@ class ProcessEvents extends Command
 
     private function processStream($trigger)
     {
-        $stream = Stream::find($trigger->device_id);
+        $stream = $trigger->stream;
         if (!$stream) return;
 
         $bot = $trigger->bot;
         $data = $trigger->data;
 
         $cacheKey = "last_processed_{$trigger->id}";
-        $lastId = Cache::get($cacheKey, 0);
+        $lastId = Cache::get($cacheKey);
+
+        if ($lastId === null) {
+            $lastId = (int) VideoAnalyticReport::query()->max('id');
+            Cache::forever($cacheKey, $lastId);
+            Log::warning('Курсор обработки событий потерян, установлен на текущий максимум', [
+                'trigger_id' => $trigger->id,
+                'id' => $lastId,
+            ]);
+        }
+
         if($trigger->event_type == Trigger::EVENT_KNOWED) {
             $personIds = collect($trigger->tags)->flatMap(function ($tag) {
-                return $tag->persons->pluck('id');
+                return $tag->persons->pluck('grapesva_uuid');
             })->unique()->filter()->toArray();
         }
         $events = VideoAnalyticReport::query()
@@ -98,14 +111,28 @@ class ProcessEvents extends Command
                 'count' => $events_count,
             ]);
         }
+        if ($events->isEmpty()) {
+            return;
+        }
+
+        $persons = Person::query()
+            ->whereIn('grapesva_uuid', $events->pluck('person_photobank_id')->filter()->unique()->all())
+            ->get()
+            ->keyBy('grapesva_uuid');
+
         $maxProcessedId = $lastId;
         foreach ($events->toArray() as $event) {
             $photos = [];
+            $person = null;
+            $maxProcessedId = max($maxProcessedId, $event['id']);
             try {
                 echo "Обработка события ID {$event['id']}\n";
                 $timestamp = Carbon::parse($event['datetime']);
                 if (!empty($event['person_photobank_id'])) {
-                    $person = Person::find($event['person_photobank_id']);
+                    $person = $persons->get($event['person_photobank_id']);
+                }
+
+                if ($person) {
                     $this->info("Персона: " . $person->getFullName() . "({$person->id}) | {$person->tags_list}");
                 }
 
@@ -113,7 +140,7 @@ class ProcessEvents extends Command
                     'event_id' => $event['id'],
                     'trigger_id' => $trigger->id,
                     'stream' => $stream->name,
-                    'person' => isset($person) ? $person->getFullName() : null,
+                    'person' => $person?->getFullName(),
                     'is_unknown' => (bool) $event['is_unknown'],
                     'datetime' => $timestamp->format('d.m.Y H:i:s'),
                 ]);
@@ -148,11 +175,14 @@ class ProcessEvents extends Command
                     ]);
                 }
                 try {
-                   SendNotification::dispatch($bot->id, $message, $photos??null);
+                   foreach ($bot->chats as $chat) {
+                       SendNotification::dispatch($bot->id, (string) $chat->chat_id, $message, $photos ?: null);
+                   }
 
-                   Log::info('Уведомление поставлено в очередь', [
+                   Log::info('Уведомления поставлены в очередь', [
                        'event_id' => $event['id'],
                        'bot_id' => $bot->id,
+                       'chats' => $bot->chats->count(),
                        'photos' => count($photos),
                    ]);
                 } catch (\Throwable $e) {
@@ -163,7 +193,6 @@ class ProcessEvents extends Command
                         'error' => $e->getMessage(),
                     ]);
                }
-                $maxProcessedId = $event['id'];
             } catch (\Throwable $e) {
                 $this->error("Ошибка обработки события ID {$event['id']}: " . $e->getMessage());
                 Log::error('Ошибка обработки события распознавания', [

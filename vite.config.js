@@ -9,6 +9,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/player.js',
+                'resources/js/videowall.js',
                 'resources/js/stream.js',
                 'resources/js/zone-preview.js',
             ],

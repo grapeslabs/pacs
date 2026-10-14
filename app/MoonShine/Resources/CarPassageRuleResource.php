@@ -11,14 +11,11 @@ use App\MoonShine\Fields\ColoredSelectField;
 use App\MoonShine\Fields\CustomText;
 use App\MoonShine\Fields\CustomTextarea;
 use App\MoonShine\Fields\SelectField;
-use App\MoonShine\Pages\CustomIndexPage;
 use Closure;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
 use MoonShine\Laravel\TypeCasts\ModelDataWrapper;
-use MoonShine\Laravel\Pages\Crud\DetailPage;
-use MoonShine\Laravel\Pages\Crud\FormPage;
 use MoonShine\Support\Enums\ToastType;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Switcher;
@@ -28,6 +25,7 @@ class CarPassageRuleResource extends BaseModelResource
 {
     protected string $model = CarPassageRule::class;
     protected string $title = 'Правила проезда';
+    protected array $with = ['carTags', 'people', 'cars', 'passages'];
     protected ?string $editModalTitle = 'Редактирование правила проезда';
     protected string $column = 'name';
 
@@ -42,9 +40,19 @@ class CarPassageRuleResource extends BaseModelResource
         CarPassageRule::DIRECTION_BOTH  => ['label' => 'Оба направления',  'color' => 'purple'],
     ];
 
-    protected function pages(): array
+
+    public function deleteConfirmation(Model $item): array
     {
-        return [CustomIndexPage::class, DetailPage::class, FormPage::class];
+        $item->loadMissing('passages');
+        $passages = $item->passages->pluck('name')->implode(', ');
+
+        return [
+            'title' => 'Удалить правило проезда?',
+            'text'  => 'Правило «' . ($item->name ?: 'Без наименования') . '»'
+                . ($passages ? ' для проездов: ' . $passages : '')
+                . ' перестанет действовать: указанные автомобили и персоны потеряют это условие проезда. '
+                . 'Зафиксированные ранее проезды останутся в журнале событий.',
+        ];
     }
 
 
@@ -78,40 +86,64 @@ class CarPassageRuleResource extends BaseModelResource
         return [
             CustomText::make('Наименование', 'name')
                 ->max(255, "Наименование не может содержать более 255 символов")
+                ->placeholder('Введите наименование правила')
                 ->required(),
 
             SelectField::make('Теги авто', 'carTags')
                 ->icon('tag')
                 ->optionsIcon('tag')
                 ->multiple()
+                ->placeholder('Выберите теги авто')
                 ->options(CarTag::query()->pluck('name', 'id')->toArray()),
 
             SelectField::make('Персоны (ФИО)', 'people')
                 ->multiple()
+                ->placeholder('Выберите персоны')
                 ->options($this->personOptions()),
 
             SelectField::make('Номера автомобилей', 'cars')
                 ->multiple()
+                ->placeholder('Выберите номера автомобилей')
                 ->options(Car::query()->pluck('license_plate', 'id')->toArray()),
 
             SelectField::make('Проезды', 'passages')
                 ->multiple()
                 ->required()
+                ->placeholder('Выберите проезды')
                 ->options(Passage::query()->pluck('name', 'id')->toArray()),
 
             SelectField::make('Направление', 'direction')
                 ->required()
                 ->default(CarPassageRule::DIRECTION_BOTH)
+                ->placeholder('Выберите направление')
                 ->options(CarPassageRule::DIRECTIONS),
 
             SelectField::make('Тип правила', 'type')
                 ->required()
                 ->default(CarPassageRule::TYPE_ALLOW)
+                ->placeholder('Выберите тип правила')
                 ->options(CarPassageRule::TYPES),
 
             Switcher::make('Активно', 'is_active')->default(true),
 
-            CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информацию')->nullable(),
+            CustomTextarea::make('Комментарий', 'comment')->placeholder('Дополнительная информация')->nullable(),
+        ];
+    }
+
+
+    public function detailFields(): iterable
+    {
+        return [
+            ID::make(),
+            Text::make('Наименование', 'name'),
+            Text::make('Теги авто', 'carTags', fn($item) => $item->carTags->pluck('name')->implode(', ') ?: '—'),
+            Text::make('Персоны', 'people', fn($item) => $item->people->map(fn(Person $p) => $p->getFullName())->implode(', ') ?: '—'),
+            Text::make('Номера автомобилей', 'cars', fn($item) => $item->cars->pluck('license_plate')->implode(', ') ?: '—'),
+            Text::make('Проезды', 'passages', fn($item) => $item->passages->pluck('name')->implode(', ') ?: '—'),
+            ColoredSelectField::make('Направление', 'direction')->options(self::DIRECTION_OPTIONS),
+            ColoredSelectField::make('Тип правила', 'type')->options(self::TYPE_OPTIONS),
+            Switcher::make('Активно', 'is_active'),
+            Text::make('Комментарий', 'comment'),
         ];
     }
 
@@ -216,45 +248,48 @@ class CarPassageRuleResource extends BaseModelResource
     public function filters(): array
     {
         return [
-            CustomText::make('Наименование', 'name'),
+            CustomText::make('Наименование', 'name')
+                ->placeholder('Фильтрация по наименованию'),
 
             SelectField::make('Теги авто', 'car_tags_filter')
                 ->icon('tag')
                 ->optionsIcon('tag')
                 ->multiple()->nullable()
+                ->placeholder('Фильтрация по тегам авто')
                 ->options(CarTag::query()->pluck('name', 'id')->toArray())
                 ->onApply($this->relationFilter('carTags', 'car_tags.id')),
 
             SelectField::make('Персоны', 'people_filter')
                 ->multiple()->nullable()
+                ->placeholder('Фильтрация по персонам')
                 ->options($this->personOptions())
                 ->onApply($this->relationFilter('people', 'person.id')),
 
             SelectField::make('Номера автомобилей', 'cars_filter')
                 ->multiple()->nullable()
+                ->placeholder('Фильтрация по номеру автомобиля')
                 ->options(Car::query()->pluck('license_plate', 'id')->toArray())
                 ->onApply($this->relationFilter('cars', 'cars.id')),
 
             SelectField::make('Проезды', 'passages_filter')
                 ->multiple()->nullable()
+                ->placeholder('Фильтрация по проездам')
                 ->options(Passage::query()->pluck('name', 'id')->toArray())
                 ->onApply($this->relationFilter('passages', 'passages.id')),
 
             SelectField::make('Направление', 'direction')
                 ->nullable()
+                ->placeholder('Фильтрация по направлению')
                 ->options(CarPassageRule::DIRECTIONS),
 
             SelectField::make('Тип правила', 'type')
                 ->nullable()
+                ->placeholder('Фильтрация по типу правила')
                 ->options(CarPassageRule::TYPES),
 
-            CustomText::make('Комментарий', 'comment')->placeholder('Дополнительная информацию'),
+            CustomText::make('Комментарий', 'comment')
+                ->placeholder('Фильтрация по комментарию'),
         ];
-    }
-
-    public function indexQuery(): \Illuminate\Contracts\Database\Query\Builder
-    {
-        return parent::indexQuery()->with(['carTags', 'people', 'cars', 'passages']);
     }
 
     private function relationFilter(string $relation, string $qualifiedKey): \Closure

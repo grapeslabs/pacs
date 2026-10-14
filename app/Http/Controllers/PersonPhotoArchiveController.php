@@ -2,47 +2,47 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ExportPersonPhotosArchive;
 use App\Jobs\ProcessPersonImportPhotoArchive;
+use App\Models\ExportTask;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Services\PhotoArchive\AllPersonPhotosExportService;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Str;
+use MoonShine\Laravel\MoonShineAuth;
 
 class PersonPhotoArchiveController
 {
     public function import(Request $request)
     {
         $request->validate([
-            'archive' => 'required|file|mimes:zip|max:51200',
+            'archive' => 'required|file|mimes:zip|max:512000',
         ]);
 
         /** @var UploadedFile $file */
         $file = $request->file('archive');
         $path = $file->storeAs('temp/imports', uniqid() . '.zip');
 
-        ProcessPersonImportPhotoArchive::dispatch($path);
+        ProcessPersonImportPhotoArchive::dispatch($path, MoonShineAuth::getGuard()->id());
 
-        return back()->with('alert', 'Архив принят в обработку. Фотографии появятся у персон в течение нескольких минут.');
+        return back()->with('moonshine_custom_toast', ['message' => 'Архив принят в обработку. Фотографии появятся у персон в течение нескольких минут.']);
     }
 
-    public function exportAll(AllPersonPhotosExportService $exportService)
+    public function exportAll(): JsonResponse
     {
-        $zipPath = $exportService->createArchive();
+        $task = ExportTask::create([
+            'user_id' => MoonShineAuth::getGuard()->id(),
+            'resource_uri' => 'person-photos',
+            'format' => ExportTask::FORMAT_ZIP,
+            'status' => ExportTask::STATUS_PENDING,
+            'path' => Str::uuid() . '.zip',
+        ]);
 
-        if (!$zipPath || !file_exists($zipPath)) {
-            return back()->with('alert', 'Не удалось создать архив. Возможно, у персон нет фотографий.');
-        }
+        ExportPersonPhotosArchive::dispatch($task->id);
 
-        return new StreamedResponse(function () use ($zipPath) {
-            $handle = fopen($zipPath, 'rb');
-            fpassthru($handle);
-            fclose($handle);
-            @unlink($zipPath);
-        }, 200, [
-            'Content-Type' => 'application/zip',
-            'Content-Disposition' => 'attachment; filename="' . basename($zipPath) . '"',
-            'Content-Length' => filesize($zipPath),
+        return response()->json([
+            'task_id' => $task->id,
+            'status_url' => route('export-tasks.status', ['task' => $task->id]),
+            'download_url' => route('export-tasks.download', ['task' => $task->id]),
         ]);
     }
-
-
 }

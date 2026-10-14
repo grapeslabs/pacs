@@ -8,7 +8,6 @@ use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use MoonShine\Laravel\Exceptions\MoonShineNotFoundException;
-use MoonShine\Laravel\Forms\FiltersForm;
 use App\MoonShine\Forms\CustomFiltersForm;
 use MoonShine\Laravel\Http\Middleware\Authenticate;
 use MoonShine\Laravel\Http\Middleware\ChangeLocale;
@@ -17,8 +16,9 @@ use App\MoonShine\Pages\Dashboard;
 use MoonShine\Laravel\Pages\ErrorPage;
 use App\MoonShine\Pages\LoginPage;
 use \MoonShine\Laravel\Forms\LoginForm;
-use \App\Http\Middleware\CheckDiskSpace;
 use \App\Http\Middleware\CheckCaptcha;
+use \App\Http\Middleware\CleanEmptyFilters;
+use \App\Http\Middleware\AuthorizeMoonShineAction;
 
 return [
     'title' => 'GRAPES PACS',
@@ -49,6 +49,7 @@ return [
 
     // Middleware
     'middleware' => [
+        CleanEmptyFilters::class,
         CheckCaptcha::class,
         EncryptCookies::class,
         AddQueuedCookiesToResponse::class,
@@ -58,6 +59,7 @@ return [
         VerifyCsrfToken::class,
         SubstituteBindings::class,
         ChangeLocale::class,
+        AuthorizeMoonShineAction::class,
     ],
 
     // Storage
