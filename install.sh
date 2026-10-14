@@ -6,7 +6,7 @@ log()  { printf '%b[INSTALL]%b %s\n' "$GREEN" "$NC" "$1"; }
 warn() { printf '%b[INSTALL] ВНИМАНИЕ:%b %s\n' "$YELLOW" "$NC" "$1"; }
 err()  { printf '%b[INSTALL] ОШИБКА:%b %s\n' "$RED" "$NC" "$1" >&2; exit 1; }
 
-VERSION="v1.2.3"
+VERSION="v1.3.0"
 INSTALL_DIR="/opt/pacs"
 DOMAIN=""
 DB_USER="pacs"
